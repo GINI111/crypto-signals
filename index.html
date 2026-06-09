@@ -557,7 +557,7 @@ async function fetchAndRender(){
   document.getElementById('footer').textContent='正在拉取 Binance 历史 K 线...';
   let klines=null;
   try{
-    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${currentTF}&limit=120`,{cache:'no-store'});
+    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${currentTF}&limit=1500`,{cache:'no-store'});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const j=await r.json();
     if(!Array.isArray(j)||j.length<30)throw new Error('bad data');
@@ -734,7 +734,7 @@ function evalBuy({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const c2=slope25>=0;
   const c2p=slope25>-ema25[n]*0.0005;
   // C3
-  const lb=20;
+  const lb=60;
   const avgLow=lows.slice(n-lb,n+1).reduce((a,b)=>a+b,0)/lb;
   const inLow=closes[n]<avgLow*1.005;
   let hrc=0;for(let i=n;i>n-5;i--){if(hist[i]>hist[i-1])hrc++;else break;}
@@ -778,7 +778,7 @@ function evalSell({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const c2=slope25<=0;
   const c2p=slope25<ema25[n]*0.0005;
   // C3
-  const lb=20;
+  const lb=60;
   const avgHigh=highs.slice(n-lb,n+1).reduce((a,b)=>a+b,0)/lb;
   const inHigh=closes[n]>avgHigh*0.995;
   let hfc=0;for(let i=n;i>n-5;i--){if(hist[i]<hist[i-1])hfc++;else break;}
@@ -834,6 +834,7 @@ function renderKline({opens,highs,lows,closes,times,ema7,ema25}){
     rightPriceScale:{borderColor:'rgba(0,200,150,0.1)'}
   });
   liveCandleSeries=liveChart.addCandlestickSeries({upColor:'#00c896',downColor:'#ff4466',borderUpColor:'#00ff9d',borderDownColor:'#ff4466',wickUpColor:'#00c896',wickDownColor:'#ff4466'});
+  // Feed all bars — lightweight-charts virtualises the canvas, only visible bars are drawn
   liveCandleSeries.setData(times.map((t,i)=>({time:t,open:opens[i],high:highs[i],low:lows[i],close:closes[i]})));
   liveChart.addLineSeries({color:'#f5c518',lineWidth:1,priceLineVisible:false,lastValueVisible:false})
     .setData(times.map((t,i)=>({time:t,value:ema7[i]})));
@@ -847,7 +848,7 @@ function drawMACD(hist,ml,sig){
   const dpr=window.devicePixelRatio||1;
   cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
   const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-  const W=cv.offsetWidth,H=cv.offsetHeight,p={l:8,r:8,t:6,b:16},n=60;
+  const W=cv.offsetWidth,H=cv.offsetHeight,p={l:8,r:8,t:6,b:16},n=300;
   const h2=hist.slice(-n),ml2=ml.slice(-n),s2=sig.slice(-n);
   const all=[...h2,...ml2,...s2].filter(v=>v!=null);if(!all.length)return;
   const mn=Math.min(...all),mx=Math.max(...all),rng=mx-mn||1;
@@ -868,7 +869,7 @@ function drawRSI(rsi){
   const dpr=window.devicePixelRatio||1;
   cv.width=cv.offsetWidth*dpr;cv.height=cv.offsetHeight*dpr;
   const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-  const W=cv.offsetWidth,H=cv.offsetHeight,p={l:8,r:22,t:6,b:16},n=60;
+  const W=cv.offsetWidth,H=cv.offsetHeight,p={l:8,r:22,t:6,b:16},n=300;
   const r2=rsi.slice(-n);
   const yw=H-p.t-p.b,xw=W-p.l-p.r;
   const ys=v=>p.t+yw*(1-v/100),xs=i=>p.l+xw*(i/(n-1));
