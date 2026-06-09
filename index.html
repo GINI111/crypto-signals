@@ -255,6 +255,7 @@ canvas.indicator{display:block;width:100%;height:105px}
     <div class="btn-group">
       <button class="btn active" onclick="switchSymbol('BTC')">BTC</button>
       <button class="btn" onclick="switchSymbol('ETH')">ETH</button>
+      <button class="btn" onclick="switchSymbol('SOL')">SOL</button>
     </div>
     <div class="btn-group">
       <button class="btn" onclick="switchTF('5m')">5m</button>
@@ -456,9 +457,8 @@ function renderHistory() {
     const timeStr = e.time.toLocaleTimeString('zh', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const dateStr = e.time.toLocaleDateString('zh', {month:'2-digit',day:'2-digit'});
     const isBTC = e.symbol === 'BTC';
-    const priceStr = isBTC
-      ? '$' + e.price.toLocaleString('en', {maximumFractionDigits: 0})
-      : '$' + e.price.toLocaleString('en', {maximumFractionDigits: 2});
+    const dec = isBTC ? 0 : e.symbol === 'ETH' ? 2 : 3;
+    const priceStr = '$' + e.price.toLocaleString('en', {minimumFractionDigits: dec, maximumFractionDigits: dec});
     const icon = e.strong ? (isBuy ? '🚀' : '🔻') : (isBuy ? '✅' : '⚠️');
     const dirLabel = e.strong
       ? (isBuy ? '强烈多头开仓' : '强烈空头开仓')
@@ -489,7 +489,8 @@ function renderHistory() {
 
 function switchSymbol(s){
   currentSymbol=s;
-  document.querySelectorAll('.btn-group:first-child .btn').forEach((b,i)=>b.classList.toggle('active',i===(s==='BTC'?0:1)));
+  const syms=['BTC','ETH','SOL'];
+  document.querySelectorAll('.btn-group:first-child .btn').forEach((b,i)=>b.classList.toggle('active',i===syms.indexOf(s)));
   if(autoTimer)clearInterval(autoTimer);
   fetchAndRender();
   autoTimer=setInterval(fetchAndRender,5*60*1000);
@@ -589,8 +590,8 @@ async function fetchAndRender(){
 function updatePriceCards({closes,rsi,hist,ema7,ema25,n}){
   const price=closes[n],prev=closes[n-1];
   const pct=((price-prev)/prev*100).toFixed(2);
-  const isBTC=currentSymbol==='BTC';
-  $v('v-price', isBTC?'$'+price.toLocaleString('en',{maximumFractionDigits:0}):'$'+price.toLocaleString('en',{maximumFractionDigits:2}));
+  const decimals=currentSymbol==='BTC'?0:currentSymbol==='ETH'?2:3;
+  $v('v-price','$'+price.toLocaleString('en',{minimumFractionDigits:decimals,maximumFractionDigits:decimals}));
   $c('v-price','pc-value '+(pct>=0?'up':'down'));
   $v('v-change',(pct>=0?'+':'')+pct+'%');$c('v-change','pc-sub '+(pct>=0?'up':'down'));
   flash('card-price',pct>=0?'flash-g':'flash-r');
