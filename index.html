@@ -407,7 +407,7 @@ let liveChart=null, liveCandleSeries=null;
    格式: your-app-name.onrender.com
    不要加 https:// 前缀
 ═══════════════════════════════════════════ */
-https://crypto-backend-jjk9.onrender.com  // ← 部署后改这里
+const RAILWAY_HOST = 'crypto-backend-jjk9.onrender.com';  // ← 部署后改这里
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const BACKEND_HTTP = IS_LOCAL ? 'http://localhost:8765' : `https://${RAILWAY_HOST}`;
 const BACKEND_WS   = IS_LOCAL ? 'ws://localhost:8765'  : `wss://${RAILWAY_HOST}`;
