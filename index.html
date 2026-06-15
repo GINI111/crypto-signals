@@ -241,6 +241,27 @@ canvas.indicator{display:block;width:100%;height:105px}
 .hr-c-miss{background:rgba(255,255,255,0.05);color:var(--dim)}
 
 .hr-time{margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);flex-shrink:0;text-align:right;line-height:1.5}
+/* ============ TRADE PLAN CARD ============ */
+.trade-plan{border-radius:10px;padding:12px 14px;margin-top:10px;border:1px solid var(--border);background:var(--bg3)}
+.trade-plan.tp-buy{border-color:rgba(0,200,150,0.35);background:rgba(0,200,150,0.04)}
+.trade-plan.tp-sell{border-color:rgba(255,68,102,0.35);background:rgba(255,68,102,0.04)}
+.trade-plan.tp-watch{border-color:rgba(245,197,24,0.3);background:rgba(245,197,24,0.03)}
+.tp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tp-title{font-size:11px;font-weight:600;letter-spacing:.5px}
+.tp-rr{font-family:'Space Mono',monospace;font-size:13px;font-weight:700}
+.tp-rr.rr-good{color:var(--green2)}
+.tp-rr.rr-ok{color:var(--yellow)}
+.tp-rr.rr-bad{color:var(--red)}
+.tp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tp-item{background:var(--bg2);border-radius:7px;padding:7px 10px;border:1px solid var(--border)}
+.tp-item-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.tp-item-value{font-family:'Space Mono',monospace;font-size:13px;font-weight:700}
+.tp-item-value.entry-val{color:var(--text)}
+.tp-item-value.stop-val{color:var(--red)}
+.tp-item-value.tp1-val{color:var(--green)}
+.tp-item-value.tp2-val{color:var(--green2)}
+.tp-note{font-size:9.5px;color:var(--muted);margin-top:8px;line-height:1.5;padding-top:7px;border-top:1px solid var(--border)}
+.tp-warn{font-size:9.5px;color:var(--yellow);margin-top:6px;display:flex;align-items:center;gap:4px}
 </style>
 </head>
 <body>
@@ -374,6 +395,28 @@ canvas.indicator{display:block;width:100%;height:105px}
 
   </div>
 
+  </div>
+
+  <!-- ====== TRADE PLAN ====== -->
+  <div class="dual-details" style="margin-bottom:14px">
+    <div class="det-panel buy-panel" id="buyTradePlanWrap">
+      <div class="det-header">
+        <div class="det-dot det-dot-buy"></div>
+        <div class="det-title up">多头交易计划</div>
+        <div style="font-size:9px;color:var(--dim);font-family:'Space Mono',monospace">ATR动态止损</div>
+      </div>
+      <div id="buyTradePlan"><div style="font-size:11px;color:var(--dim);padding:8px 0">等待信号触发（≥4分）...</div></div>
+    </div>
+    <div class="det-panel sell-panel" id="sellTradePlanWrap">
+      <div class="det-header">
+        <div class="det-dot det-dot-sell"></div>
+        <div class="det-title down">空头交易计划</div>
+        <div style="font-size:9px;color:var(--dim);font-family:'Space Mono',monospace">ATR动态止损</div>
+      </div>
+      <div id="sellTradePlan"><div style="font-size:11px;color:var(--dim);padding:8px 0">等待信号触发（≥4分）...</div></div>
+    </div>
+  </div>
+
   <!-- ====== SIGNAL HISTORY LOG ====== -->
   <div class="history-panel">
     <div class="history-header">
@@ -407,7 +450,7 @@ let liveChart=null, liveCandleSeries=null;
    格式: your-app-name.onrender.com
    不要加 https:// 前缀
 ═══════════════════════════════════════════ */
-const RAILWAY_HOST = 'crypto-backend-jjk9.onrender.com';  // ← 部署后改这里
+const RAILWAY_HOST = 'YOUR_APP.onrender.com';  // ← 部署后改这里
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const BACKEND_HTTP = IS_LOCAL ? 'http://localhost:8765' : `https://${RAILWAY_HOST}`;
 const BACKEND_WS   = IS_LOCAL ? 'ws://localhost:8765'  : `wss://${RAILWAY_HOST}`;
@@ -709,8 +752,105 @@ function renderBothSignals(d){
   updateBanner('sell',sellScore,d);
   renderConditions('buy',buyResults,buyScore);
   renderConditions('sell',sellResults,sellScore);
+  renderTradePlan('buy',buyScore,d);
+  renderTradePlan('sell',sellScore,d);
   maybeAddHistory('buy', buyScore, d.closes[d.n], buyResults, currentSymbol, currentTF);
   maybeAddHistory('sell', sellScore, d.closes[d.n], sellResults, currentSymbol, currentTF);
+}
+
+/* ============ ATR + TRADE PLAN ============ */
+function calcATR(highs,lows,closes,period=14){
+  if(closes.length<period+1)return null;
+  const trs=[];
+  for(let i=1;i<closes.length;i++){
+    const tr=Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[i-1]),Math.abs(lows[i]-closes[i-1]));
+    trs.push(tr);
+  }
+  return trs.slice(-period).reduce((a,b)=>a+b,0)/period;
+}
+
+function findSwing(highs,lows,n,lookback=20){
+  const start=Math.max(0,n-lookback);
+  let swingHigh=-Infinity,swingLow=Infinity;
+  for(let i=start;i<=n;i++){if(highs[i]>swingHigh)swingHigh=highs[i];if(lows[i]<swingLow)swingLow=lows[i];}
+  return{swingHigh,swingLow};
+}
+
+function buildTradePlan(side,entry,highs,lows,closes,symbol){
+  const atr=calcATR(highs,lows,closes,14);
+  if(!atr||!entry)return null;
+  const{swingHigh,swingLow}=findSwing(highs,lows,closes.length-1,20);
+  const atrMult=0.5;
+  const decimals=symbol==='BTC'?0:symbol==='ETH'?2:3;
+  const fmt=v=>v.toLocaleString('en',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+  let stop,risk,tp1,tp2;
+  if(side==='buy'){
+    const atrStop=entry-atrMult*atr;
+    const structStop=swingLow-atrMult*atr;
+    stop=Math.min(atrStop,structStop);
+    risk=entry-stop;
+    tp1=entry+risk*1;
+    tp2=entry+risk*2;
+  }else{
+    const atrStop=entry+atrMult*atr;
+    const structStop=swingHigh+atrMult*atr;
+    stop=Math.max(atrStop,structStop);
+    risk=stop-entry;
+    tp1=entry-risk*1;
+    tp2=entry-risk*2;
+  }
+  const rr=(side==='buy'?(tp2-entry)/risk:(entry-tp2)/risk);
+  return{entry,stop,tp1,tp2,atr,risk,rr,fmt,decimals,
+    fEntry:fmt(entry),fStop:fmt(stop),fTp1:fmt(tp1),fTp2:fmt(tp2),
+    fAtr:fmt(atr),fRr:rr.toFixed(2)};
+}
+
+function renderTradePlan(side,score,d){
+  const el=$e(side+'TradePlan');
+  const wrap=$e(side+'TradePlanWrap');
+  const isBuy=side==='buy';
+  if(score<4){
+    el.innerHTML=`<div style="font-size:11px;color:var(--dim);padding:8px 0">等待信号触发（≥4分）... 当前 ${score}/5</div>`;
+    wrap.className='det-panel '+(isBuy?'buy-panel':'sell-panel');
+    return;
+  }
+  const plan=buildTradePlan(side,d.closes[d.n],d.highs,d.lows,d.closes,currentSymbol);
+  if(!plan){el.innerHTML=`<div style="font-size:11px;color:var(--dim);padding:8px 0">数据不足，无法生成计划</div>`;return;}
+  const rrOk=plan.rr>=1.5;
+  const rrGood=plan.rr>=2;
+  const rrCls=rrGood?'rr-good':rrOk?'rr-ok':'rr-bad';
+  const gradeLabel=score===5?(isBuy?'🚀 强烈多头':'🔻 强烈空头'):(isBuy?'✅ 多头确认':'⚠️ 空头确认');
+  wrap.className='det-panel '+(isBuy?'buy-panel':'sell-panel')+(score>=4?' active':'');
+  el.innerHTML=`
+    <div class="trade-plan ${isBuy?'tp-buy':'tp-sell'}">
+      <div class="tp-header">
+        <div class="tp-title">${gradeLabel} · ${score}/5</div>
+        <div class="tp-rr ${rrCls}">R:R 1:${plan.fRr}</div>
+      </div>
+      <div class="tp-grid">
+        <div class="tp-item">
+          <div class="tp-item-label">入场价</div>
+          <div class="tp-item-value entry-val">$${plan.fEntry}</div>
+        </div>
+        <div class="tp-item">
+          <div class="tp-item-label">止损 SL</div>
+          <div class="tp-item-value stop-val">$${plan.fStop}</div>
+        </div>
+        <div class="tp-item">
+          <div class="tp-item-label">止盈 TP1 · 1R</div>
+          <div class="tp-item-value tp1-val">$${plan.fTp1}</div>
+        </div>
+        <div class="tp-item">
+          <div class="tp-item-label">止盈 TP2 · 2R</div>
+          <div class="tp-item-value tp2-val">$${plan.fTp2}</div>
+        </div>
+      </div>
+      <div class="tp-note">
+        ATR(14): $${plan.fAtr} · 止损 = ${isBuy?'结构低点':'结构高点'} ± 0.5×ATR · 建议 TP1 减仓 50%，剩余移至保本
+        ${isBuy?'· 失效条件：15m 收盘跌回 EMA25 下方':'· 失效条件：15m 收盘涨回 EMA25 上方'}
+      </div>
+      ${!rrOk?`<div class="tp-warn">⚠ R:R 低于 1:1.5，风险回报比不理想，建议观察</div>`:''}
+    </div>`;
 }
 
 function updateBanner(side,score,d){
