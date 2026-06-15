@@ -394,25 +394,109 @@ canvas.indicator{display:block;width:100%;height:105px}
 <script>
 let currentSymbol='BTC', currentTF='15m';
 let autoTimer=null, lastData=null;
-let ws=null, wsSymbol='', wsTF='';
+let ws=null, wsSymbol='', wsTF='';          // Binance WS (live tick)
+let serverWS=null;                           // Backend server WS
 let liveChart=null, liveCandleSeries=null;
 
+/* ═══════════════════════════════════════════
+   BACKEND CONNECTION
+   后端服务地址 — 如果后端运行在其他机器上，改这里
+═══════════════════════════════════════════ */
+const BACKEND = 'localhost:8765';
+const USE_BACKEND = true;   // false = 纯前端模式（无持久历史）
+
 /* ---- Signal History ---- */
-const MAX_HISTORY = 10;
-let signalHistory = [];   // [{id, side, symbol, tf, score, price, conds, time, strong}]
-let lastBuyScore = -1, lastSellScore = -1; // track transitions to avoid duplicate entries
+const MAX_HISTORY = 200;
+let signalHistory = [];
+let lastBuyScore = -1, lastSellScore = -1;
+
+/* ---- Backend WebSocket ---- */
+function connectServerWS() {
+  if (!USE_BACKEND) return;
+  if (serverWS) { serverWS.onclose=null; serverWS.close(); serverWS=null; }
+  serverWS = new WebSocket(`ws://${BACKEND}/ws`);
+  serverWS.onopen = () => {
+    document.getElementById('footer').textContent = '✅ 已连接后端服务，信号持久运行中...';
+  };
+  serverWS.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'init') {
+        // Load history from server
+        signalHistory = msg.history || [];
+        renderHistory();
+        // Load current state
+        applyServerState(msg.state);
+      } else if (msg.type === 'state_update') {
+        applyServerState(msg.data);
+      } else if (msg.type === 'new_signal') {
+        // New signal recorded by server while we were away or connected
+        const entry = msg.data;
+        if (!signalHistory.find(h => h.id === entry.id)) {
+          signalHistory.unshift(entry);
+          if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
+          renderHistory();
+          // Flash banner if matches current view
+          if (entry.symbol === currentSymbol && entry.tf === currentTF) {
+            flashNewSignal(entry);
+          }
+        }
+      }
+    } catch(_) {}
+  };
+  serverWS.onclose = () => {
+    document.getElementById('footer').textContent = '⚠️ 后端断开，5秒后重连... (信号仍在后端积累)';
+    setTimeout(connectServerWS, 5000);
+  };
+  serverWS.onerror = () => serverWS.close();
+}
+
+function applyServerState(state) {
+  if (!state) return;
+  const d = state[currentSymbol]?.[currentTF];
+  if (!d || !lastData) return;
+  // Update last price cards from server state
+  const n = lastData.n;
+  lastData.closes[n] = d.price;
+  updatePriceCards(lastData);
+}
+
+function flashNewSignal(entry) {
+  // Briefly highlight the corresponding banner
+  const bannerId = entry.side + 'Banner';
+  const el = document.getElementById(bannerId);
+  if (el) {
+    el.style.transition = 'box-shadow .1s';
+    el.style.boxShadow = entry.side === 'buy'
+      ? '0 0 60px rgba(0,255,157,0.6)' : '0 0 60px rgba(255,68,102,0.6)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 1500);
+  }
+}
+
+function clearHistory() {
+  if (USE_BACKEND) {
+    fetch(`http://${BACKEND}/api/history`, {method:'DELETE'})
+      .then(() => { signalHistory = []; renderHistory(); })
+      .catch(() => { signalHistory = []; renderHistory(); });
+  } else {
+    signalHistory = [];
+    renderHistory();
+  }
+  lastBuyScore = -1;
+  lastSellScore = -1;
+}
 
 function maybeAddHistory(side, score, price, condResults, symbol, tf) {
+  // In backend mode: server handles history recording.
+  // In standalone mode: record locally as before.
+  if (USE_BACKEND) return;
   const prevScore = side === 'buy' ? lastBuyScore : lastSellScore;
-  // Only record when score crosses ≥4 threshold (transition: was <4, now ≥4)
-  // OR when score increases while already ≥4 (e.g. 4→5)
   const wasTriggered = prevScore >= 4;
   const isTriggered  = score >= 4;
   if (!isTriggered) {
     if (side === 'buy') lastBuyScore = score; else lastSellScore = score;
     return;
   }
-  // new trigger or score upgrade
   if (!wasTriggered || score > prevScore) {
     if (side === 'buy') lastBuyScore = score; else lastSellScore = score;
     const entry = {
@@ -420,7 +504,7 @@ function maybeAddHistory(side, score, price, condResults, symbol, tf) {
       side, symbol, tf, score,
       price,
       conds: condResults.map(r => r.score >= 1),
-      time: new Date(),
+      time: new Date().toLocaleString('zh'),
       strong: score === 5
     };
     signalHistory.unshift(entry);
@@ -429,13 +513,6 @@ function maybeAddHistory(side, score, price, condResults, symbol, tf) {
   } else {
     if (side === 'buy') lastBuyScore = score; else lastSellScore = score;
   }
-}
-
-function clearHistory() {
-  signalHistory = [];
-  lastBuyScore = -1;
-  lastSellScore = -1;
-  renderHistory();
 }
 
 function renderHistory() {
@@ -454,8 +531,12 @@ function renderHistory() {
   body.querySelectorAll('.hist-row').forEach(el => el.remove());
   signalHistory.forEach(e => {
     const isBuy = e.side === 'buy';
-    const timeStr = e.time.toLocaleTimeString('zh', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const dateStr = e.time.toLocaleDateString('zh', {month:'2-digit',day:'2-digit'});
+    const timeStr = typeof e.time === 'string'
+      ? e.time.slice(11,19)
+      : e.time.toLocaleTimeString('zh', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const dateStr = typeof e.time === 'string'
+      ? e.time.slice(5,10).replace('-','/')
+      : e.time.toLocaleDateString('zh', {month:'2-digit',day:'2-digit'});
     const isBTC = e.symbol === 'BTC';
     const dec = isBTC ? 0 : e.symbol === 'ETH' ? 2 : 3;
     const priceStr = '$' + e.price.toLocaleString('en', {minimumFractionDigits: dec, maximumFractionDigits: dec});
@@ -901,6 +982,8 @@ function flash(id,c){const el=$e(id);el.classList.add(c);setTimeout(()=>el.class
 fetchAndRender();
 if(autoTimer)clearInterval(autoTimer);
 autoTimer=setInterval(fetchAndRender,5*60*1000);
+// Connect to backend for persistent history and cross-session signals
+connectServerWS();
 </script>
 </body>
 </html>
