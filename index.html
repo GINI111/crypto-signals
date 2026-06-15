@@ -402,7 +402,15 @@ let liveChart=null, liveCandleSeries=null;
    BACKEND CONNECTION
    后端服务地址 — 如果后端运行在其他机器上，改这里
 ═══════════════════════════════════════════ */
-const BACKEND = 'localhost:8765';
+/* ═══════════════════════════════════════════
+   BACKEND — 填入你的 Render 域名（部署后复制过来）
+   格式: your-app-name.onrender.com
+   不要加 https:// 前缀
+═══════════════════════════════════════════ */
+https://crypto-backend-jjk9.onrender.com  // ← 部署后改这里
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const BACKEND_HTTP = IS_LOCAL ? 'http://localhost:8765' : `https://${RAILWAY_HOST}`;
+const BACKEND_WS   = IS_LOCAL ? 'ws://localhost:8765'  : `wss://${RAILWAY_HOST}`;
 const USE_BACKEND = true;   // false = 纯前端模式（无持久历史）
 
 /* ---- Signal History ---- */
@@ -414,9 +422,10 @@ let lastBuyScore = -1, lastSellScore = -1;
 function connectServerWS() {
   if (!USE_BACKEND) return;
   if (serverWS) { serverWS.onclose=null; serverWS.close(); serverWS=null; }
-  serverWS = new WebSocket(`ws://${BACKEND}/ws`);
+  serverWS = new WebSocket(`${BACKEND_WS}/ws`);
   serverWS.onopen = () => {
-    document.getElementById('footer').textContent = '✅ 已连接后端服务，信号持久运行中...';
+    const addr = IS_LOCAL ? 'localhost:8765' : RAILWAY_HOST;
+    document.getElementById('footer').textContent = `✅ 已连接后端服务 (${addr})，信号持久运行中...`;
   };
   serverWS.onmessage = e => {
     try {
@@ -475,7 +484,7 @@ function flashNewSignal(entry) {
 
 function clearHistory() {
   if (USE_BACKEND) {
-    fetch(`http://${BACKEND}/api/history`, {method:'DELETE'})
+    fetch(`${BACKEND_HTTP}/api/history`, {method:'DELETE'})
       .then(() => { signalHistory = []; renderHistory(); })
       .catch(() => { signalHistory = []; renderHistory(); });
   } else {
