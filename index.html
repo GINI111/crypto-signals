@@ -241,7 +241,30 @@ canvas.indicator{display:block;width:100%;height:105px}
 .hr-c-miss{background:rgba(255,255,255,0.05);color:var(--dim)}
 
 .hr-time{margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);flex-shrink:0;text-align:right;line-height:1.5}
-/* ============ TRADE PLAN CARD ============ */
+/* ============ ENVIRONMENT FILTER ============ */
+.env-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:14px}
+.env-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.env-title{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--text)}
+.env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:700px){.env-grid{grid-template-columns:repeat(2,1fr)}}
+.env-item{background:var(--bg3);border-radius:8px;padding:8px 10px;border:1px solid var(--border)}
+.env-item-label{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
+.env-item-val{font-size:13px;font-weight:600;font-family:'Space Mono',monospace}
+.env-bull{color:var(--green2)} .env-bear{color:var(--red)} .env-neutral{color:var(--yellow)} .env-ok{color:var(--green)}
+.env-verdict{margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:8px}
+.env-verdict.verdict-go{background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.3);color:var(--green2)}
+.env-verdict.verdict-caution{background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--yellow)}
+.env-verdict.verdict-block{background:rgba(255,68,102,0.08);border:1px solid rgba(255,68,102,0.25);color:var(--red)}
+/* signal breakdown */
+.breakdown-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.breakdown-row:last-child{border-bottom:none}
+.bd-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.bd-pass{background:rgba(0,200,150,0.2);color:var(--green2)}
+.bd-fail{background:rgba(255,68,102,0.15);color:var(--red)}
+.bd-watch{background:rgba(245,197,24,0.15);color:var(--yellow)}
+.bd-label{font-size:11px;font-weight:500;min-width:48px;color:var(--text)}
+.bd-reason{font-size:10px;color:var(--muted);flex:1}
+</style>
 .trade-plan{border-radius:10px;padding:12px 14px;margin-top:10px;border:1px solid var(--border);background:var(--bg3)}
 .trade-plan.tp-buy{border-color:rgba(0,200,150,0.35);background:rgba(0,200,150,0.04)}
 .trade-plan.tp-sell{border-color:rgba(255,68,102,0.35);background:rgba(255,68,102,0.04)}
@@ -262,6 +285,36 @@ canvas.indicator{display:block;width:100%;height:105px}
 .tp-item-value.tp2-val{color:var(--green2)}
 .tp-note{font-size:9.5px;color:var(--muted);margin-top:8px;line-height:1.5;padding-top:7px;border-top:1px solid var(--border)}
 .tp-warn{font-size:9.5px;color:var(--yellow);margin-top:6px;display:flex;align-items:center;gap:4px}
+/* ============ ENVIRONMENT FILTER SECTION ============ */
+.env-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px}
+.env-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.env-title{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--text)}
+.env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:700px){.env-grid{grid-template-columns:repeat(2,1fr)}}
+.env-item{background:var(--bg3);border-radius:8px;padding:8px 10px;border:1px solid var(--border)}
+.env-item-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.env-item-val{font-size:12px;font-weight:600;font-family:'Space Mono',monospace}
+.env-bull{color:var(--green2)}.env-bear{color:var(--red)}.env-neutral{color:var(--yellow)}.env-ok{color:var(--green)}
+.env-verdict{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:500}
+.env-verdict.ev-ok{background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.25);color:var(--green2)}
+.env-verdict.ev-warn{background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--yellow)}
+.env-verdict.ev-block{background:rgba(255,68,102,0.08);border:1px solid rgba(255,68,102,0.25);color:var(--red)}
+.env-verdict.ev-side{background:rgba(100,100,120,0.1);border:1px solid var(--border);color:var(--muted)}
+
+/* ============ BREAKDOWN REASON ROW ============ */
+.breakdown-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.breakdown-row:last-child{border-bottom:none}
+.bd-icon{width:16px;height:16px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;margin-top:1px}
+.bd-pass{background:rgba(0,200,150,0.2);color:var(--green2)}
+.bd-fail{background:rgba(255,68,102,0.15);color:var(--red)}
+.bd-part{background:rgba(245,197,24,0.15);color:var(--yellow)}
+.bd-body{flex:1;min-width:0}
+.bd-label{font-size:10px;font-weight:500;color:var(--text)}
+.bd-reason{font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.4}
+.conclusion-box{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:11px;line-height:1.5;border:1px solid var(--border)}
+.concl-buy{background:rgba(0,200,150,0.06);border-color:rgba(0,200,150,0.2);color:rgba(200,230,220,0.8)}
+.concl-sell{background:rgba(255,68,102,0.06);border-color:rgba(255,68,102,0.2);color:rgba(220,180,180,0.8)}
+.concl-neutral{background:var(--bg3);color:var(--muted)}
 </style>
 </head>
 <body>
@@ -295,6 +348,21 @@ canvas.indicator{display:block;width:100%;height:105px}
     <div class="price-card" id="card-rsi"><div class="pc-label">RSI 14</div><div class="pc-value" id="v-rsi">---</div><div class="pc-sub" id="v-rsi-s">---</div></div>
     <div class="price-card" id="card-macd"><div class="pc-label">MACD Hist</div><div class="pc-value" id="v-macd">---</div><div class="pc-sub" id="v-macd-s">---</div></div>
     <div class="price-card" id="card-ma"><div class="pc-label">均线状态</div><div class="pc-value" id="v-ma">---</div><div class="pc-sub" id="v-ma-s">---</div></div>
+  </div>
+
+  <!-- ====== ENVIRONMENT FILTER ====== -->
+  <div class="env-panel">
+    <div class="env-header">
+      <div class="env-title">📡 市场环境过滤</div>
+      <div style="font-size:9px;color:var(--dim);font-family:'Space Mono',monospace;margin-left:auto" id="envUpdated">--</div>
+    </div>
+    <div class="env-grid">
+      <div class="env-item"><div class="env-item-label">1H 趋势</div><div class="env-item-val" id="env1h">--</div></div>
+      <div class="env-item"><div class="env-item-label">4H 趋势</div><div class="env-item-val" id="env4h">--</div></div>
+      <div class="env-item"><div class="env-item-label">市场状态</div><div class="env-item-val" id="envState">--</div></div>
+      <div class="env-item"><div class="env-item-label">ATR 波动率</div><div class="env-item-val" id="envAtr">--</div></div>
+    </div>
+    <div class="env-verdict verdict-caution" id="envVerdict">⏳ 正在加载高周期数据...</div>
   </div>
 
   <!-- ====== DUAL SIGNAL BANNERS ====== -->
@@ -716,6 +784,7 @@ async function fetchAndRender(){
   renderKline(lastData);
   drawMACD(hist,ml,sig);
   drawRSI(rsi);
+  refreshHTF();  // fetch 1h/4h for env filter
   document.getElementById('footer').textContent=`历史 K 线已加载 · ${new Date().toLocaleString('zh')} · WebSocket 实时推送中`;
   connectWS();
 }
@@ -742,20 +811,106 @@ function updatePriceCards({closes,rsi,hist,ema7,ema25,n}){
   flash('card-ma');
 }
 
+/* ============ HIGHER TIMEFRAME DATA ============ */
+const htfData={};
+
+async function fetchHTF(tf){
+  try{
+    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${tf}&limit=100`,{cache:'no-store'});
+    if(!r.ok)return null;
+    const j=await r.json();if(!Array.isArray(j)||j.length<30)return null;
+    const closes=j.map(k=>parseFloat(k[4]));
+    const highs=j.map(k=>parseFloat(k[2]));
+    const lows=j.map(k=>parseFloat(k[3]));
+    const e7=calcEMA(closes,7),e25=calcEMA(closes,25);
+    const{hist}=calcMACD(closes);
+    const n=closes.length-1;
+    const atr=calcATR(highs,lows,closes,14);
+    return{ema7:e7[n],ema25:e25[n],macdHist:hist[n],atr,price:closes[n]};
+  }catch(_){return null;}
+}
+
+function getTrendState({ema7,ema25,macdHist}){
+  if(ema7>ema25&&macdHist>0)return'bull';
+  if(ema7<ema25&&macdHist<0)return'bear';
+  return'neutral';
+}
+
+function htfAllows(side,trend){
+  if(side==='buy'&&trend==='bull')return true;
+  if(side==='sell'&&trend==='bear')return true;
+  if(trend==='neutral')return null;
+  return false;
+}
+
+function isSideways(price,atr,ema7,ema25,highs,lows,n){
+  if(!atr||atr===0)return false;
+  const lb=20;
+  const atrRatio=atr/price;
+  const emaGap=Math.abs(ema7-ema25)/price;
+  const rHigh=Math.max(...highs.slice(Math.max(0,n-lb),n+1));
+  const rLow=Math.min(...lows.slice(Math.max(0,n-lb),n+1));
+  const rangeRatio=(rHigh-rLow)/price;
+  return atrRatio<0.008&&emaGap<0.002&&rangeRatio<0.012;
+}
+
+async function refreshHTF(){
+  const tf1h=await fetchHTF('1h');
+  const tf4h=await fetchHTF('4h');
+  htfData['1h']=tf1h;
+  htfData['4h']=tf4h;
+  updateEnvPanel();
+}
+
+function updateEnvPanel(){
+  const h1=htfData['1h'],h4=htfData['4h'];
+  const t1=h1?getTrendState(h1):'neutral';
+  const t4=h4?getTrendState(h4):'neutral';
+  const tL=t=>t==='bull'?'<span class="env-bull">▲ 偏多</span>':t==='bear'?'<span class="env-bear">▼ 偏空</span>':'<span class="env-neutral">— 中性</span>';
+  $e('env1h').innerHTML=tL(t1);
+  $e('env4h').innerHTML=tL(t4);
+  const sw=lastData?isSideways(lastData.closes[lastData.n],calcATR(lastData.highs,lastData.lows,lastData.closes,14)||0,lastData.ema7[lastData.n],lastData.ema25[lastData.n],lastData.highs,lastData.lows,lastData.n):false;
+  $e('envState').innerHTML=sw?'<span class="env-neutral">⚠ 盘整</span>':'<span class="env-ok">✓ 趋势中</span>';
+  const atrVal=lastData?calcATR(lastData.highs,lastData.lows,lastData.closes,14):null;
+  const decimals=currentSymbol==='BTC'?0:2;
+  $e('envAtr').textContent=atrVal?'$'+atrVal.toLocaleString('en',{maximumFractionDigits:decimals}):'--';
+  $e('envUpdated').textContent=new Date().toLocaleTimeString('zh');
+  const el=$e('envVerdict');
+  const bothBull=t1==='bull'&&t4==='bull';
+  const bothBear=t1==='bear'&&t4==='bear';
+  if(sw){el.className='env-verdict verdict-block';el.textContent='🚫 盘整行情，信号降级 — 等待方向明确后再入场';}
+  else if(bothBull){el.className='env-verdict verdict-go';el.textContent='✅ 1H+4H 双多头共振 — 多头信号有效';}
+  else if(bothBear){el.className='env-verdict verdict-go';el.textContent='✅ 1H+4H 双空头共振 — 空头信号有效';}
+  else if(t1==='neutral'||t4==='neutral'){el.className='env-verdict verdict-caution';el.textContent='⚠ 高周期方向不明确 — 信号降级为观察';}
+  else{el.className='env-verdict verdict-block';el.textContent='🚫 1H/4H 方向分歧 — 暂不建议开仓';}
+}
+
 /* ============ RENDER BOTH SIGNALS ============ */
 function renderBothSignals(d){
   const buyResults=evalBuy(d);
   const sellResults=evalSell(d);
-  const buyScore=buyResults.reduce((a,r)=>a+r.score,0);
-  const sellScore=sellResults.reduce((a,r)=>a+r.score,0);
-  updateBanner('buy',buyScore,d);
-  updateBanner('sell',sellScore,d);
-  renderConditions('buy',buyResults,buyScore);
-  renderConditions('sell',sellResults,sellScore);
+  let buyScore=buyResults.reduce((a,r)=>a+r.score,0);
+  let sellScore=sellResults.reduce((a,r)=>a+r.score,0);
+  const h1=htfData['1h'],h4=htfData['4h'];
+  const t1=h1?getTrendState(h1):'neutral';
+  const t4=h4?getTrendState(h4):'neutral';
+  const atr=calcATR(d.highs,d.lows,d.closes,14)||0;
+  const sideways=isSideways(d.closes[d.n],atr,d.ema7[d.n],d.ema25[d.n],d.highs,d.lows,d.n);
+  const buyHTF=htfAllows('buy',t1)!==false&&htfAllows('buy',t4)!==false;
+  const sellHTF=htfAllows('sell',t1)!==false&&htfAllows('sell',t4)!==false;
+  if(sideways){buyScore=Math.max(0,buyScore-2);sellScore=Math.max(0,sellScore-2);}
+  else{if(!buyHTF)buyScore=Math.max(0,buyScore-1);if(!sellHTF)sellScore=Math.max(0,sellScore-1);}
+  const buyEnv={sideways,htfOk:buyHTF,t1,t4};
+  const sellEnv={sideways,htfOk:sellHTF,t1,t4};
+  updateBanner('buy',buyScore,d,buyEnv);
+  updateBanner('sell',sellScore,d,sellEnv);
+  renderConditions('buy',buyResults,buyScore,buyEnv);
+  renderConditions('sell',sellResults,sellScore,sellEnv);
   renderTradePlan('buy',buyScore,d);
   renderTradePlan('sell',sellScore,d);
-  maybeAddHistory('buy', buyScore, d.closes[d.n], buyResults, currentSymbol, currentTF);
-  maybeAddHistory('sell', sellScore, d.closes[d.n], sellResults, currentSymbol, currentTF);
+  maybeAddHistory('buy',buyScore,d.closes[d.n],buyResults,currentSymbol,currentTF);
+  maybeAddHistory('sell',sellScore,d.closes[d.n],sellResults,currentSymbol,currentTF);
+  updateEnvPanel();
 }
 
 /* ============ ATR + TRADE PLAN ============ */
@@ -853,118 +1008,86 @@ function renderTradePlan(side,score,d){
     </div>`;
 }
 
-function updateBanner(side,score,d){
+function updateBanner(side,score,d,env){
   const pfx=side==='buy'?'buy':'sell';
-  const banner=$e(pfx+'Banner');
-  const icon=$e(pfx+'Icon');
-  const title=$e(pfx+'Title');
-  const sub=$e(pfx+'Sub');
-  const arc=$e(pfx+'Arc');
-  const rnum=$e(pfx+'RingNum');
-  // ring arc: r=23, circ=2π×23≈144.5
+  const banner=$e(pfx+'Banner'),icon=$e(pfx+'Icon'),title=$e(pfx+'Title'),sub=$e(pfx+'Sub'),arc=$e(pfx+'Arc'),rnum=$e(pfx+'RingNum');
   const circ=144.5;
   arc.style.strokeDashoffset=circ-(score/5)*circ;
   rnum.textContent=score;
   const sym=currentSymbol;
+  const tag=(env&&env.sideways)?' · ⚠盘整降级':(env&&!env.htfOk)?' · ⚠高周期分歧':'';
   if(side==='buy'){
-    if(score>=5){
-      banner.className='sig-banner b-strong';
-      icon.textContent='🚀';title.className='sb-title buy-title';title.textContent='强烈多头开仓！';
-      sub.textContent=`${sym} · 5/5 条件全满足 · 强烈看多`;
-      rnum.className='r-num rg';
-    }else if(score>=4){
-      banner.className='sig-banner b-signal';
-      icon.textContent='✅';title.className='sb-title buy-title';title.textContent='多头开仓信号';
-      sub.textContent=`${sym} · 满足 ${score}/5 · 建议做多，注意止损`;
-      rnum.className='r-num rg';
-    }else if(score>=2){
-      banner.className='sig-banner b-watch';
-      icon.textContent='⏳';title.className='sb-title';title.style.color='rgba(200,230,220,0.7)';title.textContent=`多头积累中 ${score}/5`;
-      sub.textContent=`还差 ${4-score} 项条件`;
-      rnum.className='r-num ry';
-    }else{
-      banner.className='sig-banner b-none';
-      icon.textContent='—';title.className='sb-title idle-title';title.textContent='多头条件不足';
-      sub.textContent=`满足 ${score}/5 项`;
-      rnum.className='r-num rd';
-    }
+    if(score>=5){banner.className='sig-banner b-strong';icon.textContent='🚀';title.className='sb-title buy-title';title.textContent='强烈多头开仓！';sub.textContent=`${sym} · 5/5${tag}`;rnum.className='r-num rg';}
+    else if(score>=4){banner.className='sig-banner b-signal';icon.textContent='✅';title.className='sb-title buy-title';title.textContent='多头开仓信号';sub.textContent=`${sym} · ${score}/5${tag}`;rnum.className='r-num rg';}
+    else if(score>=2){banner.className='sig-banner b-watch';icon.textContent='⏳';title.className='sb-title';title.style.color='rgba(200,230,220,0.7)';title.textContent=`多头积累中 ${score}/5`;sub.textContent=`还差 ${4-score} 项${tag}`;rnum.className='r-num ry';}
+    else{banner.className='sig-banner b-none';icon.textContent='—';title.className='sb-title idle-title';title.textContent='多头条件不足';sub.textContent=`${score}/5 项${tag}`;rnum.className='r-num rd';}
   }else{
-    if(score>=5){
-      banner.className='sig-banner s-strong';
-      icon.textContent='🔻';title.className='sb-title sell-title';title.textContent='强烈空头开仓！';
-      sub.textContent=`${sym} · 5/5 条件全满足 · 强烈看空`;
-      rnum.className='r-num rr';
-    }else if(score>=4){
-      banner.className='sig-banner s-signal';
-      icon.textContent='⚠️';title.className='sb-title sell-title';title.textContent='空头开仓信号';
-      sub.textContent=`${sym} · 满足 ${score}/5 · 建议做空，注意止损`;
-      rnum.className='r-num rr';
-    }else if(score>=2){
-      banner.className='sig-banner s-watch';
-      icon.textContent='⏳';title.className='sb-title';title.style.color='rgba(200,230,220,0.7)';title.textContent=`空头积累中 ${score}/5`;
-      sub.textContent=`还差 ${4-score} 项条件`;
-      rnum.className='r-num ry';
-    }else{
-      banner.className='sig-banner s-none';
-      icon.textContent='—';title.className='sb-title idle-title';title.textContent='空头条件不足';
-      sub.textContent=`满足 ${score}/5 项`;
-      rnum.className='r-num rd';
-    }
+    if(score>=5){banner.className='sig-banner s-strong';icon.textContent='🔻';title.className='sb-title sell-title';title.textContent='强烈空头开仓！';sub.textContent=`${sym} · 5/5${tag}`;rnum.className='r-num rr';}
+    else if(score>=4){banner.className='sig-banner s-signal';icon.textContent='⚠️';title.className='sb-title sell-title';title.textContent='空头开仓信号';sub.textContent=`${sym} · ${score}/5${tag}`;rnum.className='r-num rr';}
+    else if(score>=2){banner.className='sig-banner s-watch';icon.textContent='⏳';title.className='sb-title';title.style.color='rgba(200,230,220,0.7)';title.textContent=`空头积累中 ${score}/5`;sub.textContent=`还差 ${4-score} 项${tag}`;rnum.className='r-num ry';}
+    else{banner.className='sig-banner s-none';icon.textContent='—';title.className='sb-title idle-title';title.textContent='空头条件不足';sub.textContent=`${score}/5 项${tag}`;rnum.className='r-num rd';}
   }
 }
 
-function renderConditions(side,results,score){
+function renderConditions(side,results,score,env){
   const isBuy=side==='buy';
-  const condsEl=$e(side+'Conds');
-  const pillsEl=$e(side+'Pills');
-  const scoreEl=$e(side+'Score');
-  const panel=$e(side+'Panel');
+  const condsEl=$e(side+'Conds'),pillsEl=$e(side+'Pills'),scoreEl=$e(side+'Score'),panel=$e(side+'Panel');
   scoreEl.textContent=score+'/5';
   panel.className='det-panel '+(isBuy?'buy-panel':'sell-panel')+(score>=4?' active':'');
-
-  condsEl.innerHTML=results.map((r,i)=>{
+  condsEl.innerHTML=results.map(r=>{
     let state='no';
-    if(r.score>=1) state=isBuy?'buy':'sell';
-    else if(r.partial) state='watch';
+    if(r.score>=1)state=isBuy?'buy':'sell';
+    else if(r.partial)state='watch';
     const rowCls='cond-row'+(state==='buy'?' hit-buy':state==='sell'?' hit-sell':state==='watch'?' hit-watch':'');
     const dotCls='cr-dot cr-dot-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'neutral');
     const badgeCls='cr-badge cb-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
     const badgeTxt=state==='buy'||state==='sell'?'✓ 满足':state==='watch'?'△ 部分':'✗ 未满足';
     const barCls='cr-bar cr-bar-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
     return `<div class="${rowCls}" style="margin-bottom:6px">
-      <div class="cr-top">
-        <div class="cr-name"><div class="${dotCls}"></div>${r.name}</div>
-        <span class="${badgeCls}">${badgeTxt}</span>
-      </div>
+      <div class="cr-top"><div class="cr-name"><div class="${dotCls}"></div>${r.name}</div><span class="${badgeCls}">${badgeTxt}</span></div>
       <div class="cr-bar-wrap"><div class="${barCls}" style="width:0%" data-pct="${r.barPct}"></div></div>
       <div class="cr-desc">${r.desc}</div>
     </div>`;
   }).join('');
 
-  // animate bars
-  setTimeout(()=>{
-    condsEl.querySelectorAll('[data-pct]').forEach(el=>{
-      el.style.width=el.dataset.pct+'%';
-    });
-  },60);
+  // Conclusion
+  const passed=results.filter(r=>r.score>=1).map(r=>r.name.split('·')[0].trim());
+  const failed=results.filter(r=>r.score===0&&!r.partial).map(r=>r.name.split('·')[0].trim());
+  let conclusion='';
+  if(score>=4) conclusion=isBuy?'趋势结构支持做多，建议结合交易计划入场':'趋势结构支持做空，建议结合交易计划入场';
+  else if(score>=2) conclusion=`${passed.length?passed.join('、')+'已就位，':''}等待${failed.slice(0,2).join('、')}确认`;
+  else conclusion='多项核心条件未满足，暂不适合入场';
 
+  // Environment block
+  if(env){
+    const t1l=env.t1==='bull'?'偏多':env.t1==='bear'?'偏空':'中性';
+    const t4l=env.t4==='bull'?'偏多':env.t4==='bear'?'偏空':'中性';
+    const htfMatch1=isBuy?env.t1==='bull':env.t1==='bear';
+    const htfMatch4=isBuy?env.t4==='bull':env.t4==='bear';
+    condsEl.innerHTML+=`
+      <div style="margin-top:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase">环境过滤</div>
+        <div class="breakdown-row"><div class="bd-icon ${htfMatch1?'bd-pass':'bd-watch'}">${env.t1==='bull'?'▲':env.t1==='bear'?'▼':'—'}</div><div class="bd-label">1H</div><div class="bd-reason">1H ${t1l}${htfMatch1?'，与方向共振':'，方向分歧'}</div></div>
+        <div class="breakdown-row"><div class="bd-icon ${htfMatch4?'bd-pass':'bd-watch'}">${env.t4==='bull'?'▲':env.t4==='bear'?'▼':'—'}</div><div class="bd-label">4H</div><div class="bd-reason">4H ${t4l}${htfMatch4?'，与方向共振':'，方向分歧'}</div></div>
+        <div class="breakdown-row"><div class="bd-icon ${env.sideways?'bd-fail':'bd-pass'}">${env.sideways?'⚠':'✓'}</div><div class="bd-label">市场</div><div class="bd-reason">${env.sideways?'盘整行情，信号降级 -2分':'趋势行情，信号有效'}</div></div>
+        <div style="margin-top:6px;font-size:10px;color:var(--muted);font-style:italic">${conclusion}</div>
+      </div>`;
+  }
+
+  setTimeout(()=>{ condsEl.querySelectorAll('[data-pct]').forEach(el=>{el.style.width=el.dataset.pct+'%';}); },60);
   pillsEl.innerHTML=results.map((r,i)=>{
     const hit=r.score>=1;
-    return `<div class="pill${hit?(isBuy?' ph-buy':' ph-sell'):''}}"><div class="pill-dot"></div>C${i+1}</div>`;
+    return `<div class="pill${hit?(isBuy?' ph-buy':' ph-sell'):''}"><div class="pill-dot"></div>C${i+1}</div>`;
   }).join('');
 }
 
 /* ============ BUY CONDITIONS ============ */
 function evalBuy({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const rv=i=>rsi[i]||50;
-  // C1
   const c1=ema7[n]>ema25[n];
   const m1=((ema7[n]-ema25[n])/ema25[n]*100).toFixed(3);
-  // C2
   const slope25=(ema25[n]-ema25[n-3])/3;
-  const c2=slope25>=0;
-  const c2p=slope25>-ema25[n]*0.0005;
-  // C3
+  const c2=slope25>=0,c2p=slope25>-ema25[n]*0.0005;
   const lb=60;
   const avgLow=lows.slice(n-lb,n+1).reduce((a,b)=>a+b,0)/lb;
   const inLow=closes[n]<avgLow*1.005;
@@ -973,42 +1096,33 @@ function evalBuy({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const rMin=Math.min(...lows.slice(n-lb,n+1));
   const pHmin=Math.min(...hist.slice(n-lb*2,n-lb).filter(v=>v!=null));
   const rHmin=Math.min(...hist.slice(n-lb,n+1).filter(v=>v!=null));
-  const c3=(rMin<=pMin*1.002||inLow)&&hrc>=2&&rHmin>=pHmin;
-  const c3p=hrc>=1&&inLow;
-  // C4
+  const c3=(rMin<=pMin*1.002||inLow)&&hrc>=2&&rHmin>=pHmin,c3p=hrc>=1&&inLow;
   const rwin=rsi.slice(n-10,n+1).filter(v=>v!=null);
   const had45=rwin.some(v=>v<45);
-  const c4=had45&&rv(n)>rv(n-2)&&rv(n)<55;
-  const c4strong=c4&&(rv(n)>35&&rv(n-3)<35);
-  const c4p=rv(n)<50&&rv(n)>rv(n-1);
-  // C5
-  const c5=closes[n]>highs[n-1];
-  const c5p=closes[n]>=highs[n-1]*0.998;
+  const c4=had45&&rv(n)>rv(n-2)&&rv(n)<55,c4p=rv(n)<50&&rv(n)>rv(n-1);
+  const c4s=c4&&rv(n)>35&&rv(n-3)<35;
+  const c5=closes[n]>highs[n-1],c5p=closes[n]>=highs[n-1]*0.998;
   return [
-    {name:'EMA7 > EMA25',score:c1?1:0,partial:false,barPct:c1?88:20,
-     desc:c1?`✓ 多头排列，差距 ${m1}%`:`✗ 空头排列（差 ${Math.abs(parseFloat(m1)).toFixed(3)}%）`},
-    {name:'EMA25 不下行',score:c2?1:0,partial:c2p&&!c2,barPct:c2?85:c2p?42:14,
-     desc:c2?`✓ 斜率 +${slope25.toFixed(2)}/根，支撑有效`:c2p?`△ 斜率 ${slope25.toFixed(2)}，轻微走平`:`✗ 斜率 ${slope25.toFixed(2)}，均线压制`},
-    {name:'MACD底背离 ≥2根',score:c3?1:0,partial:c3p&&!c3,barPct:c3?90:c3p?48:10,
-     desc:c3?`✓ 价格低位，柱线连续 ${hrc} 根抬升，底背离确认`:c3p?`△ 柱线抬升 ${hrc} 根，继续观察`:`✗ 柱线仅 ${hrc} 根，条件未达`},
-    {name:'RSI<45后回升',score:c4?1:0,partial:c4p&&!c4,barPct:c4?(c4strong?93:78):c4p?38:10,
-     desc:c4?(c4strong?`✓★ RSI=${rv(n).toFixed(1)} 上穿35，强力反弹`:`✓ RSI=${rv(n).toFixed(1)} 从<45回升`):c4p?`△ RSI=${rv(n).toFixed(1)} 偏低回升中`:`✗ RSI=${rv(n).toFixed(1)} 未从<45回升`},
-    {name:'收盘突破前高',score:c5?1:0,partial:c5p&&!c5,barPct:c5?93:c5p?58:18,
-     desc:c5?`✓ 收盘 ${closes[n].toFixed(2)} 突破前高 ${highs[n-1].toFixed(2)}`:c5p?`△ 接近前高，差 ${((highs[n-1]-closes[n])/closes[n]*100).toFixed(3)}%`:`✗ 未突破前高 ${highs[n-1].toFixed(2)}`}
+    {name:'趋势 · EMA7>EMA25',score:c1?1:0,partial:false,barPct:c1?88:20,
+     desc:c1?`EMA7 在 EMA25 上方，趋势偏多（差距 ${m1}%）`:`EMA7 仍在 EMA25 下方，多头趋势未建立`},
+    {name:'均线 · EMA25不下行',score:c2?1:0,partial:c2p&&!c2,barPct:c2?85:c2p?42:14,
+     desc:c2?`EMA25 斜率 +${slope25.toFixed(2)}/根，均线支撑有效`:c2p?`EMA25 轻微走平，暂时可接受`:`EMA25 持续下行，均线压制做多`},
+    {name:'动能 · MACD底背离',score:c3?1:0,partial:c3p&&!c3,barPct:c3?90:c3p?48:10,
+     desc:c3?`价格低位，MACD 柱线连续 ${hrc} 根抬升，底部动能积累`:c3p?`柱线抬升 ${hrc} 根，信号形成中`:`MACD 未连续抬升，上行动能不足`},
+    {name:'RSI · 超卖后回升',score:c4?1:0,partial:c4p&&!c4,barPct:c4?(c4s?93:78):c4p?38:10,
+     desc:c4?(c4s?`RSI=${rv(n).toFixed(1)} 上穿35，超卖强力反弹`:`RSI=${rv(n).toFixed(1)} 从低于45区域回升，确认超卖反弹`):c4p?`RSI=${rv(n).toFixed(1)} 有回升迹象，未充分确认`:`RSI=${rv(n).toFixed(1)} 未从超卖区回升`},
+    {name:'结构 · 收盘突破前高',score:c5?1:0,partial:c5p&&!c5,barPct:c5?93:c5p?58:18,
+     desc:c5?`收盘 ${closes[n].toFixed(2)} 突破前高 ${highs[n-1].toFixed(2)}，K 线结构确认多头`:c5p?`接近前高，差 ${((highs[n-1]-closes[n])/closes[n]*100).toFixed(3)}%，待突破`:`收盘未突破前高 ${highs[n-1].toFixed(2)}，结构未确认`}
   ];
 }
 
 /* ============ SELL CONDITIONS ============ */
 function evalSell({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const rv=i=>rsi[i]||50;
-  // C1
   const c1=ema7[n]<ema25[n];
   const m1=((ema25[n]-ema7[n])/ema25[n]*100).toFixed(3);
-  // C2
   const slope25=(ema25[n]-ema25[n-3])/3;
-  const c2=slope25<=0;
-  const c2p=slope25<ema25[n]*0.0005;
-  // C3
+  const c2=slope25<=0,c2p=slope25<ema25[n]*0.0005;
   const lb=60;
   const avgHigh=highs.slice(n-lb,n+1).reduce((a,b)=>a+b,0)/lb;
   const inHigh=closes[n]>avgHigh*0.995;
@@ -1017,28 +1131,23 @@ function evalSell({closes,highs,lows,ema7,ema25,rsi,hist,n}){
   const rMax=Math.max(...highs.slice(n-lb,n+1));
   const pHmax=Math.max(...hist.slice(n-lb*2,n-lb).filter(v=>v!=null));
   const rHmax=Math.max(...hist.slice(n-lb,n+1).filter(v=>v!=null));
-  const c3=(rMax>=pMax*0.998||inHigh)&&hfc>=2&&rHmax<=pHmax;
-  const c3p=hfc>=1&&inHigh;
-  // C4
+  const c3=(rMax>=pMax*0.998||inHigh)&&hfc>=2&&rHmax<=pHmax,c3p=hfc>=1&&inHigh;
   const rwin=rsi.slice(n-10,n+1).filter(v=>v!=null);
   const had55=rwin.some(v=>v>55);
-  const c4=had55&&rv(n)<rv(n-2)&&rv(n)>45;
-  const c4strong=c4&&(rv(n)<65&&rv(n-3)>65);
-  const c4p=rv(n)>50&&rv(n)<rv(n-1);
-  // C5
-  const c5=closes[n]<lows[n-1];
-  const c5p=closes[n]<=lows[n-1]*1.002;
+  const c4=had55&&rv(n)<rv(n-2)&&rv(n)>45,c4p=rv(n)>50&&rv(n)<rv(n-1);
+  const c4s=c4&&rv(n)<65&&rv(n-3)>65;
+  const c5=closes[n]<lows[n-1],c5p=closes[n]<=lows[n-1]*1.002;
   return [
-    {name:'EMA7 < EMA25',score:c1?1:0,partial:false,barPct:c1?88:20,
-     desc:c1?`✓ 空头排列，差距 ${m1}%`:`✗ 多头排列（差 ${Math.abs(parseFloat(m1)).toFixed(3)}%）`},
-    {name:'EMA25 不上行',score:c2?1:0,partial:c2p&&!c2,barPct:c2?85:c2p?42:14,
-     desc:c2?`✓ 斜率 ${slope25.toFixed(2)}/根，压制有效`:c2p?`△ 斜率 ${slope25.toFixed(2)}，轻微走平`:`✗ 斜率 +${slope25.toFixed(2)}，趋势仍偏多`},
-    {name:'MACD顶背离 ≥2根',score:c3?1:0,partial:c3p&&!c3,barPct:c3?90:c3p?48:10,
-     desc:c3?`✓ 价格高位，柱线连续 ${hfc} 根下降，顶背离确认`:c3p?`△ 柱线下降 ${hfc} 根，继续观察`:`✗ 柱线仅 ${hfc} 根，条件未达`},
-    {name:'RSI>55后回落',score:c4?1:0,partial:c4p&&!c4,barPct:c4?(c4strong?93:78):c4p?38:10,
-     desc:c4?(c4strong?`✓★ RSI=${rv(n).toFixed(1)} 下穿65，强力回落`:`✓ RSI=${rv(n).toFixed(1)} 从>55回落`):c4p?`△ RSI=${rv(n).toFixed(1)} 偏高回落中`:`✗ RSI=${rv(n).toFixed(1)} 未从>55回落`},
-    {name:'收盘跌破前低',score:c5?1:0,partial:c5p&&!c5,barPct:c5?93:c5p?58:18,
-     desc:c5?`✓ 收盘 ${closes[n].toFixed(2)} 跌破前低 ${lows[n-1].toFixed(2)}`:c5p?`△ 接近前低，差 ${((closes[n]-lows[n-1])/closes[n]*100).toFixed(3)}%`:`✗ 未跌破前低 ${lows[n-1].toFixed(2)}`}
+    {name:'趋势 · EMA7<EMA25',score:c1?1:0,partial:false,barPct:c1?88:20,
+     desc:c1?`EMA7 在 EMA25 下方，趋势偏空（差距 ${m1}%）`:`EMA7 仍在 EMA25 上方，空头趋势未建立`},
+    {name:'均线 · EMA25不上行',score:c2?1:0,partial:c2p&&!c2,barPct:c2?85:c2p?42:14,
+     desc:c2?`EMA25 斜率 ${slope25.toFixed(2)}/根，均线压制有效`:c2p?`EMA25 轻微走平，暂时可接受`:`EMA25 持续上行，趋势仍偏多`},
+    {name:'动能 · MACD顶背离',score:c3?1:0,partial:c3p&&!c3,barPct:c3?90:c3p?48:10,
+     desc:c3?`价格高位，MACD 柱线连续 ${hfc} 根下降，顶部动能衰竭`:c3p?`柱线下降 ${hfc} 根，信号形成中`:`MACD 未连续下降，下行动能不足`},
+    {name:'RSI · 超买后回落',score:c4?1:0,partial:c4p&&!c4,barPct:c4?(c4s?93:78):c4p?38:10,
+     desc:c4?(c4s?`RSI=${rv(n).toFixed(1)} 下穿65，超买强力回落`:`RSI=${rv(n).toFixed(1)} 从高于55区域回落，确认超买回调`):c4p?`RSI=${rv(n).toFixed(1)} 有回落迹象，未充分确认`:`RSI=${rv(n).toFixed(1)} 未从超买区回落`},
+    {name:'结构 · 收盘跌破前低',score:c5?1:0,partial:c5p&&!c5,barPct:c5?93:c5p?58:18,
+     desc:c5?`收盘 ${closes[n].toFixed(2)} 跌破前低 ${lows[n-1].toFixed(2)}，K 线结构确认空头`:c5p?`接近前低，差 ${((closes[n]-lows[n-1])/closes[n]*100).toFixed(3)}%，待跌破`:`收盘未跌破前低 ${lows[n-1].toFixed(2)}，结构未确认`}
   ];
 }
 
