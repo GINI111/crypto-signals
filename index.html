@@ -190,6 +190,11 @@ canvas.indicator{display:block;width:100%;height:105px}
 .footer{text-align:center;font-size:9.5px;font-family:'Space Mono',monospace;color:var(--dim);margin-top:14px;letter-spacing:.8px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,200,150,0.2);border-radius:2px}
+/* exit status */
+.hist-row.hr-exited{opacity:0.72;border-left:3px solid var(--dim)!important}
+.hr-badge-exit{background:rgba(150,150,150,0.1);border:1px solid rgba(150,150,150,0.2)}
+.hr-dir-exit{color:var(--muted)}
+.hr-score-exit{background:rgba(150,150,150,0.08);color:var(--muted);border:1px solid var(--border)}
 
 /* ============ HISTORY LOG ============ */
 .history-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
@@ -264,6 +269,7 @@ canvas.indicator{display:block;width:100%;height:105px}
 .bd-watch{background:rgba(245,197,24,0.15);color:var(--yellow)}
 .bd-label{font-size:11px;font-weight:500;min-width:48px;color:var(--text)}
 .bd-reason{font-size:10px;color:var(--muted);flex:1}
+
 .trade-plan{border-radius:10px;padding:12px 14px;margin-top:10px;border:1px solid var(--border);background:var(--bg3)}
 .trade-plan.tp-buy{border-color:rgba(0,200,150,0.35);background:rgba(0,200,150,0.04)}
 .trade-plan.tp-sell{border-color:rgba(255,68,102,0.35);background:rgba(255,68,102,0.04)}
@@ -555,11 +561,21 @@ function connectServerWS() {
           signalHistory.unshift(entry);
           if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
           renderHistory();
-          // Flash banner if matches current view
           if (entry.symbol === currentSymbol && entry.tf === currentTF) {
             flashNewSignal(entry);
           }
         }
+      } else if (msg.type === 'signal_exit') {
+        // Update existing entry status to exited
+        const updated = msg.data;
+        const idx = signalHistory.findIndex(h => h.id === updated.id);
+        if (idx !== -1) {
+          signalHistory[idx] = updated;
+        } else {
+          signalHistory.unshift(updated);
+          if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
+        }
+        renderHistory();
       }
     } catch(_) {}
   };
@@ -659,30 +675,39 @@ function renderHistory() {
     const isBTC = e.symbol === 'BTC';
     const dec = isBTC ? 0 : e.symbol === 'ETH' ? 2 : 3;
     const priceStr = '$' + e.price.toLocaleString('en', {minimumFractionDigits: dec, maximumFractionDigits: dec});
-    const icon = e.strong ? (isBuy ? '🚀' : '🔻') : (isBuy ? '✅' : '⚠️');
-    const dirLabel = e.strong
-      ? (isBuy ? '强烈多头开仓' : '强烈空头开仓')
-      : (isBuy ? '多头开仓信号' : '空头开仓信号');
-    const condsHtml = e.conds.map((hit, i) =>
+    const isExited = e.status === 'exited';
+    const exitPriceStr = e.exit_price
+      ? '$' + parseFloat(e.exit_price).toLocaleString('en', {minimumFractionDigits: dec, maximumFractionDigits: dec})
+      : null;
+    const exitTimeStr = e.exit_time ? e.exit_time.slice(11,16) : null;
+    const icon = isExited ? '📤' : (e.strong ? (isBuy ? '🚀' : '🔻') : (isBuy ? '✅' : '⚠️'));
+    const dirLabel = isExited
+      ? (isBuy ? '多头信号退出' : '空头信号退出')
+      : (e.strong
+        ? (isBuy ? '强烈多头开仓' : '强烈空头开仓')
+        : (isBuy ? '多头开仓信号' : '空头开仓信号'));
+    const condsHtml = (e.conds||[]).map((hit, i) =>
       `<div class="hr-c ${hit ? (isBuy?'hr-c-hit-buy':'hr-c-hit-sell') : 'hr-c-miss'}">${hit?'✓':'·'}</div>`
     ).join('');
     const row = document.createElement('div');
-    row.className = `hist-row hr-${e.side}${e.strong?' strong':''}`;
+    row.className = `hist-row hr-${e.side}${e.strong&&!isExited?' strong':''}${isExited?' hr-exited':''}`;
     row.innerHTML = `
-      <div class="hr-badge hr-badge-${e.side}">${icon}</div>
+      <div class="hr-badge hr-badge-${isExited?'exit':e.side}">${icon}</div>
       <div class="hr-main">
         <div class="hr-top">
-          <span class="hr-dir hr-dir-${e.side}">${dirLabel}</span>
+          <span class="hr-dir hr-dir-${isExited?'exit':e.side}">${dirLabel}</span>
           <span class="hr-sym">${e.symbol}/USDT</span>
           <span class="hr-tf">${e.tf}</span>
-          <span class="hr-score-tag hr-score-${e.side}">${e.score}/5</span>
+          <span class="hr-score-tag hr-score-${isExited?'exit':e.side}">${e.score}/5</span>
         </div>
         <div class="hr-bottom">
-          <span class="hr-price">${priceStr}</span>
+          <span class="hr-price">入场 ${priceStr}</span>
+          ${exitPriceStr ? `<span class="hr-price" style="color:var(--muted);font-size:11px">→ 退出 ${exitPriceStr}</span>` : ''}
           <div class="hr-conds">${condsHtml}</div>
         </div>
       </div>
-      <div class="hr-time">${timeStr}<br>${dateStr}</div>`;
+      <div class="hr-time">${timeStr}<br>${dateStr}${exitTimeStr?`<br><span style="color:var(--dim)">退 ${exitTimeStr}</span>`:''}
+      </div>`;
     body.appendChild(row);
   });
 }
