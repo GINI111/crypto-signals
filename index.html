@@ -131,7 +131,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .dual-details{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:700px){.dual-details{grid-template-columns:1fr}}
 
-.det-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:8px;transition:border-color .4s}
+.det-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px;transition:border-color .4s}
+.det-panel *{box-sizing:border-box}
+.conds-wrap{display:block;width:100%;margin-top:0}
+.cond-row{display:block;width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;overflow:hidden}
+.cond-row:last-child{margin-bottom:0}
 .det-panel.buy-panel{border-color:rgba(0,200,150,0.15)}
 .det-panel.sell-panel{border-color:rgba(255,68,102,0.15)}
 .det-panel.buy-panel.active{border-color:rgba(0,255,157,0.35)}
@@ -145,32 +149,32 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .det-score{margin-left:auto;font-family:'Space Mono',monospace;font-size:13px;font-weight:700}
 
 /* condition rows */
-.cond-row{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;transition:border-color .25s}
+.cond-row{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;transition:border-color .25s;margin-bottom:6px}
 .cond-row.hit-buy{border-color:rgba(0,200,150,0.38)}
 .cond-row.hit-sell{border-color:rgba(255,68,102,0.38)}
 .cond-row.hit-watch{border-color:rgba(245,197,24,0.3)}
-.cr-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:6px}
+.cr-top{display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;width:100%;margin-bottom:4px;gap:4px}
 .cr-name{font-size:11px;font-weight:500;display:flex;align-items:center;gap:5px;flex:1;min-width:0}
 .cr-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .cr-dot-buy{background:var(--green2);box-shadow:0 0 5px var(--green2)}
 .cr-dot-sell{background:var(--red);box-shadow:0 0 5px var(--red)}
 .cr-dot-watch{background:var(--yellow)}
 .cr-dot-neutral{background:var(--dim)}
-.cr-badge{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.8px;padding:2px 6px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.cr-badge{font-family:"Space Mono",monospace;font-size:8px;letter-spacing:.8px;padding:2px 6px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .cb-buy{background:rgba(0,200,150,0.15);color:var(--green2);border:1px solid rgba(0,200,150,0.3)}
 .cb-sell{background:rgba(255,68,102,0.15);color:var(--red);border:1px solid rgba(255,68,102,0.3)}
 .cb-watch{background:rgba(245,197,24,0.12);color:var(--yellow);border:1px solid rgba(245,197,24,0.25)}
 .cb-no{background:rgba(255,255,255,0.03);color:var(--dim);border:1px solid var(--border)}
-.cr-bar-wrap{height:2.5px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.cr-bar-wrap{height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-bottom:5px}
 .cr-bar{height:100%;border-radius:2px;transition:width .55s ease}
 .cr-bar-buy{background:linear-gradient(90deg,var(--green),var(--green2))}
 .cr-bar-sell{background:linear-gradient(90deg,#c41033,var(--red))}
 .cr-bar-watch{background:linear-gradient(90deg,#c4a000,var(--yellow))}
 .cr-bar-no{background:rgba(255,255,255,0.12)}
-.cr-desc{font-size:9.5px;color:var(--muted);line-height:1.45}
+.cr-desc{font-size:9.5px;color:var(--muted);line-height:1.45;margin-top:3px}
 
 /* score pills */
-.pills-row{display:flex;gap:4px;flex-wrap:wrap}
+.pills-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
 .pill{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:8.5px;font-family:'Space Mono',monospace;border:1px solid var(--border);background:var(--bg3);color:var(--dim);transition:all .25s}
 .pill-dot{width:4px;height:4px;border-radius:50%;background:currentColor}
 .ph-buy{background:rgba(0,200,150,0.12);border-color:rgba(0,200,150,0.3);color:var(--green2)}
@@ -187,6 +191,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @media(max-width:600px){.bottom-grid{grid-template-columns:1fr}}
 canvas.indicator{display:block;width:100%;height:105px}
 
+.det-panel #buyConds,.det-panel #sellConds{margin-top:8px}
 .footer{text-align:center;font-size:9.5px;font-family:'Space Mono',monospace;color:var(--dim);margin-top:14px;letter-spacing:.8px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,200,150,0.2);border-radius:2px}
@@ -1055,54 +1060,131 @@ function updateBanner(side,score,d,env){
 
 function renderConditions(side,results,score,env){
   const isBuy=side==='buy';
-  const condsEl=$e(side+'Conds'),pillsEl=$e(side+'Pills'),scoreEl=$e(side+'Score'),panel=$e(side+'Panel');
+  const condsEl=$e(side+'Conds');
+  const pillsEl=$e(side+'Pills');
+  const scoreEl=$e(side+'Score');
+  const panel=$e(side+'Panel');
   scoreEl.textContent=score+'/5';
   panel.className='det-panel '+(isBuy?'buy-panel':'sell-panel')+(score>=4?' active':'');
-  condsEl.innerHTML=results.map(r=>{
-    let state='no';
-    if(r.score>=1)state=isBuy?'buy':'sell';
-    else if(r.partial)state='watch';
-    const rowCls='cond-row'+(state==='buy'?' hit-buy':state==='sell'?' hit-sell':state==='watch'?' hit-watch':'');
-    const dotCls='cr-dot cr-dot-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'neutral');
-    const badgeCls='cr-badge cb-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
-    const badgeTxt=state==='buy'||state==='sell'?'✓ 满足':state==='watch'?'△ 部分':'✗ 未满足';
-    const barCls='cr-bar cr-bar-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
-    return `<div class="${rowCls}" style="margin-bottom:6px">
-      <div class="cr-top"><div class="cr-name"><div class="${dotCls}"></div>${r.name}</div><span class="${badgeCls}">${badgeTxt}</span></div>
-      <div class="cr-bar-wrap"><div class="${barCls}" style="width:0%" data-pct="${r.barPct}"></div></div>
-      <div class="cr-desc">${r.desc}</div>
-    </div>`;
-  }).join('');
 
-  // Conclusion
-  const passed=results.filter(r=>r.score>=1).map(r=>r.name.split('·')[0].trim());
-  const failed=results.filter(r=>r.score===0&&!r.partial).map(r=>r.name.split('·')[0].trim());
-  let conclusion='';
+  // Clear and rebuild using DOM API to avoid any template/quote issues
+  condsEl.innerHTML='';
+
+  results.forEach(function(r){
+    var state='no';
+    if(r.score>=1) state=isBuy?'buy':'sell';
+    else if(r.partial) state='watch';
+
+    // Outer row
+    var row=document.createElement('div');
+    row.className='cond-row'+(state==='buy'?' hit-buy':state==='sell'?' hit-sell':state==='watch'?' hit-watch':'');
+
+    // Top row: name + badge
+    var top=document.createElement('div');
+    top.className='cr-top';
+
+    var nameDiv=document.createElement('div');
+    nameDiv.className='cr-name';
+
+    var dot=document.createElement('div');
+    dot.className='cr-dot cr-dot-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'neutral');
+    nameDiv.appendChild(dot);
+
+    var nameText=document.createTextNode(r.name);
+    nameDiv.appendChild(nameText);
+
+    var badge=document.createElement('span');
+    badge.className='cr-badge cb-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
+    badge.textContent=state==='buy'||state==='sell'?'✓ 满足':state==='watch'?'△ 部分':'✗ 未满足';
+
+    top.appendChild(nameDiv);
+    top.appendChild(badge);
+    row.appendChild(top);
+
+    // Progress bar
+    var barWrap=document.createElement('div');
+    barWrap.className='cr-bar-wrap';
+    var bar=document.createElement('div');
+    bar.className='cr-bar cr-bar-'+(state==='buy'?'buy':state==='sell'?'sell':state==='watch'?'watch':'no');
+    bar.style.width='0%';
+    bar.setAttribute('data-pct', r.barPct);
+    barWrap.appendChild(bar);
+    row.appendChild(barWrap);
+
+    // Description
+    var desc=document.createElement('div');
+    desc.className='cr-desc';
+    desc.textContent=r.desc;
+    row.appendChild(desc);
+
+    condsEl.appendChild(row);
+  });
+
+  // Animate bars
+  setTimeout(function(){
+    condsEl.querySelectorAll('[data-pct]').forEach(function(el){
+      el.style.width=el.getAttribute('data-pct')+'%';
+    });
+  }, 60);
+
+  // Summary conclusion
+  var passed=results.filter(function(r){return r.score>=1;}).map(function(r){return r.name.split('·')[0].trim();});
+  var failed=results.filter(function(r){return r.score===0&&!r.partial;}).map(function(r){return r.name.split('·')[0].trim();});
+  var conclusion='';
   if(score>=4) conclusion=isBuy?'趋势结构支持做多，建议结合交易计划入场':'趋势结构支持做空，建议结合交易计划入场';
-  else if(score>=2) conclusion=`${passed.length?passed.join('、')+'已就位，':''}等待${failed.slice(0,2).join('、')}确认`;
+  else if(score>=2) conclusion=(passed.length?passed.join('、')+'已就位，':'')+'等待'+(failed.slice(0,2).join('、')||'更多条件')+'确认';
   else conclusion='多项核心条件未满足，暂不适合入场';
 
-  // Environment block
+  // Environment filter block
   if(env){
-    const t1l=env.t1==='bull'?'偏多':env.t1==='bear'?'偏空':'中性';
-    const t4l=env.t4==='bull'?'偏多':env.t4==='bear'?'偏空':'中性';
-    const htfMatch1=isBuy?env.t1==='bull':env.t1==='bear';
-    const htfMatch4=isBuy?env.t4==='bull':env.t4==='bear';
-    condsEl.innerHTML+=`
-      <div style="margin-top:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase">环境过滤</div>
-        <div class="breakdown-row"><div class="bd-icon ${htfMatch1?'bd-pass':'bd-watch'}">${env.t1==='bull'?'▲':env.t1==='bear'?'▼':'—'}</div><div class="bd-label">1H</div><div class="bd-reason">1H ${t1l}${htfMatch1?'，与方向共振':'，方向分歧'}</div></div>
-        <div class="breakdown-row"><div class="bd-icon ${htfMatch4?'bd-pass':'bd-watch'}">${env.t4==='bull'?'▲':env.t4==='bear'?'▼':'—'}</div><div class="bd-label">4H</div><div class="bd-reason">4H ${t4l}${htfMatch4?'，与方向共振':'，方向分歧'}</div></div>
-        <div class="breakdown-row"><div class="bd-icon ${env.sideways?'bd-fail':'bd-pass'}">${env.sideways?'⚠':'✓'}</div><div class="bd-label">市场</div><div class="bd-reason">${env.sideways?'盘整行情，信号降级 -2分':'趋势行情，信号有效'}</div></div>
-        <div style="margin-top:6px;font-size:10px;color:var(--muted);font-style:italic">${conclusion}</div>
-      </div>`;
+    var t1l=env.t1==='bull'?'偏多':env.t1==='bear'?'偏空':'中性';
+    var t4l=env.t4==='bull'?'偏多':env.t4==='bear'?'偏空':'中性';
+    var htfMatch1=isBuy?env.t1==='bull':env.t1==='bear';
+    var htfMatch4=isBuy?env.t4==='bull':env.t4==='bear';
+
+    var envWrap=document.createElement('div');
+    envWrap.style.cssText='margin-top:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)';
+
+    var envHdr=document.createElement('div');
+    envHdr.style.cssText='font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase';
+    envHdr.textContent='环境过滤';
+    envWrap.appendChild(envHdr);
+
+    function mkEnvRow(iconCls, label, text){
+      var row=document.createElement('div');
+      row.className='breakdown-row';
+      var ic=document.createElement('div');
+      ic.className='bd-icon '+iconCls;
+      ic.textContent=iconCls==='bd-pass'?'✓':iconCls==='bd-fail'?'⚠':'—';
+      var lb=document.createElement('div');
+      lb.className='bd-label';
+      lb.textContent=label;
+      var rs=document.createElement('div');
+      rs.className='bd-reason';
+      rs.textContent=text;
+      row.appendChild(ic); row.appendChild(lb); row.appendChild(rs);
+      return row;
+    }
+
+    envWrap.appendChild(mkEnvRow(htfMatch1?'bd-pass':'bd-watch','1H','1H '+t1l+(htfMatch1?'，与方向共振':'，方向分歧')));
+    envWrap.appendChild(mkEnvRow(htfMatch4?'bd-pass':'bd-watch','4H','4H '+t4l+(htfMatch4?'，与方向共振':'，方向分歧')));
+    envWrap.appendChild(mkEnvRow(env.sideways?'bd-fail':'bd-pass','市场',env.sideways?'盘整行情，信号降级 -2分':'趋势行情，信号有效'));
+
+    var conclDiv=document.createElement('div');
+    conclDiv.style.cssText='margin-top:6px;font-size:10px;color:var(--muted);font-style:italic';
+    conclDiv.textContent=conclusion;
+    envWrap.appendChild(conclDiv);
+    condsEl.appendChild(envWrap);
   }
 
-  setTimeout(()=>{ condsEl.querySelectorAll('[data-pct]').forEach(el=>{el.style.width=el.dataset.pct+'%';}); },60);
-  pillsEl.innerHTML=results.map((r,i)=>{
-    const hit=r.score>=1;
-    return `<div class="pill${hit?(isBuy?' ph-buy':' ph-sell'):''}"><div class="pill-dot"></div>C${i+1}</div>`;
-  }).join('');
+  // Pills
+  pillsEl.innerHTML='';
+  results.forEach(function(r,i){
+    var pill=document.createElement('div');
+    pill.className='pill'+(r.score>=1?(isBuy?' ph-buy':' ph-sell'):'');
+    pill.innerHTML='<div class="pill-dot"></div>C'+(i+1);
+    pillsEl.appendChild(pill);
+  });
 }
 
 /* ============ BUY CONDITIONS ============ */
@@ -1242,7 +1324,7 @@ function drawRSI(rsi){
   [[65,'rgba(255,68,102,0.4)'],[55,'rgba(255,140,60,0.25)'],[45,'rgba(60,200,140,0.25)'],[35,'rgba(0,200,150,0.4)']].forEach(([lv,c])=>{
     const yv=ys(lv);ctx.strokeStyle=c;ctx.lineWidth=1;ctx.setLineDash(lv===65||lv===35?[3,3]:[2,4]);
     ctx.beginPath();ctx.moveTo(p.l,yv);ctx.lineTo(W-p.r,yv);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=c.replace(/[\d.]+\)$/,'0.85)');ctx.font='8px Space Mono,monospace';ctx.fillText(lv,W-p.r+3,yv+3);
+    ctx.fillStyle=c.slice(0,c.lastIndexOf(','))+',0.85)';ctx.font='8px Space Mono,monospace';ctx.fillText(lv,W-p.r+3,yv+3);
   });
   const grad=ctx.createLinearGradient(0,p.t,0,H-p.b);
   grad.addColorStop(0,'rgba(168,85,247,0.28)');grad.addColorStop(1,'rgba(168,85,247,0)');
