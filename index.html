@@ -192,50 +192,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 canvas.indicator{display:block;width:100%;height:105px}
 
 .det-panel #buyConds,.det-panel #sellConds{margin-top:8px}
-
-
-/* ============ ORDER WALL ============ */
-.wall-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
-.wall-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.wall-title{font-size:11px;font-family:"Space Mono",monospace;letter-spacing:1.5px;color:var(--text)}
-.wall-sub{font-size:9px;color:var(--dim);font-family:"Space Mono",monospace}
-.wall-body{padding:12px 14px}
-.wall-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.wall-card{background:var(--bg3);border-radius:9px;padding:9px 12px;border:1px solid var(--border);text-align:center}
-.wall-card-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-.wall-card-val{font-family:"Space Mono",monospace;font-size:16px;font-weight:700}
-.wall-card-sub{font-size:9px;color:var(--muted);margin-top:2px}
-.wall-bars{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.wall-bar-row{display:flex;align-items:center;gap:8px}
-.wall-bar-label{font-size:10px;color:var(--muted);min-width:70px;text-align:right;font-family:"Space Mono",monospace}
-.wall-bar-track{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
-.wall-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
-.wall-bar-buy-fill{background:linear-gradient(90deg,var(--green),var(--green2))}
-.wall-bar-sell-fill{background:linear-gradient(90deg,#c41033,var(--red))}
-.wall-bar-val{font-size:10px;font-family:"Space Mono",monospace;min-width:55px}
-.wall-verdict{padding:8px 12px;border-radius:8px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:8px}
-.wall-verdict.wall-buy{background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.3);color:var(--green2)}
-.wall-verdict.wall-sell{background:rgba(255,68,102,0.1);border:1px solid rgba(255,68,102,0.3);color:var(--red)}
-.wall-verdict.wall-neutral{background:var(--bg3);border:1px solid var(--border);color:var(--muted)}
-.wall-note{font-size:9px;color:var(--dim);margin-top:8px;line-height:1.5;font-family:"Space Mono",monospace}
-/* ============ STATS PANEL ============ */
-.stats-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
-.stats-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.stats-title{font-size:11px;font-family:"Space Mono",monospace;letter-spacing:1.5px;color:var(--text)}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px}
-@media(max-width:700px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
-.stat-label{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:5px}
-.stat-value{font-family:"Space Mono",monospace;font-size:20px;font-weight:700}
-.stat-sub{font-size:9px;color:var(--muted);margin-top:3px;font-family:"Space Mono",monospace}
-.stats-breakdown{padding:0 14px 12px}
-.stats-table{width:100%;border-collapse:collapse;font-size:11px}
-.stats-table th{text-align:left;padding:5px 8px;font-family:"Space Mono",monospace;font-size:9px;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:400}
-.stats-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.04)}
-.stats-table tr:last-child td{border-bottom:none}
-.stats-empty{text-align:center;padding:20px;font-size:11px;color:var(--dim);font-family:"Space Mono",monospace}
-.win-rate-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:6px}
-.win-rate-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width .6s ease}
 .footer{text-align:center;font-size:9.5px;font-family:'Space Mono',monospace;color:var(--dim);margin-top:14px;letter-spacing:.8px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,200,150,0.2);border-radius:2px}
@@ -419,41 +375,6 @@ canvas.indicator{display:block;width:100%;height:105px}
     <div class="env-verdict verdict-caution" id="envVerdict">⏳ 正在加载高周期数据...</div>
   </div>
 
-
-<!-- ====== ORDER WALL CONFIRMATION ====== -->
-<div class="wall-panel">
-  <div class="wall-header">
-    <div>
-      <div class="wall-title">📚 盘口买卖墙确认</div>
-      <div class="wall-sub" id="wallUpdated">--</div>
-    </div>
-    <div class="wall-sub" id="wallScope">BINANCE 深度盘口 · ±2%</div>
-  </div>
-  <div class="wall-body">
-    <div class="wall-summary">
-      <div class="wall-card">
-        <div class="wall-card-label">买墙总额</div>
-        <div class="wall-card-val up" id="wallBuyVol">--</div>
-        <div class="wall-card-sub" id="wallBuyDepth">--</div>
-      </div>
-      <div class="wall-card">
-        <div class="wall-card-label">卖墙总额</div>
-        <div class="wall-card-val down" id="wallSellVol">--</div>
-        <div class="wall-card-sub" id="wallSellDepth">--</div>
-      </div>
-      <div class="wall-card">
-        <div class="wall-card-label">盘口失衡</div>
-        <div class="wall-card-val neutral" id="wallRatio">--</div>
-        <div class="wall-card-sub" id="wallRatioSub">--</div>
-      </div>
-    </div>
-    <div class="wall-bars" id="wallBars"></div>
-    <div class="wall-verdict wall-neutral" id="wallVerdict">等待盘口数据...</div>
-    <div class="wall-note" id="wallNear">最近买墙 / 卖墙：--</div>
-    <div class="wall-note">提示：买卖墙只代表当前盘口压力与支撑，若连续刷新后快速消失，按“撤单风险”对待。</div>
-  </div>
-</div>
-
   <!-- ====== DUAL SIGNAL BANNERS ====== -->
   <div class="dual-banners">
     <svg width="0" height="0" style="position:absolute">
@@ -574,53 +495,6 @@ canvas.indicator{display:block;width:100%;height:105px}
     </div>
   </div>
 
-  <!-- ====== STATS PANEL ====== -->
-  <div class="stats-panel">
-    <div class="stats-header">
-      <div class="stats-title">📊 策略复盘统计</div>
-      <div style="font-size:9px;color:var(--dim);font-family:'Space Mono',monospace" id="statsUpdated">基于历史记录</div>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">总信号数</div>
-        <div class="stat-value" id="statTotal">0</div>
-        <div class="stat-sub" id="statTotalSub">多头 0 / 空头 0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">强信号占比</div>
-        <div class="stat-value up" id="statStrong">0%</div>
-        <div class="stat-sub" id="statStrongSub">5/5满分 0 次</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">平均评分</div>
-        <div class="stat-value" id="statAvgScore">--</div>
-        <div class="stat-sub">满分5分</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">信号退出率</div>
-        <div class="stat-value" id="statExitRate">0%</div>
-        <div class="stat-sub" id="statExitSub">已退出 0 条</div>
-      </div>
-    </div>
-    <div class="stats-breakdown">
-      <table class="stats-table" id="statsTable">
-        <thead>
-          <tr>
-            <th>币种/周期</th>
-            <th>信号数</th>
-            <th>多头</th>
-            <th>空头</th>
-            <th>强信号</th>
-            <th>平均分</th>
-          </tr>
-        </thead>
-        <tbody id="statsTableBody">
-          <tr><td colspan="6" class="stats-empty">暂无统计数据</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- ====== SIGNAL HISTORY LOG ====== -->
   <div class="history-panel">
     <div class="history-header">
@@ -664,19 +538,6 @@ const USE_BACKEND = true;   // false = 纯前端模式（无持久历史）
 const MAX_HISTORY = 200;
 let signalHistory = [];
 let lastBuyScore = -1, lastSellScore = -1;
-let wallState = {
-  ready: false,
-  ratio: 1,
-  buyTotal: 0,
-  sellTotal: 0,
-  updatedAt: null,
-  rangePct: 0.02,
-  bucketSize: 10,
-  verdict: '等待盘口数据',
-  nearestBuy: null,
-  nearestSell: null,
-  top5: []
-};
 
 /* ---- Backend WebSocket ---- */
 function connectServerWS() {
@@ -694,7 +555,6 @@ function connectServerWS() {
         // Load history from server
         signalHistory = msg.history || [];
         renderHistory();
-        renderStats();
         // Load current state
         applyServerState(msg.state);
       } else if (msg.type === 'state_update') {
@@ -796,8 +656,6 @@ function maybeAddHistory(side, score, price, condResults, symbol, tf) {
 }
 
 function renderHistory() {
-  renderStats();
-  renderStats();
   const body = $e('histBody');
   const empty = $e('histEmpty');
   const meta = $e('histMeta');
@@ -956,7 +814,6 @@ async function fetchAndRender(){
   drawMACD(hist,ml,sig);
   drawRSI(rsi);
   refreshHTF();  // fetch 1h/4h for env filter
-  fetchOrderWall();  // fetch order book wall data
   document.getElementById('footer').textContent=`历史 K 线已加载 · ${new Date().toLocaleString('zh')} · WebSocket 实时推送中`;
   connectWS();
 }
@@ -1063,32 +920,17 @@ function renderBothSignals(d){
   const sellResults=evalSell(d);
   let buyScore=buyResults.reduce((a,r)=>a+r.score,0);
   let sellScore=sellResults.reduce((a,r)=>a+r.score,0);
-
-  const price=d.closes[d.n];
   const h1=htfData['1h'],h4=htfData['4h'];
   const t1=h1?getTrendState(h1):'neutral';
   const t4=h4?getTrendState(h4):'neutral';
   const atr=calcATR(d.highs,d.lows,d.closes,14)||0;
-  const sideways=isSideways(price,atr,d.ema7[d.n],d.ema25[d.n],d.highs,d.lows,d.n);
+  const sideways=isSideways(d.closes[d.n],atr,d.ema7[d.n],d.ema25[d.n],d.highs,d.lows,d.n);
   const buyHTF=htfAllows('buy',t1)!==false&&htfAllows('buy',t4)!==false;
   const sellHTF=htfAllows('sell',t1)!==false&&htfAllows('sell',t4)!==false;
-
-  if(sideways){
-    buyScore=Math.max(0,buyScore-2);
-    sellScore=Math.max(0,sellScore-2);
-  }else{
-    if(!buyHTF) buyScore=Math.max(0,buyScore-1);
-    if(!sellHTF) sellScore=Math.max(0,sellScore-1);
-  }
-
-  const buyWall=getWallSignalMeta('buy', price);
-  const sellWall=getWallSignalMeta('sell', price);
-  buyScore=clamp(buyScore + buyWall.delta, 0, 5);
-  sellScore=clamp(sellScore + sellWall.delta, 0, 5);
-
-  const buyEnv={sideways,htfOk:buyHTF,t1,t4,wall:buyWall};
-  const sellEnv={sideways,htfOk:sellHTF,t1,t4,wall:sellWall};
-
+  if(sideways){buyScore=Math.max(0,buyScore-2);sellScore=Math.max(0,sellScore-2);}
+  else{if(!buyHTF)buyScore=Math.max(0,buyScore-1);if(!sellHTF)sellScore=Math.max(0,sellScore-1);}
+  const buyEnv={sideways,htfOk:buyHTF,t1,t4};
+  const sellEnv={sideways,htfOk:sellHTF,t1,t4};
   updateBanner('buy',buyScore,d,buyEnv);
   updateBanner('sell',sellScore,d,sellEnv);
   renderConditions('buy',buyResults,buyScore,buyEnv);
@@ -1190,7 +1032,6 @@ function renderTradePlan(side,score,d){
       <div class="tp-note">
         ATR(14): $${plan.fAtr} · 止损 = ${isBuy?'结构低点':'结构高点'} ± 0.5×ATR · 建议 TP1 减仓 50%，剩余移至保本
         ${isBuy?'· 失效条件：15m 收盘跌回 EMA25 下方':'· 失效条件：15m 收盘涨回 EMA25 上方'}
-        ${wallState && wallState.ready ? ` · 盘口确认：${isBuy ? (wallState.ratio >= 1.2 ? '买墙偏强' : wallState.ratio <= 0.83 ? '卖压偏重' : '中性') : (wallState.ratio <= 0.83 ? '卖墙偏强' : wallState.ratio >= 1.2 ? '买压偏重' : '中性')}` : ''}
       </div>
       ${!rrOk?`<div class="tp-warn">⚠ R:R 低于 1:1.5，风险回报比不理想，建议观察</div>`:''}
     </div>`;
@@ -1203,7 +1044,7 @@ function updateBanner(side,score,d,env){
   arc.style.strokeDashoffset=circ-(score/5)*circ;
   rnum.textContent=score;
   const sym=currentSymbol;
-  const tag=getSignalTags(side, env);
+  const tag=(env&&env.sideways)?' · ⚠盘整降级':(env&&!env.htfOk)?' · ⚠高周期分歧':'';
   if(side==='buy'){
     if(score>=5){banner.className='sig-banner b-strong';icon.textContent='🚀';title.className='sb-title buy-title';title.textContent='强烈多头开仓！';sub.textContent=`${sym} · 5/5${tag}`;rnum.className='r-num rg';}
     else if(score>=4){banner.className='sig-banner b-signal';icon.textContent='✅';title.className='sb-title buy-title';title.textContent='多头开仓信号';sub.textContent=`${sym} · ${score}/5${tag}`;rnum.className='r-num rg';}
@@ -1496,224 +1337,6 @@ function drawRSI(rsi){
   r2.forEach((v,i)=>{if(v==null)return;i===fi?ctx.moveTo(xs(i),ys(v)):ctx.lineTo(xs(i),ys(v));});ctx.stroke();
 }
 
-
-/* ============ ORDER WALL ============ */
-let wallTimer = null;
-
-async function fetchOrderWall(){
-  const sym = currentSymbol + 'USDT';
-  try {
-    const r = await fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500', {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data = await r.json();
-    const price = lastData ? lastData.closes[lastData.n] : 0;
-    if(!price || !data || !Array.isArray(data.bids) || !Array.isArray(data.asks)) return;
-    renderOrderWall(data.bids, data.asks, price);
-    const updated = new Date();
-    wallState.updatedAt = updated;
-    $e('wallUpdated').textContent = currentSymbol+'/USDT · '+updated.toLocaleTimeString('zh');
-    $e('wallScope').textContent = 'BINANCE 深度盘口 · ±' + Math.round(wallState.rangePct * 100) + '%';
-  } catch(err) {
-    wallState.ready = false;
-    if ($e('wallVerdict')) {
-      $e('wallVerdict').className='wall-verdict wall-neutral';
-      $e('wallVerdict').textContent='⚠ 订单簿获取失败: '+err.message;
-    }
-  }
-}
-
-function renderOrderWall(bids, asks, price){
-  const rangePct = 0.02; // ±2% depth range
-  const lo = price * (1 - rangePct);
-  const hi = price * (1 + rangePct);
-  const isBTC = currentSymbol === 'BTC';
-  const decimals = isBTC ? 0 : currentSymbol === 'ETH' ? 2 : 3;
-  const fmtNotional = v => isBTC ? (v>=1000000?'$'+(v/1000000).toFixed(1)+'M':'$'+(v/1000).toFixed(0)+'K')
-                                 : (v>=1000000?'$'+(v/1000000).toFixed(2)+'M':'$'+(v/1000).toFixed(1)+'K');
-  const fmtPrice = v => Number(v).toLocaleString('en', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
-  const bucketSize = currentSymbol === 'BTC' ? 50 : currentSymbol === 'ETH' ? 5 : 0.5;
-
-  // Aggregate bids (buy orders) - price >= lo
-  var buyLevels = {};
-  bids.forEach(function(b){
-    var p=parseFloat(b[0]), q=parseFloat(b[1]);
-    if(p>=lo){
-      var bucket=Math.floor(p/bucketSize)*bucketSize;
-      var key=bucket.toFixed(decimals);
-      buyLevels[key]=(buyLevels[key]||0)+p*q;
-    }
-  });
-
-  // Aggregate asks (sell orders) - price <= hi
-  var sellLevels = {};
-  asks.forEach(function(a){
-    var p=parseFloat(a[0]), q=parseFloat(a[1]);
-    if(p<=hi){
-      var bucket=Math.floor(p/bucketSize)*bucketSize;
-      var key=bucket.toFixed(decimals);
-      sellLevels[key]=(sellLevels[key]||0)+p*q;
-    }
-  });
-
-  var buyTotal  = Object.values(buyLevels).reduce(function(a,b){return a+b;},0);
-  var sellTotal = Object.values(sellLevels).reduce(function(a,b){return a+b;},0);
-  var ratio = sellTotal > 0 ? (buyTotal/sellTotal) : 1;
-
-  const buyList = Object.entries(buyLevels)
-    .map(([p,v]) => ({p:parseFloat(p),v:v,dist:Math.max(0,(price-parseFloat(p))/price)}))
-    .filter(x => x.p < price)
-    .sort((a,b) => a.dist - b.dist);
-
-  const sellList = Object.entries(sellLevels)
-    .map(([p,v]) => ({p:parseFloat(p),v:v,dist:Math.max(0,(parseFloat(p)-price)/price)}))
-    .filter(x => x.p > price)
-    .sort((a,b) => a.dist - b.dist);
-
-  const nearestBuy = buyList.length ? buyList[0] : null;
-  const nearestSell = sellList.length ? sellList[0] : null;
-
-  wallState = {
-    ready: true,
-    ratio: ratio,
-    buyTotal: buyTotal,
-    sellTotal: sellTotal,
-    updatedAt: new Date(),
-    rangePct: rangePct,
-    bucketSize: bucketSize,
-    verdict: ratio>=1.5 ? 'buy-strong'
-      : ratio>=1.2 ? 'buy-lean'
-      : ratio<=0.67 ? 'sell-strong'
-      : ratio<=0.83 ? 'sell-lean'
-      : 'neutral',
-    nearestBuy: nearestBuy,
-    nearestSell: nearestSell,
-    top5: []
-  };
-
-  $e('wallBuyVol').textContent  = fmtNotional(buyTotal);
-  $e('wallSellVol').textContent = fmtNotional(sellTotal);
-  $e('wallRatio').textContent   = ratio.toFixed(2);
-  $e('wallBuyDepth').textContent  = '近 '+Math.round(rangePct*100)+'% 买单';
-  $e('wallSellDepth').textContent = '近 '+Math.round(rangePct*100)+'% 卖单';
-
-  // Color ratio card
-  var ratioEl = $e('wallRatio');
-  if(ratio>1.3)      { ratioEl.className='wall-card-val up'; $e('wallRatioSub').textContent='买盘明显更强'; }
-  else if(ratio<0.77){ ratioEl.className='wall-card-val down'; $e('wallRatioSub').textContent='卖盘明显更强'; }
-  else               { ratioEl.className='wall-card-val neutral'; $e('wallRatioSub').textContent='买卖力量均衡'; }
-
-  // Find top 5 walls (largest single buckets)
-  var allLevels = [];
-  Object.entries(buyLevels).forEach(function(kv){ allLevels.push({p:parseFloat(kv[0]),v:kv[1],side:'buy'}); });
-  Object.entries(sellLevels).forEach(function(kv){ allLevels.push({p:parseFloat(kv[0]),v:kv[1],side:'sell'}); });
-  allLevels.sort(function(a,b){return b.v-a.v;});
-  var top5 = allLevels.slice(0,5);
-  wallState.top5 = top5;
-  var maxV = top5.length>0 ? top5[0].v : 1;
-
-  var barsEl = $e('wallBars');
-  barsEl.innerHTML='';
-  top5.forEach(function(lv){
-    var pct = Math.round(lv.v/maxV*100);
-    var row = document.createElement('div'); row.className='wall-bar-row';
-    var lbl = document.createElement('div'); lbl.className='wall-bar-label';
-    lbl.textContent = '$'+fmtPrice(lv.p);
-    var track = document.createElement('div'); track.className='wall-bar-track';
-    var fill = document.createElement('div');
-    fill.className='wall-bar-fill '+(lv.side==='buy'?'wall-bar-buy-fill':'wall-bar-sell-fill');
-    fill.style.width='0%'; fill.setAttribute('data-pct', pct);
-    track.appendChild(fill);
-    var val = document.createElement('div'); val.className='wall-bar-val';
-    val.className='wall-bar-val '+(lv.side==='buy'?'up':'down');
-    val.textContent=fmtNotional(lv.v);
-    row.appendChild(lbl); row.appendChild(track); row.appendChild(val);
-    barsEl.appendChild(row);
-  });
-  setTimeout(function(){ barsEl.querySelectorAll('[data-pct]').forEach(function(el){el.style.width=el.getAttribute('data-pct')+'%';}); },60);
-
-  // Verdict
-  var vEl = $e('wallVerdict');
-  var nearText = '最近买墙：' + (nearestBuy ? ('$'+fmtPrice(nearestBuy.p)+' / '+fmtNotional(nearestBuy.v)+' · 距离 '+(nearestBuy.dist*100).toFixed(2)+'%') : '无') +
-                 ' ｜ 最近卖墙：' + (nearestSell ? ('$'+fmtPrice(nearestSell.p)+' / '+fmtNotional(nearestSell.v)+' · 距离 '+(nearestSell.dist*100).toFixed(2)+'%') : '无');
-  if($e('wallNear')) $e('wallNear').textContent = nearText;
-
-  if(ratio>=1.5){
-    vEl.className='wall-verdict wall-buy';
-    vEl.textContent='🟢 买墙强劲（比率 '+ratio.toFixed(2)+'）— 支撑较强，有利多头';
-  } else if(ratio>=1.2){
-    vEl.className='wall-verdict wall-buy';
-    vEl.textContent='✅ 买盘偏强（比率 '+ratio.toFixed(2)+'）— 盘口支撑多头方向';
-  } else if(ratio<=0.67){
-    vEl.className='wall-verdict wall-sell';
-    vEl.textContent='🔴 卖墙强劲（比率 '+ratio.toFixed(2)+'）— 压力较大，有利空头';
-  } else if(ratio<=0.83){
-    vEl.className='wall-verdict wall-sell';
-    vEl.textContent='⚠️ 卖盘偏强（比率 '+ratio.toFixed(2)+'）— 盘口压力偏空头';
-  } else {
-    vEl.className='wall-verdict wall-neutral';
-    vEl.textContent='⚖️ 买卖均衡（比率 '+ratio.toFixed(2)+'）— 方向不明，等待突破';
-  }
-}
-
-
-
-function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-
-function getSignalTags(side, env){
-  const tags = [];
-  if(env && env.sideways){
-    tags.push('⚠盘整降级');
-  }else if(env && env.htfOk === false){
-    tags.push('⚠高周期分歧');
-  }
-
-  if(wallState && wallState.ready){
-    const ratio = wallState.ratio || 1;
-    if(side === 'buy'){
-      if(ratio >= 1.5) tags.push('买墙强支撑');
-      else if(ratio >= 1.2) tags.push('买盘偏强');
-      else if(ratio <= 0.83) tags.push('卖压压制');
-      else tags.push('墙位中性');
-      if(wallState.nearestBuy && wallState.nearestBuy.dist <= 0.0025) tags.push('近买墙');
-      if(wallState.nearestSell && wallState.nearestSell.dist <= 0.0025) tags.push('近卖墙');
-    }else{
-      if(ratio <= 0.67) tags.push('卖墙强压');
-      else if(ratio <= 0.83) tags.push('卖盘偏强');
-      else if(ratio >= 1.2) tags.push('买压压制');
-      else tags.push('墙位中性');
-      if(wallState.nearestSell && wallState.nearestSell.dist <= 0.0025) tags.push('近卖墙');
-      if(wallState.nearestBuy && wallState.nearestBuy.dist <= 0.0025) tags.push('近买墙');
-    }
-  }
-  return tags.length ? ' · ' + tags.join(' · ') : '';
-}
-
-function getWallSignalMeta(side, price){
-  if(!wallState || !wallState.ready) return {delta:0,label:'',ratio:1};
-  const ratio = wallState.ratio || 1;
-  let delta = 0;
-  const tags = [];
-  const nearPct = 0.0025; // 0.25%
-
-  if(side === 'buy'){
-    if(ratio >= 1.5){ delta += 1; tags.push('买墙强支撑'); }
-    else if(ratio >= 1.2){ delta += 1; tags.push('买盘偏强'); }
-    else if(ratio <= 0.83){ delta -= 1; tags.push('卖压压制'); }
-
-    if(wallState.nearestBuy && wallState.nearestBuy.dist <= nearPct){ delta += 1; tags.push('近买墙'); }
-    if(wallState.nearestSell && wallState.nearestSell.dist <= nearPct){ delta -= 1; tags.push('近卖墙'); }
-  }else{
-    if(ratio <= 0.67){ delta += 1; tags.push('卖墙强压'); }
-    else if(ratio <= 0.83){ delta += 1; tags.push('卖盘偏强'); }
-    else if(ratio >= 1.2){ delta -= 1; tags.push('买压压制'); }
-
-    if(wallState.nearestSell && wallState.nearestSell.dist <= nearPct){ delta += 1; tags.push('近卖墙'); }
-    if(wallState.nearestBuy && wallState.nearestBuy.dist <= nearPct){ delta -= 1; tags.push('近买墙'); }
-  }
-
-  return { delta: clamp(delta, -2, 2), label: tags.join(' / '), ratio };
-}
-
 /* ---- helpers ---- */
 function $e(id){return document.getElementById(id);}
 function $v(id,v){$e(id).textContent=v;}
@@ -1725,65 +1348,6 @@ if(autoTimer)clearInterval(autoTimer);
 autoTimer=setInterval(fetchAndRender,5*60*1000);
 // Connect to backend for persistent history and cross-session signals
 connectServerWS();
-// Order wall auto-refresh every 60s
-if(wallTimer)clearInterval(wallTimer);
-wallTimer=setInterval(fetchOrderWall,60000);
-
-function renderStats(){
-  var h=signalHistory||[];
-  var total=h.length;
-  if(total===0){
-    $e('statTotal').textContent='0';
-    $e('statTotalSub').textContent='多头 0 / 空头 0';
-    $e('statStrong').textContent='0%';
-    $e('statStrongSub').textContent='5/5满分 0 次';
-    $e('statAvgScore').textContent='--';
-    $e('statExitRate').textContent='0%';
-    $e('statExitSub').textContent='已退出 0 条';
-    $e('statsTableBody').innerHTML='<tr><td colspan="6" class="stats-empty">暂无统计数据</td></tr>';
-    return;
-  }
-  var buyCount=h.filter(function(e){return e.side==='buy';}).length;
-  var sellCount=total-buyCount;
-  var strongCount=h.filter(function(e){return e.strong;}).length;
-  var exitedCount=h.filter(function(e){return e.status==='exited';}).length;
-  var avgScore=(h.reduce(function(a,e){return a+(e.score||0);},0)/total).toFixed(1);
-  $e('statTotal').textContent=total;
-  $e('statTotalSub').textContent='多头 '+buyCount+' / 空头 '+sellCount;
-  $e('statStrong').textContent=Math.round(strongCount/total*100)+'%';
-  $e('statStrongSub').textContent='5/5满分 '+strongCount+' 次';
-  $e('statAvgScore').textContent=avgScore;
-  $e('statAvgScore').className='stat-value '+(parseFloat(avgScore)>=4?'up':parseFloat(avgScore)>=3?'neutral':'down');
-  $e('statExitRate').textContent=Math.round(exitedCount/total*100)+'%';
-  $e('statExitSub').textContent='已退出 '+exitedCount+' 条';
-  $e('statsUpdated').textContent='共 '+total+' 条记录';
-  var groups={};
-  h.forEach(function(e){
-    var key=(e.symbol||'?')+'/'+(e.tf||'?');
-    if(!groups[key])groups[key]={key:key,total:0,buy:0,sell:0,strong:0,scoreSum:0};
-    var g=groups[key];g.total++;
-    if(e.side==='buy')g.buy++;else g.sell++;
-    if(e.strong)g.strong++;
-    g.scoreSum+=(e.score||0);
-  });
-  var rows=Object.values(groups).sort(function(a,b){return b.total-a.total;});
-  var tbody=$e('statsTableBody');tbody.innerHTML='';
-  rows.forEach(function(g){
-    var avg=(g.scoreSum/g.total).toFixed(1);
-    var tr=document.createElement('tr');
-    var td0=document.createElement('td');
-    td0.style.cssText='font-family:monospace;font-weight:500';td0.textContent=g.key;
-    var td1=document.createElement('td');td1.textContent=g.total;
-    var td2=document.createElement('td');td2.className='up';td2.textContent=g.buy;
-    var td3=document.createElement('td');td3.className='down';td3.textContent=g.sell;
-    var td4=document.createElement('td');td4.style.color='var(--yellow)';td4.textContent=g.strong;
-    var td5=document.createElement('td');td5.style.fontFamily='monospace';td5.textContent=avg;
-    tr.appendChild(td0);tr.appendChild(td1);tr.appendChild(td2);
-    tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);
-    tbody.appendChild(tr);
-  });
-}
 </script>
-
 </body>
 </html>
