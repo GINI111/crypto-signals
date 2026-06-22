@@ -624,6 +624,7 @@ canvas.indicator{display:block;width:100%;height:105px}
 
 <script>
 let currentSymbol='BTC', currentTF='15m';
+let wallRatioValue = null;  // null = not loaded yet
 let autoTimer=null, lastData=null;
 let ws=null, wsSymbol='', wsTF='';          // Binance WS (live tick)
 let serverWS=null;                           // Backend server WS
@@ -1046,8 +1047,24 @@ function renderBothSignals(d){
   const sellHTF=htfAllows('sell',t1)!==false&&htfAllows('sell',t4)!==false;
   if(sideways){buyScore=Math.max(0,buyScore-2);sellScore=Math.max(0,sellScore-2);}
   else{if(!buyHTF)buyScore=Math.max(0,buyScore-1);if(!sellHTF)sellScore=Math.max(0,sellScore-1);}
-  const buyEnv={sideways,htfOk:buyHTF,t1,t4};
-  const sellEnv={sideways,htfOk:sellHTF,t1,t4};
+  // Wall filter: deduct 1 if order book opposes signal direction
+  var wallBuyBlock=false,wallSellBlock=false;
+  if(wallRatioValue!==null){
+    if(wallRatioValue<0.8){wallBuyBlock=true;buyScore=Math.max(0,buyScore-1);}   // weak buy wall
+    if(wallRatioValue>1.25){wallSellBlock=true;sellScore=Math.max(0,sellScore-1);} // weak sell wall
+  }
+
+  // Wall veto: if wall strongly opposes direction, cap score at 3 (prevent open signal)
+  var wallVetoBuy=false, wallVetoSell=false;
+  if(wallRatioValue!==null){
+    if(wallRatioValue<0.7)  wallVetoBuy=true;   // sell wall dominant → veto buy
+    if(wallRatioValue>1.43) wallVetoSell=true;  // buy wall dominant → veto sell
+  }
+  if(wallVetoBuy  && buyScore>=4)  buyScore=3;
+  if(wallVetoSell && sellScore>=4) sellScore=3;
+
+  const buyEnv={sideways,htfOk:buyHTF,t1,t4,wallVeto:wallVetoBuy,wallRatio:wallRatioValue};
+  const sellEnv={sideways,htfOk:sellHTF,t1,t4,wallVeto:wallVetoSell,wallRatio:wallRatioValue};
   updateBanner('buy',buyScore,d,buyEnv);
   updateBanner('sell',sellScore,d,sellEnv);
   renderConditions('buy',buyResults,buyScore,buyEnv);
@@ -1161,7 +1178,7 @@ function updateBanner(side,score,d,env){
   arc.style.strokeDashoffset=circ-(score/5)*circ;
   rnum.textContent=score;
   const sym=currentSymbol;
-  const tag=(env&&env.sideways)?' · ⚠盘整降级':(env&&!env.htfOk)?' · ⚠高周期分歧':'';
+  const tag=(env&&env.sideways)?' · ⚠盘整降级':(env&&env.wallVeto)?' · 🧱盘口反向降级':(env&&!env.htfOk)?' · ⚠高周期分歧':'';
   if(side==='buy'){
     if(score>=5){banner.className='sig-banner b-strong';icon.textContent='🚀';title.className='sb-title buy-title';title.textContent='强烈多头开仓！';sub.textContent=`${sym} · 5/5${tag}`;rnum.className='r-num rg';}
     else if(score>=4){banner.className='sig-banner b-signal';icon.textContent='✅';title.className='sb-title buy-title';title.textContent='多头开仓信号';sub.textContent=`${sym} · ${score}/5${tag}`;rnum.className='r-num rg';}
@@ -1286,6 +1303,22 @@ function renderConditions(side,results,score,env){
     envWrap.appendChild(mkEnvRow(htfMatch1?'bd-pass':'bd-watch','1H','1H '+t1l+(htfMatch1?'，与方向共振':'，方向分歧')));
     envWrap.appendChild(mkEnvRow(htfMatch4?'bd-pass':'bd-watch','4H','4H '+t4l+(htfMatch4?'，与方向共振':'，方向分歧')));
     envWrap.appendChild(mkEnvRow(env.sideways?'bd-fail':'bd-pass','市场',env.sideways?'盘整行情，信号降级 -2分':'趋势行情，信号有效'));
+    if(wallRatioValue!==null){
+      var wallOk=isBuy?(wallRatioValue>=0.8):(wallRatioValue<=1.25);
+      var wallTxt=isBuy?
+        (wallRatioValue>=1.2?'买墙强劲 ('+wallRatioValue.toFixed(2)+')，盘口支撑多头':
+         wallRatioValue>=0.8?'买卖均衡 ('+wallRatioValue.toFixed(2)+')，无阻力':
+         '买墙偏弱 ('+wallRatioValue.toFixed(2)+')，信号降级 -1分'):
+        (wallRatioValue<=0.83?'卖墙强劲 ('+wallRatioValue.toFixed(2)+')，盘口压制空头':
+         wallRatioValue<=1.25?'买卖均衡 ('+wallRatioValue.toFixed(2)+')，无阻力':
+         '卖墙偏弱 ('+wallRatioValue.toFixed(2)+')，信号降级 -1分');
+      envWrap.appendChild(mkEnvRow(wallOk?'bd-pass':'bd-fail','盘口',wallTxt));
+    }
+    if(env.wallRatio!==null){
+      var wallOk=isBuy?(env.wallRatio>=0.7):(env.wallRatio<=1.43);
+      var wallTxt=env.wallRatio!==null?('买卖比 '+env.wallRatio.toFixed(2)+(env.wallVeto?'，盘口反向，信号已降级':'，盘口方向一致')):'未加载';
+      envWrap.appendChild(mkEnvRow(env.wallVeto?'bd-fail':wallOk?'bd-pass':'bd-watch','盘口',wallTxt));
+    }
 
     var conclDiv=document.createElement('div');
     conclDiv.style.cssText='margin-top:6px;font-size:10px;color:var(--muted);font-style:italic';
@@ -1587,6 +1620,8 @@ function renderOrderWall(bids,asks,price){
   var bt=Object.values(bl).reduce(function(a,b){return a+b;},0);
   var st=Object.values(sl).reduce(function(a,b){return a+b;},0);
   var ratio=st>0?(bt/st):1;
+  wallRatioValue=ratio; // expose globally for signal scoring
+  wallRatioValue=ratio;  // expose for signal scoring
   function setEl(id,txt,cls){var e=document.getElementById(id);if(e){e.textContent=txt;if(cls)e.className=cls;}}
   setEl('wallBuyVol',fmt(bt));
   setEl('wallSellVol',fmt(st));
@@ -1614,12 +1649,14 @@ function renderOrderWall(bids,asks,price){
   }
   var vd=document.getElementById('wallVerdict');
   if(vd){
-    if(ratio>=1.5){vd.className='wall-verdict wall-buy';vd.textContent='买墙强劲 ('+ratio.toFixed(2)+') — 支撑较强，有利多头';}
-    else if(ratio>=1.2){vd.className='wall-verdict wall-buy';vd.textContent='买盘偏强 ('+ratio.toFixed(2)+') — 盘口支撑多头';}
-    else if(ratio<=0.67){vd.className='wall-verdict wall-sell';vd.textContent='卖墙强劲 ('+ratio.toFixed(2)+') — 压力较大，有利空头';}
-    else if(ratio<=0.83){vd.className='wall-verdict wall-sell';vd.textContent='卖盘偏强 ('+ratio.toFixed(2)+') — 盘口压力偏空';}
-    else{vd.className='wall-verdict wall-neutral';vd.textContent='买卖均衡 ('+ratio.toFixed(2)+') — 等待方向突破';}
+    if(ratio>=1.5){vd.className='wall-verdict wall-buy';vd.textContent='买墙强劲 ('+ratio.toFixed(2)+') — 支撑较强，有利多头 ✅';}
+    else if(ratio>=1.2){vd.className='wall-verdict wall-buy';vd.textContent='买盘偏强 ('+ratio.toFixed(2)+') — 盘口支撑多头 ⚠ 空头信号降级';}
+    else if(ratio<=0.67){vd.className='wall-verdict wall-sell';vd.textContent='卖墙强劲 ('+ratio.toFixed(2)+') — 压力较大，有利空头 ✅';}
+    else if(ratio<=0.83){vd.className='wall-verdict wall-sell';vd.textContent='卖盘偏强 ('+ratio.toFixed(2)+') — 盘口压力偏空 ⚠ 多头信号降级';}
+    else{vd.className='wall-verdict wall-neutral';vd.textContent='买卖均衡 ('+ratio.toFixed(2)+') — 等待方向突破，不影响信号';}
   }
+  // Re-render signals with updated wall data
+  if(lastData) renderBothSignals(lastData);
 }
 /* ---- helpers ---- */
 function $e(id){return document.getElementById(id);}
