@@ -192,6 +192,50 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 canvas.indicator{display:block;width:100%;height:105px}
 
 .det-panel #buyConds,.det-panel #sellConds{margin-top:8px}
+
+
+/* ============ ORDER WALL ============ */
+.wall-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.wall-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.wall-title{font-size:11px;font-family:"Space Mono",monospace;letter-spacing:1.5px;color:var(--text)}
+.wall-sub{font-size:9px;color:var(--dim);font-family:"Space Mono",monospace}
+.wall-body{padding:12px 14px}
+.wall-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.wall-card{background:var(--bg3);border-radius:9px;padding:9px 12px;border:1px solid var(--border);text-align:center}
+.wall-card-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.wall-card-val{font-family:"Space Mono",monospace;font-size:16px;font-weight:700}
+.wall-card-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.wall-bars{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.wall-bar-row{display:flex;align-items:center;gap:8px}
+.wall-bar-label{font-size:10px;color:var(--muted);min-width:70px;text-align:right;font-family:"Space Mono",monospace}
+.wall-bar-track{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.wall-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.wall-bar-buy-fill{background:linear-gradient(90deg,var(--green),var(--green2))}
+.wall-bar-sell-fill{background:linear-gradient(90deg,#c41033,var(--red))}
+.wall-bar-val{font-size:10px;font-family:"Space Mono",monospace;min-width:55px}
+.wall-verdict{padding:8px 12px;border-radius:8px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:8px}
+.wall-verdict.wall-buy{background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.3);color:var(--green2)}
+.wall-verdict.wall-sell{background:rgba(255,68,102,0.1);border:1px solid rgba(255,68,102,0.3);color:var(--red)}
+.wall-verdict.wall-neutral{background:var(--bg3);border:1px solid var(--border);color:var(--muted)}
+.wall-note{font-size:9px;color:var(--dim);margin-top:8px;line-height:1.5;font-family:"Space Mono",monospace}
+/* ============ STATS PANEL ============ */
+.stats-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.stats-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stats-title{font-size:11px;font-family:"Space Mono",monospace;letter-spacing:1.5px;color:var(--text)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px}
+@media(max-width:700px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.stat-label{font-size:9px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:5px}
+.stat-value{font-family:"Space Mono",monospace;font-size:20px;font-weight:700}
+.stat-sub{font-size:9px;color:var(--muted);margin-top:3px;font-family:"Space Mono",monospace}
+.stats-breakdown{padding:0 14px 12px}
+.stats-table{width:100%;border-collapse:collapse;font-size:11px}
+.stats-table th{text-align:left;padding:5px 8px;font-family:"Space Mono",monospace;font-size:9px;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:400}
+.stats-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.stats-table tr:last-child td{border-bottom:none}
+.stats-empty{text-align:center;padding:20px;font-size:11px;color:var(--dim);font-family:"Space Mono",monospace}
+.win-rate-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:6px}
+.win-rate-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width .6s ease}
 .footer{text-align:center;font-size:9.5px;font-family:'Space Mono',monospace;color:var(--dim);margin-top:14px;letter-spacing:.8px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,200,150,0.2);border-radius:2px}
@@ -346,6 +390,7 @@ canvas.indicator{display:block;width:100%;height:105px}
       <button class="btn active" onclick="switchTF('15m')">15m</button>
       <button class="btn" onclick="switchTF('1h')">1h</button>
       <button class="btn" onclick="switchTF('4h')">4h</button>
+      <button class="btn" onclick="switchTF('1d')">1D</button>
     </div>
     <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
       <span class="spin">↻</span><span>刷新</span>
@@ -495,6 +540,71 @@ canvas.indicator{display:block;width:100%;height:105px}
     </div>
   </div>
 
+
+  <!-- ORDER WALL -->
+  <div class="wall-panel">
+    <div class="wall-header">
+      <div class="wall-title">&#x1F3E6; 买卖墙确认</div>
+      <div style="display:flex;align-items:center;gap:10px"><div class="wall-sub" id="wallUpdated">Binance 订单簿</div><button class="refresh-btn" onclick="fetchOrderWall()" style="padding:4px 10px;font-size:10px">刷新</button></div>
+    </div>
+    <div class="wall-body">
+      <div class="wall-summary">
+        <div class="wall-card"><div class="wall-card-label">买墙总量</div><div class="wall-card-val up" id="wallBuyVol">--</div><div class="wall-card-sub">近2%买单</div></div>
+        <div class="wall-card"><div class="wall-card-label">买卖比</div><div class="wall-card-val" id="wallRatio">--</div><div class="wall-card-sub" id="wallRatioSub">多空力量对比</div></div>
+        <div class="wall-card"><div class="wall-card-label">卖墙总量</div><div class="wall-card-val down" id="wallSellVol">--</div><div class="wall-card-sub">近2%卖单</div></div>
+      </div>
+      <div id="wallBars" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><div style="text-align:center;font-size:11px;color:var(--dim);padding:8px">加载中...</div></div>
+      <div class="wall-verdict wall-neutral" id="wallVerdict">&#x23F3; 正在分析买卖墙...</div>
+      <div class="wall-note">&#x26A0; 数据来自 Binance 现货订单簿，大额挂单可能随时撤销，仅供参考。</div>
+    </div>
+  </div>
+  <!-- ====== STATS PANEL ====== -->
+  <div class="stats-panel">
+    <div class="stats-header">
+      <div class="stats-title">📊 策略复盘统计</div>
+      <div style="font-size:9px;color:var(--dim);font-family:'Space Mono',monospace" id="statsUpdated">基于历史记录</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">总信号数</div>
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-sub" id="statTotalSub">多头 0 / 空头 0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">强信号占比</div>
+        <div class="stat-value up" id="statStrong">0%</div>
+        <div class="stat-sub" id="statStrongSub">5/5满分 0 次</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">平均评分</div>
+        <div class="stat-value" id="statAvgScore">--</div>
+        <div class="stat-sub">满分5分</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">信号退出率</div>
+        <div class="stat-value" id="statExitRate">0%</div>
+        <div class="stat-sub" id="statExitSub">已退出 0 条</div>
+      </div>
+    </div>
+    <div class="stats-breakdown">
+      <table class="stats-table" id="statsTable">
+        <thead>
+          <tr>
+            <th>币种/周期</th>
+            <th>信号数</th>
+            <th>多头</th>
+            <th>空头</th>
+            <th>强信号</th>
+            <th>平均分</th>
+          </tr>
+        </thead>
+        <tbody id="statsTableBody">
+          <tr><td colspan="6" class="stats-empty">暂无统计数据</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ====== SIGNAL HISTORY LOG ====== -->
   <div class="history-panel">
     <div class="history-header">
@@ -555,6 +665,7 @@ function connectServerWS() {
         // Load history from server
         signalHistory = msg.history || [];
         renderHistory();
+        renderStats();
         // Load current state
         applyServerState(msg.state);
       } else if (msg.type === 'state_update') {
@@ -656,6 +767,8 @@ function maybeAddHistory(side, score, price, condResults, symbol, tf) {
 }
 
 function renderHistory() {
+  renderStats();
+  renderStats();
   const body = $e('histBody');
   const empty = $e('histEmpty');
   const meta = $e('histMeta');
@@ -724,10 +837,12 @@ function switchSymbol(s){
   if(autoTimer)clearInterval(autoTimer);
   fetchAndRender();
   autoTimer=setInterval(fetchAndRender,5*60*1000);
+if(wallTimer2)clearInterval(wallTimer2);
+wallTimer2=setInterval(fetchOrderWall,60000);
 }
 function switchTF(tf){
   currentTF=tf;
-  ['5m','15m','1h','4h'].forEach((t,i)=>document.querySelectorAll('.btn-group:nth-child(2) .btn')[i].classList.toggle('active',t===tf));
+  ['5m','15m','1h','4h','1d'].forEach((t,i)=>document.querySelectorAll('.btn-group:nth-child(2) .btn')[i].classList.toggle('active',t===tf));
   if(autoTimer)clearInterval(autoTimer);
   fetchAndRender();
   autoTimer=setInterval(fetchAndRender,5*60*1000);
@@ -813,7 +928,9 @@ async function fetchAndRender(){
   renderKline(lastData);
   drawMACD(hist,ml,sig);
   drawRSI(rsi);
-  refreshHTF();  // fetch 1h/4h for env filter
+  refreshHTF();
+  fetchOrderWall();  // fetch 1h/4h for env filter
+  fetchOrderWall();  // fetch order book wall data
   document.getElementById('footer').textContent=`历史 K 线已加载 · ${new Date().toLocaleString('zh')} · WebSocket 实时推送中`;
   connectWS();
 }
@@ -1337,6 +1454,173 @@ function drawRSI(rsi){
   r2.forEach((v,i)=>{if(v==null)return;i===fi?ctx.moveTo(xs(i),ys(v)):ctx.lineTo(xs(i),ys(v));});ctx.stroke();
 }
 
+
+/* ============ ORDER WALL ============ */
+let wallTimer = null;
+
+async function fetchOrderWall(){
+  const sym = currentSymbol + 'USDT';
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500', {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    const price = lastData ? lastData.closes[lastData.n] : 0;
+    if(!price) return;
+    renderOrderWall(data.bids, data.asks, price);
+    $e('wallUpdated').textContent = currentSymbol+'/USDT · '+new Date().toLocaleTimeString('zh');
+  } catch(err) {
+    $e('wallVerdict').className='wall-verdict wall-neutral';
+    $e('wallVerdict').textContent='⚠ 订单簿获取失败: '+err.message;
+  }
+}
+
+function renderOrderWall(bids, asks, price){
+  const rangePct = 0.02; // ±2% depth range
+  const lo = price * (1 - rangePct);
+  const hi = price * (1 + rangePct);
+  const isBTC = currentSymbol === 'BTC';
+  const fmt = v => isBTC ? (v>=1000000?'$'+(v/1000000).toFixed(1)+'M':'$'+(v/1000).toFixed(0)+'K')
+                         : (v>=1000000?'$'+(v/1000000).toFixed(2)+'M':'$'+(v/1000).toFixed(1)+'K');
+
+  // Aggregate bids (buy orders) - price >= lo
+  var buyLevels = {};
+  bids.forEach(function(b){
+    var p=parseFloat(b[0]), q=parseFloat(b[1]);
+    if(p>=lo){ var bucket=Math.floor(p/10)*10; buyLevels[bucket]=(buyLevels[bucket]||0)+p*q; }
+  });
+  // Aggregate asks (sell orders) - price <= hi
+  var sellLevels = {};
+  asks.forEach(function(a){
+    var p=parseFloat(a[0]), q=parseFloat(a[1]);
+    if(p<=hi){ var bucket=Math.floor(p/10)*10; sellLevels[bucket]=(sellLevels[bucket]||0)+p*q; }
+  });
+
+  var buyTotal  = Object.values(buyLevels).reduce(function(a,b){return a+b;},0);
+  var sellTotal = Object.values(sellLevels).reduce(function(a,b){return a+b;},0);
+  var ratio = sellTotal > 0 ? (buyTotal/sellTotal) : 1;
+
+  $e('wallBuyVol').textContent  = fmt(buyTotal);
+  $e('wallSellVol').textContent = fmt(sellTotal);
+  $e('wallRatio').textContent   = ratio.toFixed(2);
+  $e('wallBuyDepth').textContent  = '近 '+Math.round(rangePct*100)+'% 买单';
+  $e('wallSellDepth').textContent = '近 '+Math.round(rangePct*100)+'% 卖单';
+
+  // Color ratio card
+  var ratioEl = $e('wallRatio');
+  if(ratio>1.3)      { ratioEl.className='wall-card-val up'; $e('wallRatioSub').textContent='买盘明显更强'; }
+  else if(ratio<0.77){ ratioEl.className='wall-card-val down'; $e('wallRatioSub').textContent='卖盘明显更强'; }
+  else               { ratioEl.className='wall-card-val neutral'; $e('wallRatioSub').textContent='买卖力量均衡'; }
+
+  // Find top 5 walls (largest single buckets)
+  var allLevels = [];
+  Object.entries(buyLevels).forEach(function(kv){ allLevels.push({p:parseFloat(kv[0]),v:kv[1],side:'buy'}); });
+  Object.entries(sellLevels).forEach(function(kv){ allLevels.push({p:parseFloat(kv[0]),v:kv[1],side:'sell'}); });
+  allLevels.sort(function(a,b){return b.v-a.v;});
+  var top5 = allLevels.slice(0,5);
+  var maxV = top5.length>0 ? top5[0].v : 1;
+
+  var barsEl = $e('wallBars');
+  barsEl.innerHTML='';
+  top5.forEach(function(lv){
+    var pct = Math.round(lv.v/maxV*100);
+    var row = document.createElement('div'); row.className='wall-bar-row';
+    var lbl = document.createElement('div'); lbl.className='wall-bar-label';
+    lbl.textContent = '$'+Math.round(lv.p).toLocaleString('en');
+    var track = document.createElement('div'); track.className='wall-bar-track';
+    var fill = document.createElement('div');
+    fill.className='wall-bar-fill '+(lv.side==='buy'?'wall-bar-buy-fill':'wall-bar-sell-fill');
+    fill.style.width='0%'; fill.setAttribute('data-pct', pct);
+    track.appendChild(fill);
+    var val = document.createElement('div'); val.className='wall-bar-val';
+    val.className='wall-bar-val '+(lv.side==='buy'?'up':'down');
+    val.textContent=fmt(lv.v);
+    row.appendChild(lbl); row.appendChild(track); row.appendChild(val);
+    barsEl.appendChild(row);
+  });
+  setTimeout(function(){ barsEl.querySelectorAll('[data-pct]').forEach(function(el){el.style.width=el.getAttribute('data-pct')+'%';}); },60);
+
+  // Verdict
+  var vEl = $e('wallVerdict');
+  if(ratio>=1.5){
+    vEl.className='wall-verdict wall-buy';
+    vEl.textContent='🟢 买墙强劲（比率 '+ratio.toFixed(2)+'）— 支撑较强，有利多头';
+  } else if(ratio>=1.2){
+    vEl.className='wall-verdict wall-buy';
+    vEl.textContent='✅ 买盘偏强（比率 '+ratio.toFixed(2)+'）— 盘口支撑多头方向';
+  } else if(ratio<=0.67){
+    vEl.className='wall-verdict wall-sell';
+    vEl.textContent='🔴 卖墙强劲（比率 '+ratio.toFixed(2)+'）— 压力较大，有利空头';
+  } else if(ratio<=0.83){
+    vEl.className='wall-verdict wall-sell';
+    vEl.textContent='⚠️ 卖盘偏强（比率 '+ratio.toFixed(2)+'）— 盘口压力偏空头';
+  } else {
+    vEl.className='wall-verdict wall-neutral';
+    vEl.textContent='⚖️ 买卖均衡（比率 '+ratio.toFixed(2)+'）— 方向不明，等待突破';
+  }
+}
+
+
+var wallTimer2=null;
+function fetchOrderWall(){
+  var sym=currentSymbol+'USDT';
+  fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500',{cache:'no-store'})
+  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(function(data){
+    var price=lastData?lastData.closes[lastData.n]:0;
+    if(!price)return;
+    renderOrderWall(data.bids,data.asks,price);
+    var el=document.getElementById('wallUpdated');
+    if(el)el.textContent=currentSymbol+'/USDT '+new Date().toLocaleTimeString('zh');
+  }).catch(function(err){
+    var v=document.getElementById('wallVerdict');
+    if(v){v.className='wall-verdict wall-neutral';v.textContent='获取失败: '+err.message;}
+  });
+}
+function renderOrderWall(bids,asks,price){
+  var rp=0.02,lo=price*(1-rp),hi=price*(1+rp);
+  var isBTC=currentSymbol==='BTC';
+  var bk=isBTC?100:10;
+  function fmt(v){return v>=1000000?'$'+(v/1000000).toFixed(2)+'M':'$'+(v/1000).toFixed(0)+'K';}
+  var bl={},sl={};
+  bids.forEach(function(b){var p=parseFloat(b[0]),q=parseFloat(b[1]);if(p>=lo){var k=Math.floor(p/bk)*bk;bl[k]=(bl[k]||0)+p*q;}});
+  asks.forEach(function(a){var p=parseFloat(a[0]),q=parseFloat(a[1]);if(p<=hi){var k=Math.floor(p/bk)*bk;sl[k]=(sl[k]||0)+p*q;}});
+  var bt=Object.values(bl).reduce(function(a,b){return a+b;},0);
+  var st=Object.values(sl).reduce(function(a,b){return a+b;},0);
+  var ratio=st>0?(bt/st):1;
+  function setEl(id,txt,cls){var e=document.getElementById(id);if(e){e.textContent=txt;if(cls)e.className=cls;}}
+  setEl('wallBuyVol',fmt(bt));
+  setEl('wallSellVol',fmt(st));
+  setEl('wallRatio',ratio.toFixed(2),ratio>1.3?'wall-card-val up':ratio<0.77?'wall-card-val down':'wall-card-val neutral');
+  setEl('wallRatioSub',ratio>1.3?'买盘明显更强':ratio<0.77?'卖盘明显更强':'买卖力量均衡');
+  var all=[];
+  Object.entries(bl).forEach(function(kv){all.push({p:parseFloat(kv[0]),v:kv[1],side:'buy'});});
+  Object.entries(sl).forEach(function(kv){all.push({p:parseFloat(kv[0]),v:kv[1],side:'sell'});});
+  all.sort(function(a,b){return b.v-a.v;});
+  var top=all.slice(0,5),mx=top.length?top[0].v:1;
+  var bars=document.getElementById('wallBars');
+  if(bars){
+    bars.innerHTML='';
+    top.forEach(function(lv){
+      var row=document.createElement('div');row.className='wall-bar-row';
+      var lbl=document.createElement('div');lbl.className='wall-bar-label';lbl.textContent='$'+Math.round(lv.p).toLocaleString('en');
+      var tr=document.createElement('div');tr.className='wall-bar-track';
+      var fl=document.createElement('div');fl.className='wall-bar-fill '+(lv.side==='buy'?'wall-bar-buy-fill':'wall-bar-sell-fill');
+      fl.style.width='0%';fl.setAttribute('data-pct',Math.round(lv.v/mx*100));
+      tr.appendChild(fl);
+      var vl=document.createElement('div');vl.className='wall-bar-val '+(lv.side==='buy'?'up':'down');vl.textContent=fmt(lv.v);
+      row.appendChild(lbl);row.appendChild(tr);row.appendChild(vl);bars.appendChild(row);
+    });
+    setTimeout(function(){bars.querySelectorAll('[data-pct]').forEach(function(el){el.style.width=el.getAttribute('data-pct')+'%';});},80);
+  }
+  var vd=document.getElementById('wallVerdict');
+  if(vd){
+    if(ratio>=1.5){vd.className='wall-verdict wall-buy';vd.textContent='买墙强劲 ('+ratio.toFixed(2)+') — 支撑较强，有利多头';}
+    else if(ratio>=1.2){vd.className='wall-verdict wall-buy';vd.textContent='买盘偏强 ('+ratio.toFixed(2)+') — 盘口支撑多头';}
+    else if(ratio<=0.67){vd.className='wall-verdict wall-sell';vd.textContent='卖墙强劲 ('+ratio.toFixed(2)+') — 压力较大，有利空头';}
+    else if(ratio<=0.83){vd.className='wall-verdict wall-sell';vd.textContent='卖盘偏强 ('+ratio.toFixed(2)+') — 盘口压力偏空';}
+    else{vd.className='wall-verdict wall-neutral';vd.textContent='买卖均衡 ('+ratio.toFixed(2)+') — 等待方向突破';}
+  }
+}
 /* ---- helpers ---- */
 function $e(id){return document.getElementById(id);}
 function $v(id,v){$e(id).textContent=v;}
@@ -1348,6 +1632,65 @@ if(autoTimer)clearInterval(autoTimer);
 autoTimer=setInterval(fetchAndRender,5*60*1000);
 // Connect to backend for persistent history and cross-session signals
 connectServerWS();
+// Order wall auto-refresh every 60s
+if(wallTimer)clearInterval(wallTimer);
+wallTimer=setInterval(fetchOrderWall,60000);
+
+function renderStats(){
+  var h=signalHistory||[];
+  var total=h.length;
+  if(total===0){
+    $e('statTotal').textContent='0';
+    $e('statTotalSub').textContent='多头 0 / 空头 0';
+    $e('statStrong').textContent='0%';
+    $e('statStrongSub').textContent='5/5满分 0 次';
+    $e('statAvgScore').textContent='--';
+    $e('statExitRate').textContent='0%';
+    $e('statExitSub').textContent='已退出 0 条';
+    $e('statsTableBody').innerHTML='<tr><td colspan="6" class="stats-empty">暂无统计数据</td></tr>';
+    return;
+  }
+  var buyCount=h.filter(function(e){return e.side==='buy';}).length;
+  var sellCount=total-buyCount;
+  var strongCount=h.filter(function(e){return e.strong;}).length;
+  var exitedCount=h.filter(function(e){return e.status==='exited';}).length;
+  var avgScore=(h.reduce(function(a,e){return a+(e.score||0);},0)/total).toFixed(1);
+  $e('statTotal').textContent=total;
+  $e('statTotalSub').textContent='多头 '+buyCount+' / 空头 '+sellCount;
+  $e('statStrong').textContent=Math.round(strongCount/total*100)+'%';
+  $e('statStrongSub').textContent='5/5满分 '+strongCount+' 次';
+  $e('statAvgScore').textContent=avgScore;
+  $e('statAvgScore').className='stat-value '+(parseFloat(avgScore)>=4?'up':parseFloat(avgScore)>=3?'neutral':'down');
+  $e('statExitRate').textContent=Math.round(exitedCount/total*100)+'%';
+  $e('statExitSub').textContent='已退出 '+exitedCount+' 条';
+  $e('statsUpdated').textContent='共 '+total+' 条记录';
+  var groups={};
+  h.forEach(function(e){
+    var key=(e.symbol||'?')+'/'+(e.tf||'?');
+    if(!groups[key])groups[key]={key:key,total:0,buy:0,sell:0,strong:0,scoreSum:0};
+    var g=groups[key];g.total++;
+    if(e.side==='buy')g.buy++;else g.sell++;
+    if(e.strong)g.strong++;
+    g.scoreSum+=(e.score||0);
+  });
+  var rows=Object.values(groups).sort(function(a,b){return b.total-a.total;});
+  var tbody=$e('statsTableBody');tbody.innerHTML='';
+  rows.forEach(function(g){
+    var avg=(g.scoreSum/g.total).toFixed(1);
+    var tr=document.createElement('tr');
+    var td0=document.createElement('td');
+    td0.style.cssText='font-family:monospace;font-weight:500';td0.textContent=g.key;
+    var td1=document.createElement('td');td1.textContent=g.total;
+    var td2=document.createElement('td');td2.className='up';td2.textContent=g.buy;
+    var td3=document.createElement('td');td3.className='down';td3.textContent=g.sell;
+    var td4=document.createElement('td');td4.style.color='var(--yellow)';td4.textContent=g.strong;
+    var td5=document.createElement('td');td5.style.fontFamily='monospace';td5.textContent=avg;
+    tr.appendChild(td0);tr.appendChild(td1);tr.appendChild(td2);
+    tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);
+    tbody.appendChild(tr);
+  });
+}
 </script>
+
 </body>
 </html>
