@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
@@ -683,7 +682,6 @@ function connectServerWS() {
           }
         }
       } else if (msg.type === 'signal_exit') {
-        // Update existing entry status to exited
         const updated = msg.data;
         const idx = signalHistory.findIndex(h => h.id === updated.id);
         if (idx !== -1) {
@@ -693,6 +691,8 @@ function connectServerWS() {
           if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
         }
         renderHistory();
+        renderStats();
+        renderStats();
       }
     } catch(_) {}
   };
@@ -1676,58 +1676,92 @@ wallTimer=setInterval(fetchOrderWall,60000);
 function renderStats(){
   var h=signalHistory||[];
   var total=h.length;
+  var eS=document.getElementById('statTotal');
+  if(!eS)return;
   if(total===0){
-    $e('statTotal').textContent='0';
-    $e('statTotalSub').textContent='多头 0 / 空头 0';
-    $e('statStrong').textContent='0%';
-    $e('statStrongSub').textContent='5/5满分 0 次';
-    $e('statAvgScore').textContent='--';
-    $e('statExitRate').textContent='0%';
-    $e('statExitSub').textContent='已退出 0 条';
-    $e('statsTableBody').innerHTML='<tr><td colspan="6" class="stats-empty">暂无统计数据</td></tr>';
+    eS.textContent='0';
+    document.getElementById('statTotalSub').textContent='多头 0 / 空头 0';
+    document.getElementById('statStrong').textContent='0%';
+    document.getElementById('statStrongSub').textContent='5/5满分 0 次';
+    document.getElementById('statAvgScore').textContent='--';
+    document.getElementById('statExitRate').textContent='0%';
+    document.getElementById('statExitSub').textContent='已退出 0 条';
+    document.getElementById('statsUpdated').textContent='暂无记录';
+    var tb=document.getElementById('statsTableBody');
+    if(tb)tb.innerHTML='<tr><td colspan="7" class="stats-empty">暂无统计数据</td></tr>';
     return;
   }
   var buyCount=h.filter(function(e){return e.side==='buy';}).length;
   var sellCount=total-buyCount;
   var strongCount=h.filter(function(e){return e.strong;}).length;
-  var exitedCount=h.filter(function(e){return e.status==='exited';}).length;
+  var exitedList=h.filter(function(e){return e.status==='exited'&&e.exit_price&&e.price;});
+  var exitedCount=exitedList.length;
   var avgScore=(h.reduce(function(a,e){return a+(e.score||0);},0)/total).toFixed(1);
-  $e('statTotal').textContent=total;
-  $e('statTotalSub').textContent='多头 '+buyCount+' / 空头 '+sellCount;
-  $e('statStrong').textContent=Math.round(strongCount/total*100)+'%';
-  $e('statStrongSub').textContent='5/5满分 '+strongCount+' 次';
-  $e('statAvgScore').textContent=avgScore;
-  $e('statAvgScore').className='stat-value '+(parseFloat(avgScore)>=4?'up':parseFloat(avgScore)>=3?'neutral':'down');
-  $e('statExitRate').textContent=Math.round(exitedCount/total*100)+'%';
-  $e('statExitSub').textContent='已退出 '+exitedCount+' 条';
-  $e('statsUpdated').textContent='共 '+total+' 条记录';
+  var wins=0,totalPnlPct=0;
+  exitedList.forEach(function(e){
+    var ep=parseFloat(e.price),ex=parseFloat(e.exit_price);
+    var pp=e.side==='buy'?((ex-ep)/ep*100):((ep-ex)/ep*100);
+    totalPnlPct+=pp;
+    if(pp>0)wins++;
+  });
+  var winRate=exitedCount>0?Math.round(wins/exitedCount*100):null;
+  var avgPnl=exitedCount>0?(totalPnlPct/exitedCount).toFixed(2):null;
+  eS.textContent=total;
+  document.getElementById('statTotalSub').textContent='多头 '+buyCount+' / 空头 '+sellCount;
+  document.getElementById('statStrong').textContent=Math.round(strongCount/total*100)+'%';
+  document.getElementById('statStrongSub').textContent='5/5满分 '+strongCount+' 次';
+  var avgEl=document.getElementById('statAvgScore');
+  avgEl.textContent=avgScore;
+  avgEl.className='stat-value '+(parseFloat(avgScore)>=4?'up':parseFloat(avgScore)>=3?'neutral':'down');
+  var exitEl=document.getElementById('statExitRate');
+  var exitSubEl=document.getElementById('statExitSub');
+  if(winRate!==null){
+    exitEl.textContent=winRate+'%';
+    exitEl.className='stat-value '+(winRate>=50?'up':'down');
+    exitSubEl.textContent='胜率('+exitedCount+'次) 均盈亏'+(parseFloat(avgPnl)>0?'+':'')+avgPnl+'%';
+  }else{
+    exitEl.textContent='0%';
+    exitEl.className='stat-value neutral';
+    exitSubEl.textContent='已退出 0 条';
+  }
+  document.getElementById('statsUpdated').textContent='共'+total+'条 · '+exitedCount+'条已退出';
   var groups={};
   h.forEach(function(e){
     var key=(e.symbol||'?')+'/'+(e.tf||'?');
-    if(!groups[key])groups[key]={key:key,total:0,buy:0,sell:0,strong:0,scoreSum:0};
+    if(!groups[key])groups[key]={key:key,total:0,buy:0,sell:0,strong:0,scoreSum:0,exits:0,wins:0,pnlSum:0};
     var g=groups[key];g.total++;
     if(e.side==='buy')g.buy++;else g.sell++;
     if(e.strong)g.strong++;
     g.scoreSum+=(e.score||0);
+    if(e.status==='exited'&&e.exit_price&&e.price){
+      var ep=parseFloat(e.price),ex=parseFloat(e.exit_price);
+      var pp=e.side==='buy'?((ex-ep)/ep*100):((ep-ex)/ep*100);
+      g.exits++;g.pnlSum+=pp;if(pp>0)g.wins++;
+    }
   });
   var rows=Object.values(groups).sort(function(a,b){return b.total-a.total;});
-  var tbody=$e('statsTableBody');tbody.innerHTML='';
+  var tbody=document.getElementById('statsTableBody');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  var thead=document.querySelector('#statsTable thead tr');
+  if(thead&&thead.children.length<7){var th=document.createElement('th');th.textContent='胜率';thead.appendChild(th);}
   rows.forEach(function(g){
     var avg=(g.scoreSum/g.total).toFixed(1);
+    var wr=g.exits>0?Math.round(g.wins/g.exits*100)+'%':'--';
     var tr=document.createElement('tr');
-    var td0=document.createElement('td');
-    td0.style.cssText='font-family:monospace;font-weight:500';td0.textContent=g.key;
+    var td0=document.createElement('td');td0.style.fontWeight='600';td0.textContent=g.key;
     var td1=document.createElement('td');td1.textContent=g.total;
     var td2=document.createElement('td');td2.className='up';td2.textContent=g.buy;
     var td3=document.createElement('td');td3.className='down';td3.textContent=g.sell;
     var td4=document.createElement('td');td4.style.color='var(--yellow)';td4.textContent=g.strong;
     var td5=document.createElement('td');td5.style.fontFamily='monospace';td5.textContent=avg;
+    var td6=document.createElement('td');td6.className=g.exits>0?(g.wins/g.exits>=0.5?'up':'down'):'';td6.textContent=wr;
     tr.appendChild(td0);tr.appendChild(td1);tr.appendChild(td2);
-    tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);
+    tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);tr.appendChild(td6);
     tbody.appendChild(tr);
   });
 }
-</script>
 
+</script>
 </body>
 </html>
