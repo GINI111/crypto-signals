@@ -646,7 +646,20 @@ const USE_BACKEND = true;   // false = 纯前端模式（无持久历史）
 
 /* ---- Signal History ---- */
 const MAX_HISTORY = 200;
-let signalHistory = [];
+// Load history from localStorage for persistence across backend restarts
+let signalHistory = (function(){
+  try {
+    var saved = localStorage.getItem('crypto_signal_history');
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        console.log('Loaded ' + parsed.length + ' records from localStorage');
+        return parsed;
+      }
+    }
+  } catch(e) { console.warn('localStorage load failed:', e); }
+  return [];
+})();
 let lastBuyScore = -1, lastSellScore = -1;
 
 /* ---- Backend WebSocket ---- */
@@ -657,13 +670,33 @@ function connectServerWS() {
   serverWS.onopen = () => {
     const addr = IS_LOCAL ? 'localhost:8765' : RAILWAY_HOST;
     document.getElementById('footer').textContent = `✅ 已连接后端服务 (${addr})，信号持久运行中...`;
+    // Push localStorage history to backend in case it restarted and lost data
+    if (signalHistory.length > 0) {
+      fetch(`${BACKEND_HTTP}/api/history/sync`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(signalHistory)
+      }).catch(() => {});
+    }
   };
   serverWS.onmessage = e => {
     try {
       const msg = JSON.parse(e.data);
       if (msg.type === 'init') {
         // Load history from server
-        signalHistory = msg.history || [];
+        // Merge server history with localStorage - take the union, prefer server data
+        var serverHistory = msg.history || [];
+        var localHistory = (function(){
+          try { var s=localStorage.getItem('crypto_signal_history'); return s?JSON.parse(s):[]; } catch(e){return [];}
+        })();
+        // Merge: use server as base, add any local entries not in server
+        var merged = serverHistory.slice();
+        localHistory.forEach(function(le){
+          if (!merged.find(function(se){return se.id === le.id;})) merged.push(le);
+        });
+        merged.sort(function(a,b){ return new Date(b.time) - new Date(a.time); });
+        signalHistory = merged.slice(0, MAX_HISTORY);
+        saveHistoryLocal();
         renderHistory();
         renderStats();
         // Load current state
@@ -676,6 +709,7 @@ function connectServerWS() {
         if (!signalHistory.find(h => h.id === entry.id)) {
           signalHistory.unshift(entry);
           if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
+          saveHistoryLocal();
           renderHistory();
           if (entry.symbol === currentSymbol && entry.tf === currentTF) {
             flashNewSignal(entry);
@@ -690,6 +724,7 @@ function connectServerWS() {
           signalHistory.unshift(updated);
           if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
         }
+        saveHistoryLocal();
         renderHistory();
         renderStats();
         renderStats();
@@ -725,14 +760,22 @@ function flashNewSignal(entry) {
   }
 }
 
+function saveHistoryLocal() {
+  try {
+    localStorage.setItem('crypto_signal_history', JSON.stringify(signalHistory.slice(0, MAX_HISTORY)));
+  } catch(e) { console.warn('localStorage save failed:', e); }
+}
+
 function clearHistory() {
   if (USE_BACKEND) {
     fetch(`${BACKEND_HTTP}/api/history`, {method:'DELETE'})
-      .then(() => { signalHistory = []; renderHistory(); })
-      .catch(() => { signalHistory = []; renderHistory(); });
+      .then(() => { signalHistory = []; localStorage.removeItem('crypto_signal_history'); renderHistory(); renderStats(); })
+      .catch(() => { signalHistory = []; localStorage.removeItem('crypto_signal_history'); renderHistory(); renderStats(); });
   } else {
     signalHistory = [];
+    localStorage.removeItem('crypto_signal_history');
     renderHistory();
+    renderStats();
   }
   lastBuyScore = -1;
   lastSellScore = -1;
@@ -761,6 +804,7 @@ function maybeAddHistory(side, score, price, condResults, symbol, tf) {
     };
     signalHistory.unshift(entry);
     if (signalHistory.length > MAX_HISTORY) signalHistory = signalHistory.slice(0, MAX_HISTORY);
+    saveHistoryLocal();
     renderHistory();
   } else {
     if (side === 'buy') lastBuyScore = score; else lastSellScore = score;
