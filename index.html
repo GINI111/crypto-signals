@@ -623,6 +623,10 @@ canvas.indicator{display:block;width:100%;height:105px}
 
 <script>
 let currentSymbol='BTC', currentTF='15m';
+const SYMBOLS_ALL = ['BTC','ETH','SOL'];
+const TFS_ALL     = ['5m','15m','1h','4h','1d'];
+const klineCache  = {};   // klineCache['BTC']['15m'] = data
+let   cacheLoading = {};  // prevent duplicate fetches
 let wallRatioValue = null;  // null = not loaded yet
 let autoTimer=null, lastData=null;
 let ws=null, wsSymbol='', wsTF='';          // Binance WS (live tick)
@@ -881,16 +885,15 @@ function switchSymbol(s){
   document.querySelectorAll('.btn-group:first-child .btn').forEach((b,i)=>b.classList.toggle('active',i===syms.indexOf(s)));
   if(autoTimer)clearInterval(autoTimer);
   fetchAndRender();
-  autoTimer=setInterval(fetchAndRender,5*60*1000);
-if(wallTimer2)clearInterval(wallTimer2);
-wallTimer2=setInterval(fetchOrderWall,60000);
+  autoTimer=setInterval(()=>fetchIntoCache(currentSymbol,currentTF).then(()=>{if(klineCache[currentSymbol]&&klineCache[currentSymbol][currentTF]){lastData=Object.assign({},klineCache[currentSymbol][currentTF]);updatePriceCards(lastData);renderBothSignals(lastData);}}),5*60*1000);
+  if(wallTimer2)clearInterval(wallTimer2);wallTimer2=setInterval(fetchOrderWall,60000);
 }
 function switchTF(tf){
   currentTF=tf;
   ['5m','15m','1h','4h','1d'].forEach((t,i)=>document.querySelectorAll('.btn-group:nth-child(2) .btn')[i].classList.toggle('active',t===tf));
   if(autoTimer)clearInterval(autoTimer);
   fetchAndRender();
-  autoTimer=setInterval(fetchAndRender,5*60*1000);
+  autoTimer=setInterval(()=>fetchIntoCache(currentSymbol,currentTF).then(()=>{if(klineCache[currentSymbol]&&klineCache[currentSymbol][currentTF]){lastData=Object.assign({},klineCache[currentSymbol][currentTF]);updatePriceCards(lastData);renderBothSignals(lastData);}}),5*60*1000);
 }
 function manualRefresh(){
   const btn=document.getElementById('refreshBtn');
@@ -943,40 +946,74 @@ function connectWS(){
   ws.onerror=()=>ws.close();
 }
 
-async function fetchAndRender(){
-  document.getElementById('chart-title').textContent=`${currentSymbol}/USDT · ${currentTF}`;
-  document.getElementById('footer').textContent='正在拉取 Binance 历史 K 线...';
-  let klines=null;
+// ── fetch one symbol/tf into cache ──
+async function fetchIntoCache(sym,tf){
+  const key=sym+'_'+tf;
+  if(cacheLoading[key])return;
+  cacheLoading[key]=true;
   try{
-    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${currentTF}&limit=1500`,{cache:'no-store'});
+    const r=await fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'USDT&interval='+tf+'&limit=1500');
     if(!r.ok)throw new Error('HTTP '+r.status);
     const j=await r.json();
     if(!Array.isArray(j)||j.length<30)throw new Error('bad data');
-    klines=j;
-  }catch(err){
-    document.getElementById('footer').textContent=`Binance REST 受限 (${err.message})，保持上次数据`;
-    if(lastData){connectWS();}
+    const opens=j.map(k=>parseFloat(k[1]));
+    const highs=j.map(k=>parseFloat(k[2]));
+    const lows=j.map(k=>parseFloat(k[3]));
+    const closes=j.map(k=>parseFloat(k[4]));
+    const times=j.map(k=>Math.floor(k[0]/1000));
+    const ema7=calcEMA(closes,7),ema25=calcEMA(closes,25);
+    const rsi=calcRSI(closes,14);
+    const{ml,sig,hist}=calcMACD(closes);
+    const n=closes.length-1;
+    if(!klineCache[sym])klineCache[sym]={};
+    klineCache[sym][tf]={opens,highs,lows,closes,times,ema7,ema25,rsi,ml,sig,hist,n,fetchedAt:Date.now()};
+  }catch(err){console.warn('Cache fetch failed',sym,tf,err.message);}
+  cacheLoading[key]=false;
+}
+
+async function preloadAll(){
+  const tasks=[];
+  for(const sym of SYMBOLS_ALL)
+    for(const tf of TFS_ALL)
+      if(!(klineCache[sym]&&klineCache[sym][tf]))
+        tasks.push(fetchIntoCache(sym,tf));
+  await Promise.all(tasks);
+  document.getElementById('footer').textContent='所有数据预加载完成 · '+new Date().toLocaleTimeString('zh')+' · 切换周期无需等待';
+}
+
+async function fetchAndRender(){
+  document.getElementById('chart-title').textContent=currentSymbol+'/USDT · '+currentTF;
+  const cached=klineCache[currentSymbol]&&klineCache[currentSymbol][currentTF];
+  const age=cached?(Date.now()-cached.fetchedAt)/1000:Infinity;
+  if(cached&&age<300){
+    lastData=Object.assign({},cached);
+    updatePriceCards(lastData);
+    renderBothSignals(lastData);
+    renderKline(lastData);
+    drawMACD(lastData.hist,lastData.ml,lastData.sig);
+    drawRSI(lastData.rsi);
+    refreshHTF();fetchOrderWall();
+    document.getElementById('footer').textContent='缓存数据 · '+currentSymbol+'/USDT '+currentTF+' · WebSocket 实时推送中';
+    connectWS();
+    fetchIntoCache(currentSymbol,currentTF);
     return;
   }
-  const opens=klines.map(k=>parseFloat(k[1]));
-  const highs=klines.map(k=>parseFloat(k[2]));
-  const lows=klines.map(k=>parseFloat(k[3]));
-  const closes=klines.map(k=>parseFloat(k[4]));
-  const times=klines.map(k=>Math.floor(k[0]/1000));
-  const ema7=calcEMA(closes,7),ema25=calcEMA(closes,25);
-  const rsi=calcRSI(closes,14);
-  const{ml,sig,hist}=calcMACD(closes);
-  const n=closes.length-1;
-  lastData={opens,highs,lows,closes,times,ema7,ema25,rsi,ml,sig,hist,n};
+  document.getElementById('footer').textContent='正在拉取 K 线数据...';
+  await fetchIntoCache(currentSymbol,currentTF);
+  const fresh=klineCache[currentSymbol]&&klineCache[currentSymbol][currentTF];
+  if(!fresh){
+    document.getElementById('footer').textContent='数据获取失败，保持上次显示';
+    if(lastData)connectWS();
+    return;
+  }
+  lastData=Object.assign({},fresh);
   updatePriceCards(lastData);
   renderBothSignals(lastData);
   renderKline(lastData);
-  drawMACD(hist,ml,sig);
-  drawRSI(rsi);
-  refreshHTF();
-  fetchOrderWall();  // fetch 1h/4h for env filter
-  fetchOrderWall();  // fetch order book wall data
-  document.getElementById('footer').textContent=`历史 K 线已加载 · ${new Date().toLocaleString('zh')} · WebSocket 实时推送中`;
+  drawMACD(lastData.hist,lastData.ml,lastData.sig);
+  drawRSI(lastData.rsi);
+  refreshHTF();fetchOrderWall();
+  document.getElementById('footer').textContent='K 线已加载 · '+new Date().toLocaleString('zh')+' · WebSocket 实时推送中';
   connectWS();
 }
 
@@ -1007,7 +1044,7 @@ const htfData={};
 
 async function fetchHTF(tf){
   try{
-    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${tf}&limit=100`,{cache:'no-store'});
+    const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}USDT&interval=${tf}&limit=100`);
     if(!r.ok)return null;
     const j=await r.json();if(!Array.isArray(j)||j.length<30)return null;
     const closes=j.map(k=>parseFloat(k[4]));
@@ -1538,7 +1575,7 @@ let wallTimer = null;
 async function fetchOrderWall(){
   const sym = currentSymbol + 'USDT';
   try {
-    const r = await fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500', {cache:'no-store'});
+    const r = await fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500', );
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data = await r.json();
     const price = lastData ? lastData.closes[lastData.n] : 0;
@@ -1640,7 +1677,7 @@ function renderOrderWall(bids, asks, price){
 var wallTimer2=null;
 function fetchOrderWall(){
   var sym=currentSymbol+'USDT';
-  fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500',{cache:'no-store'})
+  fetch('https://api.binance.com/api/v3/depth?symbol='+sym+'&limit=500')
   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
   .then(function(data){
     var price=lastData?lastData.closes[lastData.n]:0;
@@ -1710,7 +1747,9 @@ function flash(id,c){const el=$e(id);el.classList.add(c);setTimeout(()=>el.class
 
 fetchAndRender();
 if(autoTimer)clearInterval(autoTimer);
-autoTimer=setInterval(fetchAndRender,5*60*1000);
+autoTimer=setInterval(()=>fetchIntoCache(currentSymbol,currentTF).then(()=>fetchAndRender()),5*60*1000);
+// Preload all other symbols/TFs in background after 2s
+setTimeout(preloadAll, 2000);
 // Connect to backend for persistent history and cross-session signals
 connectServerWS();
 // Order wall auto-refresh every 60s
