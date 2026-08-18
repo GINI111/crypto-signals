@@ -547,6 +547,11 @@ $('fundSave').onclick=()=>{
 $('fundAuto').onclick=autoFetchFunding;
 $('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
 loadFunding();
+// 资金面定时自动刷新：每30分钟拉一次（仅刷新 auto 来源；手动粘贴的数据不覆盖）
+setInterval(()=>{
+  if(!document.hidden&&(!fundingData||fundingData.source==='auto'))autoFetchFunding();
+},30*60e3);
+setTimeout(()=>{if(!fundingData)autoFetchFunding()},8000);
 $('btClose').onclick=()=>{$('btPanel').style.display='none'};
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;const keys=new Set(storedSignals.map(x=>x.key));let added=0;arr.forEach(x=>{if(x&&x.key&&!keys.has(x.key)){storedSignals.push(x);keys.add(x.key);added++}});saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();$('footer').textContent=`导入完成：新增 ${added} 条，共 ${storedSignals.length} 条`}catch(err){$('footer').textContent='导入失败：文件格式不正确'}};rd.readAsText(f);e.target.value=''};
