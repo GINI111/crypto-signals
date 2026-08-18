@@ -109,7 +109,7 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.2,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let livePrice=null,liveChange=null;
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
@@ -123,7 +123,21 @@ function volRatio(d,i){const win=d.v.slice(Math.max(0,i-20),i);const base=win.le
 function closed(data){return data.slice(0,-1)}
 function parse(data){return {o:data.map(k=>+k[1]),h:data.map(k=>+k[2]),l:data.map(k=>+k[3]),c:data.map(k=>+k[4]),v:data.map(k=>+k[5]),t:data.map(k=>Math.floor(k[0]/1000)),closeTime:data[data.length-2]?data[data.length-2][6]:0}}
 function trend(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),s=(e25[n]-e25[n-3])/3;return e7[n]>e25[n]&&s>=0?'多头':e7[n]<e25[n]&&s<=0?'空头':'震荡'}
-async function getTF(interval,limit=120){let r=await fetch(api(interval,limit),{cache:'no-store'});if(!r.ok)throw Error(r.status);return parse(closed(await r.json()))}
+async function getTF(interval,limit=120){
+  const out=[];let endTime=null;
+  while(out.length<limit){
+    const need=Math.min(1000,limit-out.length);
+    const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${need}`+(endTime?`&endTime=${endTime}`:'');
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok)throw Error(r.status);
+    const j=await r.json();
+    if(!j.length)break;
+    out.unshift(...j);
+    endTime=j[0][0]-1;
+    if(j.length<need)break;
+  }
+  return parse(closed(out));
+}
 async function loadAll(){
   $('footer').textContent='正在拉取 Binance 数据...';
   setState('tf4','加载中');setState('tf1','加载中');setState('tfc','加载中');setState('market','加载中');setState('atr','加载中');setState('volConfirm','加载中');setState('bookRatio','加载中');
@@ -261,15 +275,17 @@ async function runBacktest(){
   const panel=$('btPanel');panel.style.display='block';$('btList').innerHTML='<div class="empty">拉取历史数据...</div>';
   $('btScope').textContent=`${symbol}/USDT · ${tf}`;
   try{
-    // 拉取当前周期 + 1H + 4H 历史（500根）
-    const [cur,a1,a4]=await Promise.all([getTF(tf,1000),getTF('1h',600),getTF('4h',300)]);
+    // 拉取当前周期(30天) + 1H + 4H 历史
+    const [cur,a1,a4]=await Promise.all([getTF(tf,2880),getTF('1h',720),getTF('4h',180)]);
     const d=cur;const n=d.c.length;
     const sigs=[];let openBuy=null,openSell=null,lastBuyT=0,lastSellT=0;
     const cooldown=CFG.cooldownMs[tf]||0;
     const warmup=40;
+    const W=100; // 滑动窗口：指标计算只需最近100根
     for(let i=warmup;i<n;i++){
-      // 构造到 i 为止的切片
-      const slice={o:d.o.slice(0,i+1),h:d.h.slice(0,i+1),l:d.l.slice(0,i+1),c:d.c.slice(0,i+1),v:d.v.slice(0,i+1),t:d.t.slice(0,i+1)};
+      // 滑动窗口切片（避免全量重算，O(n*100)）
+      const s=Math.max(0,i-W+1);
+      const slice={o:d.o.slice(s,i+1),h:d.h.slice(s,i+1),l:d.l.slice(s,i+1),c:d.c.slice(s,i+1),v:d.v.slice(s,i+1),t:d.t.slice(s,i+1)};
       const tNow=d.t[i]*1000;
       // 1H/4H 用对应时间点前的数据
       const htf1={o:a1.o.filter((_,j)=>a1.t[j]*1000<=tNow),h:[],l:[],c:[],v:[],t:[]};// 简化：直接用趋势近似
