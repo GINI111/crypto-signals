@@ -37,7 +37,8 @@
       <div class="small" style="margin-bottom:8px">从数据源复制整段 [BTC]Funding Data($) 表格粘贴到下面，点"解析并保存"。数据会用于信号过滤和面板显示。示例格式：<br><code style="color:var(--m)">Period Perp Data Spot Data<br>4h 305.91M 27.77M</code></div>
       <textarea id="fundInput" style="width:100%;height:200px;background:var(--bg3);color:var(--t);border:1px solid var(--line);border-radius:8px;padding:10px;font:11px Consolas,monospace;resize:vertical" placeholder="[BTC]Funding Data($):&#10;&#10;Price: $64659.10&#10;Period Perp Data Spot Data&#10;5m 31.71M 1.54M&#10;15m 32.24M 1.05M&#10;..."></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <button class="refresh" id="fundSave" style="margin-left:0">✅ 解析并保存</button>
+        <button class="refresh" id="fundAuto" style="margin-left:0">🔄 自动获取(BTC)</button>
+        <button class="refresh" id="fundSave">✅ 解析并保存</button>
         <button class="refresh" id="fundClear">🗑 清除数据</button>
         <span class="small" id="fundMsg" style="color:var(--m)"></span>
       </div>
@@ -245,6 +246,95 @@ function fundSpotAgg(periods){
 function fundingAgeHours(){
   if(!fundingData||!fundingData._ts)return null;
   return (Date.now()-fundingData._ts)/36e5;
+}
+// ── 自动获取（复刻 crypto_flow_monitor 算法：Binance精确 + OKX/Bybit估算）──
+const FUND_EX={
+  'BTC':{bS:'BTCUSDT',bF:'BTCUSDT',oS:'BTC-USDT',oF:'BTC-USDT-SWAP',bbS:'BTCUSDT',bbF:'BTCUSDT'},
+  'ETH':{bS:'ETHUSDT',bF:'ETHUSDT',oS:'ETH-USDT',oF:'ETH-USDT-SWAP',bbS:'ETHUSDT',bbF:'ETHUSDT'},
+  'SOL':{bS:'SOLUSDT',bF:'SOLUSDT',oS:'SOL-USDT',oF:'SOL-USDT-SWAP',bbS:'SOLUSDT',bbF:'SOLUSDT'}
+};
+const FUND_IVS={'5m':{bin:'5m',okx:'5m',bb:'5',lim:6},'1h':{bin:'1h',okx:'1H',bb:'60',lim:12},'1d':{bin:'1d',okx:'1D',bb:'D',lim:30}};
+const FUND_TF=[
+  {l:'5m',iv:'5m',n:1},{l:'15m',iv:'5m',n:3},{l:'30m',iv:'5m',n:6},
+  {l:'1h',iv:'1h',n:1},{l:'2h',iv:'1h',n:2},{l:'4h',iv:'1h',n:4},
+  {l:'6h',iv:'1h',n:6},{l:'8h',iv:'1h',n:8},{l:'12h',iv:'1h',n:12},
+  {l:'1d',iv:'1d',n:1},{l:'3d',iv:'1d',n:3},{l:'7d',iv:'1d',n:7},
+  {l:'15d',iv:'1d',n:15},{l:'30d',iv:'1d',n:30}
+];
+async function fundFetchBin(sym,interval,lim,fut){
+  if(!sym)return null;
+  const base=fut?'https://fapi.binance.com/fapi/v1':'https://api.binance.com/api/v3';
+  try{
+    const r=await fetch(`${base}/klines?symbol=${sym}&interval=${interval}&limit=${lim}`,{signal:AbortSignal.timeout(9000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(!Array.isArray(d)||!d.length)return null;
+    return d.map(k=>2*parseFloat(k[10])-parseFloat(k[7]));
+  }catch{return null}
+}
+async function fundFetchOKX(instId,bar,lim){
+  if(!instId)return null;
+  try{
+    const r=await fetch(`https://www.okx.com/api/v5/market/history-candles?instId=${instId}&bar=${bar}&limit=${lim}`,{signal:AbortSignal.timeout(9000)});
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(j.code!=='0'||!j.data?.length)return null;
+    return j.data.slice().reverse().map(k=>{
+      const h=+k[2],l=+k[3],c=+k[4],qv=+k[7]||+k[6];
+      if(!qv||h===l)return 0;
+      return (2*((c-l)/(h-l))-1)*qv;
+    });
+  }catch{return null}
+}
+async function fundFetchBB(sym,interval,lim,cat){
+  if(!sym)return null;
+  try{
+    const r=await fetch(`https://api.bybit.com/v5/market/kline?category=${cat}&symbol=${sym}&interval=${interval}&limit=${lim}`,{signal:AbortSignal.timeout(9000)});
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(j.retCode!==0||!j.result?.list?.length)return null;
+    return j.result.list.slice().reverse().map(k=>{
+      const h=+k[2],l=+k[3],c=+k[4],qv=+k[6];
+      if(!qv||h===l)return 0;
+      return (2*((c-l)/(h-l))-1)*qv;
+    });
+  }catch{return null}
+}
+function fundNf(arr,n){if(!arr||arr.length<n)return null;return arr.slice(-n).reduce((a,b)=>a+b,0)}
+function fundAggArr(vals){const v=vals.filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0):null}
+async function autoFetchFunding(){
+  const $m=$('fundMsg');
+  const ex=FUND_EX[symbol]||FUND_EX['BTC'];
+  $m.textContent='⏳ 正在获取 Binance/OKX/Bybit...';
+  try{
+    // 并行拉取 3 个基础周期 × 合约/现货 × 3 交易所 = 18 个请求
+    const tasks={};
+    for(const iv of Object.keys(FUND_IVS)){
+      const {bin,okx,bb,lim}=FUND_IVS[iv];
+      tasks[`bS_${iv}`]=()=>fundFetchBin(ex.bS,bin,lim,false);
+      tasks[`bF_${iv}`]=()=>fundFetchBin(ex.bF,bin,lim,true);
+      tasks[`oS_${iv}`]=()=>fundFetchOKX(ex.oS,okx,lim);
+      tasks[`oF_${iv}`]=()=>fundFetchOKX(ex.oF,okx,lim);
+      tasks[`bbS_${iv}`]=()=>fundFetchBB(ex.bbS,bb,lim,'spot');
+      tasks[`bbF_${iv}`]=()=>fundFetchBB(ex.bbF,bb,lim,'linear');
+    }
+    const keys=Object.keys(tasks);
+    const vals=await Promise.all(keys.map(k=>tasks[k]()));
+    const raw={};keys.forEach((k,i)=>{raw[k]=vals[i]});
+    const rows=FUND_TF.map(t=>{
+      const iv=t.iv;
+      const bF=raw[`bF_${iv}`],bS=raw[`bS_${iv}`],oF=raw[`oF_${iv}`],oS=raw[`oS_${iv}`],bbF=raw[`bbF_${iv}`],bbS=raw[`bbS_${iv}`];
+      const perp=fundAggArr([fundNf(bF,t.n),fundNf(oF,t.n),fundNf(bbF,t.n)]);
+      const spot=fundAggArr([fundNf(bS,t.n),fundNf(oS,t.n),fundNf(bbS,t.n)]);
+      return {period:t.l,perp,spot};
+    });
+    const okRows=rows.filter(r=>r.perp!==null||r.spot!==null);
+    if(!okRows.length){$m.textContent='❌ 获取失败，请检查网络或手动粘贴';return}
+    fundingData={rows:okRows,_ts:Date.now(),source:'auto'};
+    saveFunding();
+    $m.textContent=`✅ 自动获取成功(${symbol}) ${okRows.length} 周期 · 三所聚合`;
+    $('fundPreview').innerHTML='自动获取预览（三家聚合）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
+  }catch(e){$m.textContent='❌ 自动获取异常：'+e.message}
 }
 function fundingVerdict(){
   // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)时返回 null = 不拦截
@@ -454,6 +544,7 @@ $('fundSave').onclick=()=>{
   $('fundMsg').textContent=`✅ 已保存 ${rows.length} 个周期`;
   $('fundPreview').innerHTML='解析预览：<br>'+rows.map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>');
 };
+$('fundAuto').onclick=autoFetchFunding;
 $('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
 loadFunding();
 $('btClose').onclick=()=>{$('btPanel').style.display='none'};
