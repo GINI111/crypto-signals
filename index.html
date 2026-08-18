@@ -24,6 +24,7 @@
     <div class="grp"><button class="btn active" data-sym="BTC">BTC</button><button class="btn" data-sym="ETH">ETH</button><button class="btn" data-sym="SOL">SOL</button></div>
     <div class="grp"><button class="btn" data-tf="5m">5m预警</button><button class="btn active" data-tf="15m">15m</button><button class="btn" data-tf="1h">1h</button><button class="btn" data-tf="4h">4h</button><button class="btn" data-tf="1d">1D</button></div>
     <button class="refresh" id="refresh">↻ 刷新</button>
+    <button class="refresh" id="backtestBtn">🧪 回测</button>
     <button class="refresh" id="exportBtn">⬇ 导出信号</button>
     <button class="refresh" id="importBtn">⬆ 导入信号</button>
     <input type="file" id="importFile" accept=".json" style="display:none">
@@ -90,11 +91,25 @@
     <div class="panelHead"><span>📋 S级交易信号历史 / 生命周期</span><button class="refresh" style="margin:0" id="clear">清空</button></div>
     <div class="historyBody" id="history"><div class="empty">暂无已确认交易信号</div></div>
   </div>
+  <div class="panel history" id="btPanel" style="display:none">
+    <div class="panelHead"><span>🧪 回测结果 <span id="btScope"></span></span><button class="refresh" style="margin:0" id="btClose">关闭</button></div>
+    <div class="statCards" style="padding:10px">
+      <div class="stat"><div class="lab">信号数</div><div class="big" id="btCount">--</div></div>
+      <div class="stat"><div class="lab">胜率(TP2)</div><div class="big" id="btWinRate">--</div></div>
+      <div class="stat"><div class="lab">平均收益</div><div class="big" id="btAvg">--</div></div>
+      <div class="stat"><div class="lab">Profit Factor</div><div class="big" id="btPF">--</div></div>
+      <div class="stat"><div class="lab">最大连亏</div><div class="big" id="btStreak">--</div></div>
+      <div class="stat"><div class="lab">累计收益</div><div class="big" id="btTotal">--</div></div>
+      <div class="stat"><div class="lab">TP2/保本/止损/过期</div><div class="big" id="btDetail" style="font-size:12px">--</div></div>
+      <div class="stat"><div class="lab">回测区间</div><div class="big" id="btRange" style="font-size:11px">--</div></div>
+    </div>
+    <div class="historyBody" id="btList" style="max-height:220px"><div class="empty">回测中...</div></div>
+  </div>
   <div class="footer" id="footer">正在初始化...</div>
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.2,tp1ATR:1.2,tp2ATR:2.4,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.2,tp1ATR:1.2,tp2ATR:2.4,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let livePrice=null,liveChange=null;
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
@@ -108,7 +123,7 @@ function volRatio(d,i){const win=d.v.slice(Math.max(0,i-20),i);const base=win.le
 function closed(data){return data.slice(0,-1)}
 function parse(data){return {o:data.map(k=>+k[1]),h:data.map(k=>+k[2]),l:data.map(k=>+k[3]),c:data.map(k=>+k[4]),v:data.map(k=>+k[5]),t:data.map(k=>Math.floor(k[0]/1000)),closeTime:data[data.length-2]?data[data.length-2][6]:0}}
 function trend(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),s=(e25[n]-e25[n-3])/3;return e7[n]>e25[n]&&s>=0?'多头':e7[n]<e25[n]&&s<=0?'空头':'震荡'}
-async function getTF(interval){let r=await fetch(api(interval),{cache:'no-store'});if(!r.ok)throw Error(r.status);return parse(closed(await r.json()))}
+async function getTF(interval,limit=120){let r=await fetch(api(interval,limit),{cache:'no-store'});if(!r.ok)throw Error(r.status);return parse(closed(await r.json()))}
 async function loadAll(){
   $('footer').textContent='正在拉取 Binance 数据...';
   setState('tf4','加载中');setState('tf1','加载中');setState('tfc','加载中');setState('market','加载中');setState('atr','加载中');setState('volConfirm','加载中');setState('bookRatio','加载中');
@@ -123,25 +138,25 @@ let n=0;
 function updateCards(d){let e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d.c),i=d.c.length-1,p=d.c[i],prev=d.c[i-1],vr=volRatio(d,i);const shown=livePrice??p;$('price').textContent='$'+shown.toLocaleString('en',{maximumFractionDigits:symbol==='BTC'?0:2});const pct=liveChange??((p/prev-1)*100);$('chg').textContent=pct.toFixed(2)+'%'+(liveChange!=null?' · 24H':'');$('chg').className='sub '+(pct>=0?'up':'down');$('rsi').textContent=r[i].toFixed(1);$('rsiSub').textContent=r[i]<35?'极端超卖':r[i]<45?'低位':r[i]>65?'高位':'中性';$('macd').textContent=m.h[i].toFixed(5);$('macdSub').textContent=m.h[i]>m.h[i-1]?'柱线扩张 ↑':'柱线收缩 ↓';$('ema').textContent=e7[i]>e25[i]?'多头':'空头';$('emaSub').textContent=`EMA7 ${e7[i]>e25[i]?'↑':'↓'} · EMA25斜率 ${(e25[i]-e25[i-3]).toFixed(2)}`;$('vol').textContent=vr.toFixed(2)+'x';$('volSub').textContent=vr>=1.3?'放量确认':vr>=1?'正常':'缩量'}
 function updateFilters(d){let t1=trend(htf['1h']),t4=trend(htf['4h']),tc=trend(d),r=rsi(d.c),m=macd(d),i=d.c.length-1,aa=atr(d)/d.c[i]*100;setState('tf4',t4);setState('tf1',t1);setState('tfc',tf==='5m'?'预警':tc);setState('market',Math.abs(aa)<.7?'低波动':aa>3?'高波动':'正常');setState('atr',aa.toFixed(2)+'%');let vr=volRatio(d,i);setState('volConfirm',vr>=1.3?'已确认':'不足')}
 function setState(id,text){$(id).textContent=text;$(id).className='tfstate '+(text==='多头'||text==='空头'||text==='已确认'?'ok':text==='预警'||text==='震荡'||text==='不足'?'neutral':'neutral')}
-function macdDivBull(d){let r=dsi=rsi(d.c),m=macd(d),n=d.c.length-1,lb=24,p1=Math.min(...d.l.slice(n-lb*2,n-lb)),p2=Math.min(...d.l.slice(n-lb,n+1)),h1=Math.min(...m.h.slice(n-lb*2,n-lb)),h2=Math.min(...m.h.slice(n-lb,n+1)),rise=[m.h[n],m.h[n-1],m.h[n-2]].every((x,i,a)=>i===0||x>a[i-1]);return p2<=p1*1.002&&h2>h1&&rise}
-function macdDivBear(d){let m=macd(d),n=d.c.length-1,lb=24,p1=Math.max(...d.h.slice(n-lb*2,n-lb)),p2=Math.max(...d.h.slice(n-lb,n+1)),h1=Math.max(...m.h.slice(n-lb*2,n-lb)),h2=Math.max(...m.h.slice(n-lb,n+1)),fall=[m.h[n],m.h[n-1],m.h[n-2]].every((x,i,a)=>i===0||x<a[i-1]);return p2>=p1*.998&&h2<h1&&fall}
-function signal(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf['1h']),t4=trend(htf['4h']),s25=(e25[n]-e25[n-3])/3,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),rsiBuy=r[n]<58&&r[n]>35&&r[n]>r[n-2]&&(Math.min(...r.slice(n-8,n))<40),rsiSell=r[n]>42&&r[n]<65&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>60),emaCrossUp=e7[n]>e25[n]&&e7[n-1]<=e25[n-1],emaCrossDn=e7[n]<e25[n]&&e7[n-1]>=e25[n-1],b=[
+function macdDivBull(d){let r=dsi=rsi(d.c),m=macd(d.c),n=d.c.length-1,lb=24,p1=Math.min(...d.l.slice(n-lb*2,n-lb)),p2=Math.min(...d.l.slice(n-lb,n+1)),h1=Math.min(...m.h.slice(n-lb*2,n-lb)),h2=Math.min(...m.h.slice(n-lb,n+1)),rise=[m.h[n],m.h[n-1],m.h[n-2]].every((x,i,a)=>i===0||x>a[i-1]);return p2<=p1*1.002&&h2>h1&&rise}
+function macdDivBear(d){let m=macd(d.c),n=d.c.length-1,lb=24,p1=Math.max(...d.h.slice(n-lb*2,n-lb)),p2=Math.max(...d.h.slice(n-lb,n+1)),h1=Math.max(...m.h.slice(n-lb*2,n-lb)),h2=Math.max(...m.h.slice(n-lb,n+1)),fall=[m.h[n],m.h[n-1],m.h[n-2]].every((x,i,a)=>i===0||x<a[i-1]);return p2>=p1*.998&&h2<h1&&fall}
+function signal(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf['1h']),t4=trend(htf['4h']),s25=(e25[n]-e25[n-3])/3,aa=atr(d)/d.c[n]*100,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),lowVol=aa<CFG.lowVolATR[tf],rsiBuy=r[n]<58&&r[n]>35&&r[n]>r[n-2]&&(Math.min(...r.slice(n-8,n))<40),rsiSell=r[n]>42&&r[n]<65&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>60),emaCrossUp=e7[n]>e25[n]&&e7[n-1]<=e25[n-1],emaCrossDn=e7[n]<e25[n]&&e7[n-1]>=e25[n-1],b=[
   {name:'4H方向过滤',score:t4==='多头'?1:0,partial:t4==='震荡',desc:t4==='多头'?'✓ 4H多头':'✗ 4H非多头'},
   {name:'1H方向过滤',score:t1==='多头'?1:0,partial:t1==='震荡',desc:t1==='多头'?'✓ 1H多头':'✗ 1H非多头'},
   {name:'趋势结构',score:(e7[n]>e25[n]&&s25>=0)?1:0,partial:e7[n]>e25[n],desc:e7[n]>e25[n]?`EMA多头 · 斜率 ${s25.toFixed(2)}`:'EMA结构未确认'},
   {name:'MACD底背离/转强',score:macdDivBull(d)?1:0,partial:m.h[n]>m.h[n-1],desc:macdDivBull(d)?'✓ 底背离+柱线连续改善':'观察MACD结构'},
   {name:'RSI反转',score:rsiBuy?1:0,partial:r[n]>r[n-1]&&r[n]<50,desc:rsiBuy?`✓ RSI ${r[n].toFixed(1)} 从极端区反转`:`RSI ${r[n].toFixed(1)}`},
-  {name:'收盘突破 + 放量',score:(breakUp&&vr>=1.3)?1:0,partial:breakUp&&vr>=1,desc:(breakUp&&vr>=1.3)?`✓ 突破 + ${vr.toFixed(2)}x 成交量`:'需收盘突破且成交量≥1.3x'}
+  {name:'收盘突破 + 放量',score:(breakUp&&vr>=1.3&&!lowVol)?1:0,partial:breakUp&&vr>=1&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%) 突破可靠性低`:(breakUp&&vr>=1.3)?`✓ 突破 + ${vr.toFixed(2)}x 成交量`:'需收盘突破且成交量≥1.3x'}
 ];let s=[
   {name:'4H方向过滤',score:t4==='空头'?1:0,partial:t4==='震荡',desc:t4==='空头'?'✓ 4H空头':'✗ 4H非空头'},
   {name:'1H方向过滤',score:t1==='空头'?1:0,partial:t1==='震荡',desc:t1==='空头'?'✓ 1H空头':'✗ 1H非空头'},
   {name:'趋势结构',score:(e7[n]<e25[n]&&s25<=0)?1:0,partial:e7[n]<e25[n],desc:e7[n]<e25[n]?`EMA空头 · 斜率 ${s25.toFixed(2)}`:'EMA结构未确认'},
   {name:'MACD顶背离/转弱',score:macdDivBear(d)?1:0,partial:m.h[n]<m.h[n-1],desc:macdDivBear(d)?'✓ 顶背离+柱线连续转弱':'观察MACD结构'},
   {name:'RSI反转',score:rsiSell?1:0,partial:r[n]<r[n-1]&&r[n]>50,desc:rsiSell?`✓ RSI ${r[n].toFixed(1)} 从高位反转`:`RSI ${r[n].toFixed(1)}`},
-  {name:'收盘跌破 + 放量',score:(breakDn&&vr>=1.3)?1:0,partial:breakDn&&vr>=1,desc:(breakDn&&vr>=1.3)?`✓ 跌破 + ${vr.toFixed(2)}x 成交量`:'需收盘跌破且成交量≥1.3x'}
+  {name:'收盘跌破 + 放量',score:(breakDn&&vr>=1.3&&!lowVol)?1:0,partial:breakDn&&vr>=1&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%) 突破可靠性低`:(breakDn&&vr>=1.3)?`✓ 跌破 + ${vr.toFixed(2)}x 成交量`:'需收盘跌破且成交量≥1.3x'}
 ];let buyGate=t4==='多头'&&t1==='多头',sellGate=t4==='空头'&&t1==='空头';return {b,s,buyGate,sellGate,raw:{t1,t4,tc:trend(d)}}}
 function evalSignal(d){let x=signal(d);x.sellGate=x.raw.t1==='空头'&&x.raw.t4==='空头';return x}
-function renderSignals(d,isClosed){let x=evalSignal(d),bs=x.b.reduce((a,r)=>a+r.score,0),ss=x.s.reduce((a,r)=>a+r.score,0);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let bOK=x.buyGate&&bs>=5, sOK=x.sellGate&&ss>=5;let warning=tf==='5m';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
+function renderSignals(d,isClosed){let x=evalSignal(d),bs=x.b.reduce((a,r)=>a+r.score,0),ss=x.s.reduce((a,r)=>a+r.score,0);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let bOK=x.buyGate&&bs>=4, sOK=x.sellGate&&ss>=4;let warning=tf==='5m';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
 function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?'S级 · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(p?'高质量多头信号':'高质量空头信号'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 4H=${x.raw.t4} · 1H=${x.raw.t1} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}`}
 function storageScope(){return `${symbol}|${tf}`}
@@ -173,11 +188,13 @@ function updateSignalLifecycle(d){
       const adverse=tr.side==='buy'?Math.max(0,(tr.entry-lo)/tr.entry*100):Math.max(0,(hi-tr.entry)/tr.entry*100);
       tr.mfePct=Math.max(tr.mfePct||0,favourable);tr.maePct=Math.max(tr.maePct||0,adverse);tr.lastProcessedTime=candleTime;
       if(!tr.tp1Hit&&((tr.side==='buy'&&hi>=tr.tp1)||(tr.side==='sell'&&lo<=tr.tp1)))tr.tp1Hit=true;
-      const hitSL=tr.side==='buy'?lo<=tr.stop:hi>=tr.stop;
+      // TP1命中后，止损上移至成本价（保本）
+      const effStop=tr.tp1Hit?tr.entry:tr.stop;
+      const hitSL=tr.side==='buy'?lo<=effStop:hi>=effStop;
       const hitTP2=tr.side==='buy'?hi>=tr.tp2:lo<=tr.tp2;
       // 同一根K线同时触及止损和TP2时，采用保守的“先止损”处理。
-      if(hitSL&&hitTP2){tr.result='SL';tr.exitPrice=tr.stop;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((tr.stop-tr.entry)/tr.entry*100):((tr.entry-tr.stop)/tr.entry*100);changed=true;break}
-      if(hitSL){tr.result='SL';tr.exitPrice=tr.stop;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((tr.stop-tr.entry)/tr.entry*100):((tr.entry-tr.stop)/tr.entry*100);changed=true;break}
+      if(hitSL&&hitTP2){tr.result=tr.tp1Hit?'BE':'SL';tr.exitPrice=effStop;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((effStop-tr.entry)/tr.entry*100):((tr.entry-effStop)/tr.entry*100);changed=true;break}
+      if(hitSL){tr.result=tr.tp1Hit?'BE':'SL';tr.exitPrice=effStop;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((effStop-tr.entry)/tr.entry*100):((tr.entry-effStop)/tr.entry*100);changed=true;break}
       if(hitTP2){tr.result='TP2';tr.exitPrice=tr.tp2;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((tr.tp2-tr.entry)/tr.entry*100):((tr.entry-tr.tp2)/tr.entry*100);changed=true;break}
       if(tr.barsOpen>=CFG.maxBars[tf]){tr.result='EXPIRED';tr.exitPrice=cl;tr.exitTime=candleTime;tr.returnPct=tr.side==='buy'?((cl-tr.entry)/tr.entry*100):((tr.entry-cl)/tr.entry*100);changed=true;break}
     }
@@ -189,12 +206,14 @@ function updateSignalLifecycle(d){
 function renderHistory(){let el=$('history');const hs=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${h.returnPct>=0?'+':''}${h.returnPct.toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';return `<div class="hrow"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/6 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${h.rr.toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%</div></div><div class="small ${cls}">${status}<br>${new Date(h.createdAt).toLocaleTimeString('zh-CN')}</div></div>`}).join('')}
 function fmtPrice(p,s){return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
 function renderPerformance(){
-  const hs=storedSignals.filter(x=>x.scope===storageScope());const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),exps=done.filter(x=>x.result==='EXPIRED');
+  const hs=storedSignals.filter(x=>x.scope===storageScope());const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
   const grossWin=done.reduce((a,x)=>a+Math.max(0,x.returnPct||0),0),grossLoss=done.reduce((a,x)=>a+Math.max(0,-(x.returnPct||0)),0);
-  const wr=done.length?wins.length/done.length*100:0,avg=done.length?done.reduce((a,x)=>a+(x.returnPct||0),0)/done.length:0,pf=grossLoss?grossWin/grossLoss:0;
+  // 胜率 = TP2 / (TP2 + SL)，BE保本单不计入分母
+  const decided=wins.length+sls.length;
+  const wr=decided?wins.length/decided*100:0,avg=done.length?done.reduce((a,x)=>a+(x.returnPct||0),0)/done.length:0,pf=grossLoss?grossWin/grossLoss:0;
   let streak=0,maxStreak=0;done.slice().sort((a,b)=>a.createdAt-b.createdAt).forEach(x=>{if((x.returnPct||0)<0){streak++;maxStreak=Math.max(maxStreak,streak)}else streak=0});
-  $('statsScope').textContent=`${symbol}/USDT · ${tf}`;$('winRate').textContent=done.length?wr.toFixed(1)+'%':'--';$('avgReturn').textContent=done.length?(avg>=0?'+':'')+avg.toFixed(2)+'%':'--';$('avgReturn').className='big '+(avg>=0?'profit':'loss');$('profitFactor').textContent=done.length?pf.toFixed(2):'--';$('maxLossStreak').textContent=done.length?String(maxStreak):'--';
-  $('statsDetail').textContent=done.length?`完成 ${done.length} · TP2 ${wins.length} · 止损 ${done.filter(x=>x.result==='SL').length} · 过期 ${exps.length}${exps.filter(x=>x.returnPct>0).length?'(盈'+exps.filter(x=>x.returnPct>0).length+')':''} · 未平仓 ${hs.length-done.length}`:'暂无已完成信号';
+  $('statsScope').textContent=`${symbol}/USDT · ${tf}`;$('winRate').textContent=decided?wr.toFixed(1)+'%':'--';$('avgReturn').textContent=done.length?(avg>=0?'+':'')+avg.toFixed(2)+'%':'--';$('avgReturn').className='big '+(avg>=0?'profit':'loss');$('profitFactor').textContent=done.length?pf.toFixed(2):'--';$('maxLossStreak').textContent=done.length?String(maxStreak):'--';
+  $('statsDetail').textContent=done.length?`完成 ${done.length} · TP2 ${wins.length} · 止损 ${sls.length} · 保本 ${bes.length} · 过期 ${exps.length}${exps.filter(x=>x.returnPct>0).length?'(盈'+exps.filter(x=>x.returnPct>0).length+')':''} · 未平仓 ${hs.length-done.length}`:'暂无已完成信号';
   const active=hs.filter(x=>!x.result);$('activeCount').textContent=active.length+' 个';
   $('activeTrades').innerHTML=active.length?active.map(x=>`<div class="activeTrade"><div class="tradeLine"><b class="${x.side==='buy'?'up':'down'}">${x.side==='buy'?'BUY':'SELL'} · ${x.score}/6</b><span>${new Date(x.createdAt).toLocaleTimeString('zh-CN')}</span></div><div class="tradeLine"><span>入场</span><b>$${fmtPrice(x.entry,x.symbol)}</b></div><div class="tradeLine"><span>止损</span><b class="loss">$${fmtPrice(x.stop,x.symbol)}</b></div><div class="tradeLine"><span>TP1 / TP2</span><b class="profit">$${fmtPrice(x.tp1,x.symbol)} / $${fmtPrice(x.tp2,x.symbol)}</b></div><div class="tradeLine"><span>RR / 持仓K</span><b>1:${x.rr.toFixed(1)} / ${x.barsOpen||0}</b></div><div class="tradeLine"><span>MFE / MAE</span><b>+${(x.mfePct||0).toFixed(2)}% / -${(x.maePct||0).toFixed(2)}%</b></div></div>`).join(''):'<div class="empty" style="padding:10px">当前没有进行中的 S 级信号</div>';
 }
@@ -210,8 +229,94 @@ function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b
 function chooseTF(v){tf=v;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===v));resetAndLoad()}
 function resetAndLoad(){history=[];lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};loadAll().catch(e=>$('footer').textContent='加载失败：'+e.message)}
 document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dataset.sym));document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>chooseTF(b.dataset.tf));$('refresh').onclick=()=>loadAll().catch(e=>$('footer').textContent='刷新失败：'+e.message);$('clear').onclick=()=>{storedSignals=storedSignals.filter(x=>x.scope!==storageScope());saveStoredSignals();history=[];renderHistory();renderPerformance()};
-// 导出/导入信号（防localStorage丢失）
+// 回测：用历史K线模拟信号 + 持仓生命周期
+const BT_MAXBARS=CFG.maxBars[tf]||48;
+function btEval(d,htf1,htf4){
+  // 复刻 signal() 判定逻辑（含低波动过滤、TP1保本由生命周期模拟）
+  let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf1),t4=trend(htf4),s25=(e25[n]-e25[n-3])/3,aa=atr(d)/d.c[n]*100,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),lowVol=aa<CFG.lowVolATR[tf],rsiBuy=r[n]<58&&r[n]>35&&r[n]>r[n-2]&&(Math.min(...r.slice(n-8,n))<40),rsiSell=r[n]>42&&r[n]<65&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>60);
+  let bs=(t4==='多头'?1:0)+(t1==='多头'?1:0)+((e7[n]>e25[n]&&s25>=0)?1:0)+(macdDivBull(d)?1:0)+(rsiBuy?1:0)+((breakUp&&vr>=1.3&&!lowVol)?1:0);
+  let ss=(t4==='空头'?1:0)+(t1==='空头'?1:0)+((e7[n]<e25[n]&&s25<=0)?1:0)+(macdDivBear(d)?1:0)+(rsiSell?1:0)+((breakDn&&vr>=1.3&&!lowVol)?1:0);
+  return {bs,ss,buyGate:t4==='多头'&&t1==='多头',sellGate:t4==='空头'&&t1==='空头'};
+}
+function btSimulateLifecycle(sig,d,startIdx){
+  // 与实时 updateSignalLifecycle 一致：TP1后保本，同K线先止损
+  let idx=startIdx;
+  while(idx<d.t.length){
+    const hi=d.h[idx],lo=d.l[idx],cl=d.c[idx];
+    sig.barsOpen++;
+    if(!sig.tp1Hit&&((sig.side==='buy'&&hi>=sig.tp1)||(sig.side==='sell'&&lo<=sig.tp1)))sig.tp1Hit=true;
+    const effStop=sig.tp1Hit?sig.entry:sig.stop;
+    const hitSL=sig.side==='buy'?lo<=effStop:hi>=effStop;
+    const hitTP2=sig.side==='buy'?hi>=sig.tp2:lo<=sig.tp2;
+    if(hitSL&&hitTP2){sig.result=sig.tp1Hit?'BE':'SL';sig.exitPrice=effStop;sig.returnPct=sig.side==='buy'?((effStop-sig.entry)/sig.entry*100):((sig.entry-effStop)/sig.entry*100);return}
+    if(hitSL){sig.result=sig.tp1Hit?'BE':'SL';sig.exitPrice=effStop;sig.returnPct=sig.side==='buy'?((effStop-sig.entry)/sig.entry*100):((sig.entry-effStop)/sig.entry*100);return}
+    if(hitTP2){sig.result='TP2';sig.exitPrice=sig.tp2;sig.returnPct=sig.side==='buy'?((sig.tp2-sig.entry)/sig.entry*100):((sig.entry-sig.tp2)/sig.entry*100);return}
+    if(sig.barsOpen>=BT_MAXBARS){sig.result='EXPIRED';sig.exitPrice=cl;sig.returnPct=sig.side==='buy'?((cl-sig.entry)/sig.entry*100):((sig.entry-cl)/sig.entry*100);return}
+    idx++;
+  }
+  sig.result='EXPIRED';sig.exitPrice=d.c[d.c.length-1];sig.returnPct=sig.side==='buy'?((sig.exitPrice-sig.entry)/sig.entry*100):((sig.entry-sig.exitPrice)/sig.entry*100);
+}
+async function runBacktest(){
+  const btn=$('backtestBtn');btn.textContent='回测中...';btn.disabled=true;
+  const panel=$('btPanel');panel.style.display='block';$('btList').innerHTML='<div class="empty">拉取历史数据...</div>';
+  $('btScope').textContent=`${symbol}/USDT · ${tf}`;
+  try{
+    // 拉取当前周期 + 1H + 4H 历史（500根）
+    const [cur,a1,a4]=await Promise.all([getTF(tf,1000),getTF('1h',600),getTF('4h',300)]);
+    const d=cur;const n=d.c.length;
+    const sigs=[];let openBuy=null,openSell=null,lastBuyT=0,lastSellT=0;
+    const cooldown=CFG.cooldownMs[tf]||0;
+    const warmup=40;
+    for(let i=warmup;i<n;i++){
+      // 构造到 i 为止的切片
+      const slice={o:d.o.slice(0,i+1),h:d.h.slice(0,i+1),l:d.l.slice(0,i+1),c:d.c.slice(0,i+1),v:d.v.slice(0,i+1),t:d.t.slice(0,i+1)};
+      const tNow=d.t[i]*1000;
+      // 1H/4H 用对应时间点前的数据
+      const htf1={o:a1.o.filter((_,j)=>a1.t[j]*1000<=tNow),h:[],l:[],c:[],v:[],t:[]};// 简化：直接用趋势近似
+      // 更精确：截取到 tNow 的 1H/4H 数据
+      const cut=(src)=>{let k=0;while(k<src.t.length&&src.t[k]*1000<=tNow)k++;return {o:src.o.slice(0,k),h:src.h.slice(0,k),l:src.l.slice(0,k),c:src.c.slice(0,k),v:src.v.slice(0,k),t:src.t.slice(0,k)}};
+      const f1=cut(a1),f4=cut(a4);
+      const ev=btEval(slice,f1,f4);
+      const entry=d.c[i];
+      if(ev.buyGate&&ev.bs>=4){
+        if(!openBuy&&tNow-lastBuyT>=cooldown){
+          const atrVal=atr(slice),plan=tradePlan('buy',entry,atrVal);
+          if(plan.rr>=2){openBuy={side:'buy',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.bs,time:tNow,entryIdx:i};lastBuyT=tNow}
+        }
+      }
+      if(ev.sellGate&&ev.ss>=4){
+        if(!openSell&&tNow-lastSellT>=cooldown){
+          const atrVal=atr(slice),plan=tradePlan('sell',entry,atrVal);
+          if(plan.rr>=2){openSell={side:'sell',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.ss,time:tNow,entryIdx:i};lastSellT=tNow}
+        }
+      }
+      if(openBuy){btSimulateLifecycle(openBuy,d,i+1);openBuy.result&&sigs.push(openBuy);openBuy=null}
+      if(openSell){btSimulateLifecycle(openSell,d,i+1);openSell.result&&sigs.push(openSell);openSell=null}
+    }
+    // 统计
+    const done=sigs.filter(x=>x.result);
+    const wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
+    const decided=wins.length+sls.length;
+    const grossWin=done.reduce((a,x)=>a+Math.max(0,x.returnPct||0),0),grossLoss=done.reduce((a,x)=>a+Math.max(0,-(x.returnPct||0)),0);
+    const total=done.reduce((a,x)=>a+(x.returnPct||0),0);
+    let streak=0,maxStreak=0;done.slice().sort((a,b)=>a.time-b.time).forEach(x=>{if((x.returnPct||0)<0){streak++;maxStreak=Math.max(maxStreak,streak)}else streak=0});
+    $('btCount').textContent=done.length;
+    $('btWinRate').textContent=decided?(wins.length/decided*100).toFixed(1)+'%':'--';
+    $('btAvg').textContent=done.length?((total/done.length)>=0?'+':'')+(total/done.length).toFixed(2)+'%':'--';
+    $('btPF').textContent=grossLoss?(grossWin/grossLoss).toFixed(2):'--';
+    $('btStreak').textContent=String(maxStreak);
+    $('btTotal').textContent=(total>=0?'+':'')+total.toFixed(2)+'%';
+    $('btDetail').textContent=`${wins.length}/${bes.length}/${sls.length}/${exps.length}`;
+    const t0=new Date(d.t[warmup]*1000),t1=new Date(d.t[n-1]*1000);
+    $('btRange').textContent=`${t0.toLocaleDateString('zh-CN')} ~ ${t1.toLocaleDateString('zh-CN')}`;
+    $('btList').innerHTML=done.length?done.slice().sort((a,b)=>b.time-a.time).slice(0,30).map(s=>`<div class="hrow"><div class="htag ${s.side==='buy'?'up':'down'}">${s.side==='buy'?'BUY':'SELL'} ${s.score}/6</div><div class="hmain"><b>$${fmtPrice(s.entry,s.symbol)} → $${fmtPrice(s.exitPrice,s.symbol)}</b><div class="small">${s.result} ${s.returnPct>=0?'+':''}${s.returnPct.toFixed(2)}% · ${s.barsOpen}根 · ${new Date(s.time).toLocaleDateString('zh-CN')} ${new Date(s.time).toLocaleTimeString('zh-CN')}</div></div></div>`).join(''):'<div class="empty">回测区间内无信号</div>';
+    $('footer').textContent=`回测完成：${done.length} 个信号 · 胜率 ${decided?(wins.length/decided*100).toFixed(1):'--'}% · 累计 ${(total>=0?'+':'')+total.toFixed(2)}%`;
+  }catch(e){$('btList').innerHTML=`<div class="empty">回测失败：${e.message}</div>`}
+  btn.textContent='🧪 回测';btn.disabled=false;
+}
 $('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(storedSignals,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`crypto-signals-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);$('footer').textContent='已导出 '+storedSignals.length+' 条信号'};
+$('backtestBtn').onclick=runBacktest;
+$('btClose').onclick=()=>{$('btPanel').style.display='none'};
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;const keys=new Set(storedSignals.map(x=>x.key));let added=0;arr.forEach(x=>{if(x&&x.key&&!keys.has(x.key)){storedSignals.push(x);keys.add(x.key);added++}});saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();$('footer').textContent=`导入完成：新增 ${added} 条，共 ${storedSignals.length} 条`}catch(err){$('footer').textContent='导入失败：文件格式不正确'}};rd.readAsText(f);e.target.value=''};
 loadAll().catch(e=>$('footer').textContent='初始化失败：'+e.message);
