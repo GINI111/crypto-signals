@@ -25,9 +25,24 @@
     <div class="grp"><button class="btn" data-tf="5m">5m预警</button><button class="btn active" data-tf="15m">15m</button><button class="btn" data-tf="1h">1h</button><button class="btn" data-tf="4h">4h</button><button class="btn" data-tf="1d">1D</button></div>
     <button class="refresh" id="refresh">↻ 刷新</button>
     <button class="refresh" id="backtestBtn">🧪 回测</button>
+    <button class="refresh" id="fundingBtn">💵 资金面</button>
     <button class="refresh" id="exportBtn">⬇ 导出信号</button>
     <button class="refresh" id="importBtn">⬆ 导入信号</button>
     <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
+
+  <div id="fundModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(560px,92vw);max-height:82vh;overflow:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font:700 12px Consolas,monospace">💵 粘贴 Funding Data</b><button class="btn" id="fundClose" style="border:1px solid var(--line);border-radius:6px">✕</button></div>
+      <div class="small" style="margin-bottom:8px">从数据源复制整段 [BTC]Funding Data($) 表格粘贴到下面，点"解析并保存"。数据会用于信号过滤和面板显示。示例格式：<br><code style="color:var(--m)">Period Perp Data Spot Data<br>4h 305.91M 27.77M</code></div>
+      <textarea id="fundInput" style="width:100%;height:200px;background:var(--bg3);color:var(--t);border:1px solid var(--line);border-radius:8px;padding:10px;font:11px Consolas,monospace;resize:vertical" placeholder="[BTC]Funding Data($):&#10;&#10;Price: $64659.10&#10;Period Perp Data Spot Data&#10;5m 31.71M 1.54M&#10;15m 32.24M 1.05M&#10;..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="refresh" id="fundSave" style="margin-left:0">✅ 解析并保存</button>
+        <button class="refresh" id="fundClear">🗑 清除数据</button>
+        <span class="small" id="fundMsg" style="color:var(--m)"></span>
+      </div>
+      <div class="small" style="margin-top:8px" id="fundPreview"></div>
+    </div>
   </div>
 
   <div class="cards">
@@ -59,6 +74,13 @@
       <div style="height:10px"></div><h3>🏦 ORDERBOOK</h3>
       <div class="tfrow"><span>买卖比</span><span class="tfstate neutral" id="bookRatio">--</span></div>
       <div class="small" style="margin-top:8px">订单簿只做确认，不单独制造交易信号。</div>
+      <div style="height:10px"></div><h3>💵 FUNDING <span id="fundingAge" class="small" style="color:var(--d)"></span></h3>
+      <div class="tfrow"><span>Perp 短期(30m-2h)</span><span class="tfstate neutral" id="fundShort">--</span></div>
+      <div class="tfrow"><span>Perp 中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
+      <div class="tfrow"><span>Perp 长期(1d-7d)</span><span class="tfstate neutral" id="fundLong">--</span></div>
+      <div class="tfrow"><span>Spot 净流入</span><span class="tfstate neutral" id="fundSpot">--</span></div>
+      <div class="tfrow"><span>资金面结论</span><span class="tfstate neutral" id="fundVerdict">未录入</span></div>
+      <div class="small" style="margin-top:8px" id="fundHint">点击上方 💵 资金面 粘贴 Funding Data。</div>
     </div>
     <div class="panel">
       <div class="panelHead"><span>多头条件</span><span class="score" id="buyScore">0/6</span></div>
@@ -177,7 +199,97 @@ function storageScope(){return `${symbol}|${tf}`}
 function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
 function tradePlan(side,entry,atrVal){const risk=Math.max(atrVal*CFG.stopATR,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+atrVal*CFG.tp1ATR:entry-atrVal*CFG.tp1ATR;const tp2=side==='buy'?entry+atrVal*CFG.tp2ATR:entry-atrVal*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
+const FUND_KEY='crypto_signal_pro_v21_funding';
+let fundingData=null;
+function loadFunding(){try{fundingData=JSON.parse(localStorage.getItem(FUND_KEY)||'null')}catch(e){fundingData=null}renderFunding()}
+function saveFunding(){localStorage.setItem(FUND_KEY,JSON.stringify(fundingData));renderFunding()}
+function parseFunding(text){
+  // 解析格式: Period Perp Data Spot Data / 5m 31.71M 1.54M ...
+  const rows=[];const lines=text.split('\n');
+  for(const line of lines){
+    const t=line.trim();if(!t)continue;
+    if(!/^[0-9]+[mhd]/.test(t))continue;
+    const parts=t.split(/\s+/);if(parts.length<3)continue;
+    const perp=parseFundNum(parts[1]),spot=parseFundNum(parts[2]);
+    if(perp===null||spot===null)continue;
+    rows.push({period:parts[0],perp,spot});
+  }
+  return rows;
+}
+function parseFundNum(s){
+  if(s==null)return null;
+  const m=String(s).match(/^(-?[\d.]+)([MKB])?$/i);
+  if(!m)return null;
+  let v=parseFloat(m[1]);
+  const u=(m[2]||'').toUpperCase();
+  if(u==='M')v*=1e6;else if(u==='K')v*=1e3;else if(u==='B')v*=1e9;
+  return v;
+}
+function fmtFund(v){
+  if(v==null)return '--';
+  const abs=Math.abs(v);
+  const s=abs>=1e9?(v/1e9).toFixed(2)+'B':abs>=1e6?(v/1e6).toFixed(1)+'M':abs>=1e3?(v/1e3).toFixed(1)+'K':v.toFixed(0);
+  return (v>0?'+':'')+s;
+}
+function fundAgg(periods){
+  // 取指定周期的 Perp 均值（美元）
+  const rows=(fundingData&&fundingData.rows||[]).filter(r=>periods.includes(r.period));
+  if(!rows.length)return null;
+  return rows.reduce((a,r)=>a+r.perp,0)/rows.length;
+}
+function fundSpotAgg(periods){
+  const rows=(fundingData&&fundingData.rows||[]).filter(r=>periods.includes(r.period));
+  if(!rows.length)return null;
+  return rows.reduce((a,r)=>a+r.spot,0)/rows.length;
+}
+function fundingAgeHours(){
+  if(!fundingData||!fundingData._ts)return null;
+  return (Date.now()-fundingData._ts)/36e5;
+}
+function fundingVerdict(){
+  // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)时返回 null = 不拦截
+  if(!fundingData||!fundingData.rows||!fundingData.rows.length)return null;
+  const age=fundingAgeHours();if(age===null||age>48)return null;
+  const mid=fundAgg(['4h','6h','8h','12h']);if(mid===null)return null;
+  const spot=fundSpotAgg(['4h','6h','8h','12h','1d']);if(spot===null)return null;
+  const short=fundAgg(['30m','1h','2h']);
+  const long=fundAgg(['1d','3d','7d']);
+  const buyOk=mid>0&&spot>0;
+  const sellOk=mid<0&&spot<0;
+  return {
+    allowBuy:buyOk,allowSell:sellOk,
+    label:buyOk?'偏多':(sellOk?'偏空':'中性'),
+    desc:`中期Perp ${fmtFund(mid)} · Spot ${fmtFund(spot)}`+(short!=null?` · 短期 ${fmtFund(short)}`:'')+(long!=null?` · 长期 ${fmtFund(long)}`:'')
+  };
+}
+function renderFunding(){
+  const el=(id,v,cls)=>{const e=$(id);if(e){e.textContent=v;e.className='tfstate '+(cls||'neutral')}};
+  const age=fundingAgeHours();
+  const ageTxt=age===null?'':`· ${age<1?'<1h':Math.round(age)+'h'}前`;
+  el('fundingAge',ageTxt,'');
+  if(!fundingData||!fundingData.rows||!fundingData.rows.length){
+    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundVerdict','未录入');
+    $('fundHint').textContent='点击上方 💵 资金面 粘贴 Funding Data。';
+    return;
+  }
+  const short=fundAgg(['30m','1h','2h']),mid=fundAgg(['4h','6h','8h','12h']),long=fundAgg(['1d','3d','7d']),spot=fundSpotAgg(['4h','6h','8h','12h','1d']);
+  el('fundShort',fmtFund(short),short>0?'ok':(short<0?'bad':'neutral'));
+  el('fundMid',fmtFund(mid),mid>0?'ok':(mid<0?'bad':'neutral'));
+  el('fundLong',fmtFund(long),long>0?'ok':(long<0?'bad':'neutral'));
+  el('fundSpot',fmtFund(spot),spot>0?'ok':(spot<0?'bad':'neutral'));
+  const v=fundingVerdict();
+  if(v){el('fundVerdict',v.label,v.label==='偏多'?'ok':(v.label==='偏空'?'bad':'neutral'));$('fundHint').textContent=v.desc+(age!==null&&age>48?' · ⚠️ 数据已超48h，过滤已暂停':'')}
+  else if(age!==null&&age>48){el('fundVerdict','已过期','neutral');$('fundHint').textContent='⚠️ 数据超过48小时，资金面过滤暂停。请重新粘贴更新。'}
+  else {el('fundVerdict','中性','neutral');$('fundHint').textContent='Perp/Spot 方向不一致，过滤不拦截但仅作参考。'}
+}
+
 function maybeSignal(side,score,d,conds){
+  // 资金面过滤器（A方案）：数据有效时，Perp中期+Spot方向必须与信号方向一致
+  const fv=fundingVerdict();
+  if(fv){
+    if(side==='buy'&&!fv.allowBuy){$('footer').textContent=`🚫 资金面拦截买入信号：${fv.desc}`;return}
+    if(side==='sell'&&!fv.allowSell){$('footer').textContent=`🚫 资金面拦截卖出信号：${fv.desc}`;return}
+  }
   const key=`${symbol}|${tf}|${side}|${d.t[d.t.length-1]}`;let now=Date.now();
   const dup=storedSignals.find(x=>x.key===key);
   const prev=storedSignals.filter(x=>x.scope===storageScope()&&x.side===side).sort((a,b)=>b.createdAt-a.createdAt)[0];
@@ -332,6 +444,18 @@ async function runBacktest(){
 }
 $('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(storedSignals,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`crypto-signals-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);$('footer').textContent='已导出 '+storedSignals.length+' 条信号'};
 $('backtestBtn').onclick=runBacktest;
+$('fundingBtn').onclick=()=>{$('fundModal').style.display='flex';$('fundInput').value='';$('fundMsg').textContent='';$('fundPreview').textContent=''};
+$('fundClose').onclick=()=>{$('fundModal').style.display='none'};
+$('fundModal').onclick=e=>{if(e.target===$('fundModal'))$('fundModal').style.display='none'};
+$('fundSave').onclick=()=>{
+  const text=$('fundInput').value;const rows=parseFunding(text);
+  if(!rows.length){$('fundMsg').textContent='❌ 没解析到数据，请检查格式';return}
+  fundingData={rows,_ts:Date.now()};saveFunding();
+  $('fundMsg').textContent=`✅ 已保存 ${rows.length} 个周期`;
+  $('fundPreview').innerHTML='解析预览：<br>'+rows.map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>');
+};
+$('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
+loadFunding();
 $('btClose').onclick=()=>{$('btPanel').style.display='none'};
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;const keys=new Set(storedSignals.map(x=>x.key));let added=0;arr.forEach(x=>{if(x&&x.key&&!keys.has(x.key)){storedSignals.push(x);keys.add(x.key);added++}});saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();$('footer').textContent=`导入完成：新增 ${added} 条，共 ${storedSignals.length} 条`}catch(err){$('footer').textContent='导入失败：文件格式不正确'}};rd.readAsText(f);e.target.value=''};
