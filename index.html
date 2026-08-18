@@ -80,7 +80,7 @@
       <div class="tfrow"><span>Perp 中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
       <div class="tfrow"><span>Perp 长期(1d-7d)</span><span class="tfstate neutral" id="fundLong">--</span></div>
       <div class="tfrow"><span>Spot 净流入</span><span class="tfstate neutral" id="fundSpot">--</span></div>
-      <div class="tfrow"><span>资金面结论</span><span class="tfstate neutral" id="fundVerdict">未录入</span></div>
+      <div class="tfrow" id="fundVerdictRow" style="cursor:pointer" title="点击暂停/恢复资金面过滤"><span>资金面结论 <span class="small" style="color:var(--d)">(点击切换)</span></span><span class="tfstate neutral" id="fundVerdict">未录入</span></div>
       <div class="small" style="margin-top:8px" id="fundHint">点击上方 💵 资金面 粘贴 Funding Data。</div>
     </div>
     <div class="panel">
@@ -202,7 +202,13 @@ function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(sto
 function tradePlan(side,entry,atrVal){const risk=Math.max(atrVal*CFG.stopATR,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+atrVal*CFG.tp1ATR:entry-atrVal*CFG.tp1ATR;const tp2=side==='buy'?entry+atrVal*CFG.tp2ATR:entry-atrVal*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
 const FUND_KEY='crypto_signal_pro_v21_funding';
 let fundingData=null;
-function loadFunding(){try{fundingData=JSON.parse(localStorage.getItem(FUND_KEY)||'null')}catch(e){fundingData=null}renderFunding()}
+let fundingFilterOff=false; // 用户手动暂停资金面过滤
+function toggleFundingFilter(){
+  fundingFilterOff=!fundingFilterOff;
+  localStorage.setItem(FUND_KEY+'_off',fundingFilterOff?'1':'0');
+  renderFunding();
+}
+function loadFunding(){try{fundingData=JSON.parse(localStorage.getItem(FUND_KEY)||'null')}catch(e){fundingData=null}fundingFilterOff=localStorage.getItem(FUND_KEY+'_off')==='1';renderFunding()}
 function saveFunding(){localStorage.setItem(FUND_KEY,JSON.stringify(fundingData));renderFunding()}
 function parseFunding(text){
   // 解析格式: Period Perp Data Spot Data / 5m 31.71M 1.54M ...
@@ -337,6 +343,8 @@ async function autoFetchFunding(){
   }catch(e){$m.textContent='❌ 自动获取异常：'+e.message}
 }
 function fundingVerdict(){
+  // 用户手动暂停时直接返回 null（不拦截）
+  if(fundingFilterOff)return null;
   // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)时返回 null = 不拦截
   if(!fundingData||!fundingData.rows||!fundingData.rows.length)return null;
   const age=fundingAgeHours();if(age===null||age>48)return null;
@@ -368,8 +376,8 @@ function renderFunding(){
   el('fundLong',fmtFund(long),long>0?'ok':(long<0?'bad':'neutral'));
   el('fundSpot',fmtFund(spot),spot>0?'ok':(spot<0?'bad':'neutral'));
   const v=fundingVerdict();
-  if(v){el('fundVerdict',v.label,v.label==='偏多'?'ok':(v.label==='偏空'?'bad':'neutral'));$('fundHint').textContent=v.desc+(age!==null&&age>48?' · ⚠️ 数据已超48h，过滤已暂停':'')}
-  else if(age!==null&&age>48){el('fundVerdict','已过期','neutral');$('fundHint').textContent='⚠️ 数据超过48小时，资金面过滤暂停。请重新粘贴更新。'}
+  if(v){el('fundVerdict',v.label,v.label==='偏多'?'ok':(v.label==='偏空'?'bad':'neutral'));$('fundHint').textContent=v.desc+(age!==null&&age>48?' · ⚠️ 数据已超48h，过滤已暂停':'')+(fundingFilterOff?' · ⏸ 已手动暂停':'')}  else if(age!==null&&age>48){el('fundVerdict','已过期','neutral');$('fundHint').textContent='⚠️ 数据超过48小时，资金面过滤暂停。请重新粘贴更新。'}
+  else if(fundingFilterOff){el('fundVerdict','⏸ 已暂停','neutral');$('fundHint').textContent='资金面过滤已手动暂停，信号不受资金面限制。点击"资金面结论"恢复。'}
   else {el('fundVerdict','中性','neutral');$('fundHint').textContent='Perp/Spot 方向不一致，过滤不拦截但仅作参考。'}
 }
 
@@ -545,6 +553,7 @@ $('fundSave').onclick=()=>{
   $('fundPreview').innerHTML='解析预览：<br>'+rows.map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>');
 };
 $('fundAuto').onclick=autoFetchFunding;
+$('fundVerdictRow').onclick=toggleFundingFilter;
 $('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
 loadFunding();
 // 资金面定时自动刷新：每30分钟拉一次（仅刷新 auto 来源；手动粘贴的数据不覆盖）
