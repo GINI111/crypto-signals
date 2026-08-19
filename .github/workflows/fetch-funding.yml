@@ -1,0 +1,70 @@
+name: Fetch CoinAnk Funding
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch CoinAnk funding data
+        env:
+          COINANK_KEY: ${{ secrets.COINANK_KEY }}
+        run: |
+          python3 << 'EOF'
+          import json, os, time, urllib.request
+
+          key = os.environ.get('COINANK_KEY', '')
+          COINS = ('BTC', 'ETH', 'SOL')
+          FIELDS = ('m1net','m5net','m15net','m30net','h1net','h2net','h4net','h6net','h8net','h12net','d1net','d3net','d7net','d15net','d30net')
+
+          def fetch(pt):
+              url = f'https://api.coinank.com/api/fund/fundReal?page=1&size=100&type=1&productType={pt}&sortBy=&baseCoin=&isFollow=false'
+              req = urllib.request.Request(url, data=b'{}', method='POST')
+              req.add_header('Content-Type', 'application/json')
+              req.add_header('coinank-apikey', key)
+              req.add_header('client', 'web')
+              req.add_header('web-version', '102')
+              req.add_header('token', '')
+              req.add_header('accept', 'application/json, text/plain, */*')
+              req.add_header('Origin', 'https://coinank.com')
+              req.add_header('Referer', 'https://coinank.com/')
+              req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+              with urllib.request.urlopen(req, timeout=15) as r:
+                  return json.load(r)
+
+          swap = fetch('SWAP')
+          spot = fetch('SPOT')
+          coins = {}
+          for pt, data in (('SWAP', swap), ('SPOT', spot)):
+              for c in (data.get('data') or {}).get('list', []):
+                  bc = (c.get('baseCoin') or '').upper()
+                  if bc in COINS:
+                      coins.setdefault(bc, {})[pt] = {f: c.get(f) for f in FIELDS}
+
+          out = {'_ts': int(time.time() * 1000), 'coins': coins}
+          os.makedirs('data', exist_ok=True)
+          with open('data/funding.json', 'w') as f:
+              json.dump(out, f, separators=(',', ':'))
+          print('saved coins:', list(coins.keys()))
+          print('BTC h4net:', coins.get('BTC', {}).get('SWAP', {}).get('h4net'))
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "fund-bot"
+          git config user.email "fund-bot@users.noreply.github.com"
+          git add data/funding.json
+          if git diff --cached --quiet; then
+            echo "no changes, skip commit"
+          else
+            git commit -m "chore: update funding data $(date -u +%FT%TZ)"
+            git push
+          fi
