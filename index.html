@@ -193,8 +193,8 @@ let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/
   fc=fundConfirm(), fundB=fc&&fc.score>0, fundS=fc&&fc.score<0,
   DliveB=D||fundB||obB>=0.5, DliveS=Ds||fundS||obS>=0.5,
   // 矩阵：🟡=A+B或A+C（观察）；🟢=A+B+C或A+B+D（确认）；🔥=A+C+D（交易）；🔥🔥=A+B+C+D（强交易）
-  rawGradeB=(A&&C&&DliveB)?'S':((A&&B&&C)||(A&&B&&DliveB))?'A':((A&&B)||(A&&C)||(A&&DliveB))?'C':'—',
-  rawGradeS=(As&&Cs&&DliveS)?'S':((As&&Bs&&Cs)||(As&&Bs&&DliveS))?'A':((As&&Bs)||(As&&Cs)||(As&&DliveS))?'C':'—',
+  rawGradeB=(A&&C&&DliveB)?'S':(A&&B&&DliveB)?'S':((A&&B&&C)||(A&&B&&DliveB))?'A':((A&&B)||(A&&C)||(A&&DliveB))?'C':'—',
+  rawGradeS=(As&&Cs&&DliveS)?'S':(As&&Bs&&DliveS)?'S':((As&&Bs&&Cs)||(As&&Bs&&DliveS))?'A':((As&&Bs)||(As&&Cs)||(As&&DliveS))?'C':'—',
   // 方向闸门：4H/1H 只禁明显逆势（4H空头或1H强空头→S级降为A级；观察/确认不受限）
   sGateB=t4!=='空头'&&!strongBear, sGateS=t4!=='多头'&&!strongBull,
   tb=(A?1:0)+(B?1:0)+(C?1:0)+(DliveB?1:0), ts=(As?1:0)+(Bs?1:0)+(Cs?1:0)+(DliveS?1:0),
@@ -473,8 +473,8 @@ function btEval(d,htf1,htf4){
   const B=(m.h[n]>m.h[n-1])||rsiBuy, Bs=(m.h[n]<m.h[n-1])||rsiSell;
   const C=breakUp&&!lowVol, Cs=breakDn&&!lowVol;
   const D=vr>=1.3&&!lowVol, Ds=vr>=1.3&&!lowVol;
-  let gradeB=(A&&C&&D)?'S':((A&&B&&C)||(A&&B&&D))?'A':((A&&B)||(A&&C)||(A&&D))?'C':'—';
-  let gradeS=(As&&Cs&&Ds)?'S':((As&&Bs&&Cs)||(As&&Bs&&Ds))?'A':((As&&Bs)||(As&&Cs)||(As&&Ds))?'C':'—';
+  let gradeB=(A&&C&&D)?'S':(A&&B&&D)?'S':((A&&B&&C)||(A&&B&&D))?'A':((A&&B)||(A&&C)||(A&&D))?'C':'—';
+  let gradeS=(As&&Cs&&Ds)?'S':(As&&Bs&&Ds)?'S':((As&&Bs&&Cs)||(As&&Bs&&Ds))?'A':((As&&Bs)||(As&&Cs)||(As&&Ds))?'C':'—';
   const sGateB=t4!=='空头'&&!strongBear, sGateS=t4!=='多头'&&!strongBull;
   gradeB=sGateB?gradeB:(gradeB==='S'?'A':gradeB);
   gradeS=sGateS?gradeS:(gradeS==='S'?'A':gradeS);
