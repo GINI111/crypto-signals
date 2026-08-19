@@ -336,7 +336,7 @@ async function autoFetchFunding(){
     });
     const okRows=rows.filter(r=>r.perp!==null||r.spot!==null);
     if(!okRows.length){$m.textContent='❌ 获取失败，请检查网络或手动粘贴';return}
-    fundingData={rows:okRows,_ts:Date.now(),source:'auto'};
+    fundingData={rows:okRows,_ts:Date.now(),source:'auto',symbol};
     saveFunding();
     $m.textContent=`✅ 自动获取成功(${symbol}) ${okRows.length} 周期 · 三所聚合`;
     $('fundPreview').innerHTML='自动获取预览（三家聚合）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
@@ -345,8 +345,10 @@ async function autoFetchFunding(){
 function fundingVerdict(){
   // 用户手动暂停时直接返回 null（不拦截）
   if(fundingFilterOff)return null;
-  // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)时返回 null = 不拦截
+  // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)/币种不符时返回 null = 不拦截
   if(!fundingData||!fundingData.rows||!fundingData.rows.length)return null;
+  // 旧数据无 symbol 字段视为 BTC；币种不符时不拦截（避免用错币种数据过滤信号）
+  if((fundingData.symbol||'BTC')!==symbol)return null;
   const age=fundingAgeHours();if(age===null||age>48)return null;
   const mid=fundAgg(['4h','6h','8h','12h']);if(mid===null)return null;
   const spot=fundSpotAgg(['4h','6h','8h','12h','1d']);if(spot===null)return null;
@@ -368,6 +370,12 @@ function renderFunding(){
   if(!fundingData||!fundingData.rows||!fundingData.rows.length){
     el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundVerdict','未录入');
     $('fundHint').textContent='点击上方 💵 资金面 粘贴 Funding Data。';
+    return;
+  }
+  // 旧数据无 symbol 字段视为 BTC；币种不符时显示提示而非旧币种数据
+  if((fundingData.symbol||'BTC')!==symbol){
+    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundVerdict','未录入');
+    $('fundHint').textContent=`当前数据是 ${fundingData.symbol||'BTC'} 资金面，切换币种后请重新获取或粘贴 ${symbol} 数据。`;
     return;
   }
   const short=fundAgg(['30m','1h','2h']),mid=fundAgg(['4h','6h','8h','12h']),long=fundAgg(['1d','3d','7d']),spot=fundSpotAgg(['4h','6h','8h','12h','1d']);
@@ -449,7 +457,7 @@ function drawRSI(d){let a=rsi(d.c).slice(-70);canvas('rsiCanvas',(ctx,w,h)=>{ctx
 function connectPriceWS(){if(priceWS){priceWS.onclose=null;priceWS.close()}priceWS=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@ticker`);priceWS.onmessage=e=>{try{const d=JSON.parse(e.data);livePrice=+d.c;liveChange=+d.P;updateCards(last)}catch(err){console.error('price WS error',err)}};priceWS.onclose=()=>setTimeout(()=>{if(priceWS)connectPriceWS()},3000)}
 function connectWS(){if(ws){ws.onclose=null;ws.close()}livePrice=null;liveChange=null;connectPriceWS();ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@kline_${tf}`);ws.onmessage=e=>{try{let k=JSON.parse(e.data).k;if(!last)return;let kt=Math.floor(k.t/1000),i=last.t.indexOf(kt),closed=!!k.x;if(i===-1){last.t.push(kt);last.o.push(+k.o);last.h.push(+k.h);last.l.push(+k.l);last.c.push(+k.c);last.v.push(+k.v);i=last.c.length-1}else{last.o[i]=+k.o;last.h[i]=+k.h;last.l[i]=+k.l;last.c[i]=+k.c;last.v[i]=+k.v}updateCards(last);updateFilters(last);renderSignals(last,closed);if(closed){updateSignalLifecycle(last)}if(candle)candle.update({time:kt,open:+k.o,high:+k.h,low:+k.l,close:+k.c});$('footer').textContent=`Binance WebSocket · ${symbol}/USDT ${tf} · ${closed?'刚刚收盘':'实时未收盘'} · S级自动跟踪中`}catch(e){console.error('WS render error',e)}};ws.onclose=()=>setTimeout(()=>{if(ws)connectWS()},3000)}
 
-function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b=>b.classList.toggle('active',b.dataset.sym===s));resetAndLoad()}
+function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b=>b.classList.toggle('active',b.dataset.sym===s));resetAndLoad();renderFunding();if(!fundingData||fundingData.symbol!==symbol)autoFetchFunding()}
 function chooseTF(v){tf=v;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===v));resetAndLoad()}
 function resetAndLoad(){history=[];lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};loadAll().catch(e=>$('footer').textContent='加载失败：'+e.message)}
 document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dataset.sym));document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>chooseTF(b.dataset.tf));$('refresh').onclick=()=>loadAll().catch(e=>$('footer').textContent='刷新失败：'+e.message);$('clear').onclick=()=>{storedSignals=storedSignals.filter(x=>x.scope!==storageScope());saveStoredSignals();history=[];renderHistory();renderPerformance()};
@@ -548,7 +556,7 @@ $('fundModal').onclick=e=>{if(e.target===$('fundModal'))$('fundModal').style.dis
 $('fundSave').onclick=()=>{
   const text=$('fundInput').value;const rows=parseFunding(text);
   if(!rows.length){$('fundMsg').textContent='❌ 没解析到数据，请检查格式';return}
-  fundingData={rows,_ts:Date.now()};saveFunding();
+  fundingData={rows,_ts:Date.now(),symbol};saveFunding();
   $('fundMsg').textContent=`✅ 已保存 ${rows.length} 个周期`;
   $('fundPreview').innerHTML='解析预览：<br>'+rows.map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>');
 };
@@ -556,11 +564,11 @@ $('fundAuto').onclick=autoFetchFunding;
 $('fundVerdictRow').onclick=toggleFundingFilter;
 $('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
 loadFunding();
-// 资金面定时自动刷新：每30分钟拉一次（仅刷新 auto 来源；手动粘贴的数据不覆盖）
+// 资金面定时自动刷新：每30分钟拉一次（仅刷新 auto 来源；手动粘贴的数据不覆盖；币种不匹配时也刷新）
 setInterval(()=>{
-  if(!document.hidden&&(!fundingData||fundingData.source==='auto'))autoFetchFunding();
+  if(!document.hidden&&(!fundingData||fundingData.source==='auto'||fundingData.symbol!==symbol))autoFetchFunding();
 },30*60e3);
-setTimeout(()=>{if(!fundingData)autoFetchFunding()},8000);
+setTimeout(()=>{if(!fundingData||fundingData.symbol!==symbol)autoFetchFunding()},8000);
 $('btClose').onclick=()=>{$('btPanel').style.display='none'};
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const arr=JSON.parse(rd.result);if(!Array.isArray(arr))throw 0;const keys=new Set(storedSignals.map(x=>x.key));let added=0;arr.forEach(x=>{if(x&&x.key&&!keys.has(x.key)){storedSignals.push(x);keys.add(x.key);added++}});saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();$('footer').textContent=`导入完成：新增 ${added} 条，共 ${storedSignals.length} 条`}catch(err){$('footer').textContent='导入失败：文件格式不正确'}};rd.readAsText(f);e.target.value=''};
