@@ -125,6 +125,7 @@
       <div class="stat"><div class="lab">最大连亏</div><div class="big" id="btStreak">--</div></div>
       <div class="stat"><div class="lab">累计收益</div><div class="big" id="btTotal">--</div></div>
       <div class="stat"><div class="lab">TP2/保本/止损/过期</div><div class="big" id="btDetail" style="font-size:12px">--</div></div>
+      <div class="stat"><div class="lab">信号分布(S/A/C)</div><div class="big" id="btDist" style="font-size:12px">--</div></div>
       <div class="stat"><div class="lab">回测区间</div><div class="big" id="btRange" style="font-size:11px">--</div></div>
     </div>
     <div class="historyBody" id="btList" style="max-height:220px"><div class="empty">回测中...</div></div>
@@ -133,7 +134,7 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let livePrice=null,liveChange=null;
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
@@ -185,11 +186,14 @@ let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/
   emaS=(e7[n]<e25[n]&&s25<=0)?1:0, macdS=macdDivBear(d)?1:0, rsiS=rsiSell?1:0, brkS=(breakDn&&!lowVol)?1:0,
   volB=(vr>=1.3&&!lowVol)?1:0, volS=(vr>=1.3&&!lowVol)?1:0,
   fc=fundConfirm(), fundB=fc&&fc.score>0?1:0, fundS=fc&&fc.score<0?1:0,
-  techB=emaB+macdB+rsiB+brkB, techS=emaS+macdS+rsiS+brkS,
-  tb=techB+volB+fundB+obB, ts=techS+volS+fundS+obS,
-  // 等级：>=4 S级 / >=3 A级 / >=2 候选（S级需技术核心>=2）
-  gradeB=tb>=4&&techB>=2?'S':(tb>=3?'A':(tb>=2?'C':'—')),
-  gradeS=ts>=4&&techS>=2?'S':(ts>=3?'A':(ts>=2?'C':'—')),
+  techB=emaB+macdB+rsiB+brkB+volB, techS=emaS+macdS+rsiS+brkS+volS,
+  coreDirB=emaB+macdB+rsiB+brkB, coreDirS=emaS+macdS+rsiS+brkS,
+  tb=techB+fundB+obB, ts=techS+fundS+obS,
+  // V2.2.1 等级：S级=≥4分且核心方向≥2且方向闸门通过；A级=≥3重点观察；C级=≥2候选
+  // 参数来自 CFG.v22（可调）
+  gradeB=(tb>=CFG.v22.s&&coreDirB>=CFG.v22.coreDir&&sGateB)?'S':(tb>=CFG.v22.a?'A':(tb>=CFG.v22.cand?'C':'—')),
+  gradeS=(ts>=CFG.v22.s&&coreDirS>=CFG.v22.coreDir&&sGateS)?'S':(ts>=CFG.v22.a?'A':(ts>=CFG.v22.cand?'C':'—')),
+  sPlusB=gradeB==='S'&&(fundB||obB>=0.5||vr>=CFG.v22.volSurge), sPlusS=gradeS==='S'&&(fundS||obS>=0.5||vr>=CFG.v22.volSurge),
   // 方向闸门：4H/1H 只禁逆势（不参与打分）。4H空头或1H强空头→禁S级；A级/候选不受限
   sGateB=t4!=='空头'&&!strongBear, sGateS=t4!=='多头'&&!strongBull,
   b=[
@@ -209,12 +213,12 @@ let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/
   {name:'Fund Flow',score:fundS,partial:fc&&fc.score>=-10&&fc.score<=10,desc:fc?`${fc.label} ${fc.score>0?'+':''}${Math.round(fc.score)}`:'资金面无数据'},
   {name:'Orderbook',score:obS,partial:false,desc:$('bookRatio').textContent||'--'}
 ];
-  return {b,s,bs:tb,ss:ts,techB,techS,buyGate:sGateB,sellGate:sGateS,gradeB,gradeS,raw:{t1,t4,tc:trend(d),strongBear,strongBull}}}
+  return {b,s,bs:tb,ss:ts,techB,techS,coreDirB,coreDirS,buyGate:sGateB,sellGate:sGateS,gradeB,gradeS,sPlusB,sPlusS,raw:{t1,t4,tc:trend(d),strongBear,strongBull}}}
 function evalSignal(d){let x=signal(d);return x}
-function gradeInfo(g){return g==='S'?{txt:'🔥 S级',cls:'s'}:g==='A'?{txt:'🟢 A级',cls:'a'}:g==='C'?{txt:'🟡 候选',cls:'c'}:{txt:'WAIT',cls:'w'}}
-function renderSignals(d,isClosed){let x=evalSignal(d),bs=+x.bs.toFixed(1),ss=+x.ss.toFixed(1);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let warning=tf==='5m';let bOK=!warning&&(x.gradeB==='A'||x.gradeB==='S'), sOK=!warning&&(x.gradeS==='A'||x.gradeS==='S');banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
+function gradeInfo(g,plus){return g==='S'?(plus?{txt:'🔥🔥 S+级',cls:'s'}:{txt:'🔥 S级',cls:'s'}):g==='A'?{txt:'🟢 A级 · 观察',cls:'a'}:g==='C'?{txt:'🟡 候选',cls:'c'}:{txt:'WAIT',cls:'w'}}
+function renderSignals(d,isClosed){let x=evalSignal(d),bs=+x.bs.toFixed(1),ss=+x.ss.toFixed(1);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let warning=tf==='5m';let bOK=!warning&&x.gradeB==='S', sOK=!warning&&x.gradeS==='S';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
-function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');const g=gradeInfo(p?x.gradeB:x.gradeS);b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?g.txt+' · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(g==='S'?(p?'🔥 高质量多头信号':'🔥 高质量空头信号'):(p?'🟢 多头确认':'🟢 空头确认')):g==='S'?(p?'多头被方向闸门拦截':'空头被方向闸门拦截'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 技术${p?x.techB:x.techS}项 · 4H=${x.raw.t4} · 1H=${x.raw.t1}${x.raw.strongBear?' · 1H强空头':''}${x.raw.strongBull?' · 1H强多头':''} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
+function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');const g=gradeInfo(p?x.gradeB:x.gradeS,p?x.sPlusB:x.sPlusS);b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?g.txt+' · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(g.txt==='🔥🔥 S+级'?(p?'🔥 高质量多头信号 + 资金确认':'🔥 高质量空头信号 + 资金确认'):(p?'🔥 高质量多头信号':'🔥 高质量空头信号')):g==='S'?(p?'多头被方向闸门拦截':'空头被方向闸门拦截'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 技术${p?x.techB:x.techS}项(核心方向${p?x.coreDirB:x.coreDirS}) · 4H=${x.raw.t4} · 1H=${x.raw.t1}${x.raw.strongBear?' · 1H强空头':''}${x.raw.strongBull?' · 1H强多头':''} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
 function fundTag(side){
   // 资金确认层标注：基于当前币种资金面方向（强多/偏多=多，强空/偏空=空）
   const fv=fundingVerdict();
@@ -469,11 +473,12 @@ function btEval(d,htf1,htf4){
   const emaB=(e7[n]>e25[n]&&s25>=0)?1:0, macdB=macdDivBull(d)?1:0, rsiB=rsiBuy?1:0, brkB=(breakUp&&!lowVol)?1:0;
   const emaS=(e7[n]<e25[n]&&s25<=0)?1:0, macdS=macdDivBear(d)?1:0, rsiS=rsiSell?1:0, brkS=(breakDn&&!lowVol)?1:0;
   const volB=(vr>=1.3&&!lowVol)?1:0, volS=(vr>=1.3&&!lowVol)?1:0;
-  const techB=emaB+macdB+rsiB+brkB, techS=emaS+macdS+rsiS+brkS;
-  const tb=techB+volB, ts=techS+volS;
-  const gradeB=tb>=4&&techB>=2?'S':(tb>=3?'A':(tb>=2?'C':'—'));
-  const gradeS=ts>=4&&techS>=2?'S':(ts>=3?'A':(ts>=2?'C':'—'));
-  return {bs:tb,ss:ts,techB,techS,buyGate:t4!=='空头'&&!strongBear,sellGate:t4!=='多头'&&!strongBull,gradeB,gradeS};
+  const techB=emaB+macdB+rsiB+brkB+volB, techS=emaS+macdS+rsiS+brkS+volS;
+  const coreDirB=emaB+macdB+rsiB+brkB, coreDirS=emaS+macdS+rsiS+brkS;
+  const tb=techB, ts=techS;
+  const gradeB=(tb>=CFG.v22.s&&coreDirB>=CFG.v22.coreDir&&t4!=='空头'&&!strongBear)?'S':(tb>=CFG.v22.a?'A':(tb>=CFG.v22.cand?'C':'—'));
+  const gradeS=(ts>=CFG.v22.s&&coreDirS>=CFG.v22.coreDir&&t4!=='多头'&&!strongBull)?'S':(ts>=CFG.v22.a?'A':(ts>=CFG.v22.cand?'C':'—'));
+  return {bs:tb,ss:ts,techB,techS,coreDirB,coreDirS,buyGate:t4!=='空头'&&!strongBear,sellGate:t4!=='多头'&&!strongBull,gradeB,gradeS};
 }
 function btSimulateLifecycle(sig,d,startIdx){
   // 与实时 updateSignalLifecycle 一致：TP1后保本，同K线先止损
@@ -502,6 +507,7 @@ async function runBacktest(){
     const [cur,a1,a4]=await Promise.all([getTF(tf,2880),getTF('1h',720),getTF('4h',180)]);
     const d=cur;const n=d.c.length;
     const sigs=[];let openBuy=null,openSell=null,lastBuyT=0,lastSellT=0;
+    const dist={BS:0,BA:0,BC:0,SS:0,SA:0,SC:0};
     const cooldown=CFG.cooldownMs[tf]||0;
     const warmup=40;
     const W=100; // 滑动窗口：指标计算只需最近100根
@@ -516,14 +522,16 @@ async function runBacktest(){
       const cut=(src)=>{let k=0;while(k<src.t.length&&src.t[k]*1000<=tNow)k++;return {o:src.o.slice(0,k),h:src.h.slice(0,k),l:src.l.slice(0,k),c:src.c.slice(0,k),v:src.v.slice(0,k),t:src.t.slice(0,k)}};
       const f1=cut(a1),f4=cut(a4);
       const ev=btEval(slice,f1,f4);
+      if(ev.buyGate)dist['B'+ev.gradeB]=(dist['B'+ev.gradeB]||0)+1;
+      if(ev.sellGate)dist['S'+ev.gradeS]=(dist['S'+ev.gradeS]||0)+1;
       const entry=d.c[i];
-      if((ev.gradeB==='A'||ev.gradeB==='S')&&ev.buyGate){
+      if(ev.gradeB==='S'&&ev.buyGate){
         if(!openBuy&&tNow-lastBuyT>=cooldown){
           const atrVal=atr(slice),plan=tradePlan('buy',entry,atrVal);
           if(plan.rr>=2){openBuy={side:'buy',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.bs,time:tNow,entryIdx:i};lastBuyT=tNow}
         }
       }
-      if((ev.gradeS==='A'||ev.gradeS==='S')&&ev.sellGate){
+      if(ev.gradeS==='S'&&ev.sellGate){
         if(!openSell&&tNow-lastSellT>=cooldown){
           const atrVal=atr(slice),plan=tradePlan('sell',entry,atrVal);
           if(plan.rr>=2){openSell={side:'sell',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.ss,time:tNow,entryIdx:i};lastSellT=tNow}
@@ -546,6 +554,7 @@ async function runBacktest(){
     $('btStreak').textContent=String(maxStreak);
     $('btTotal').textContent=(total>=0?'+':'')+total.toFixed(2)+'%';
     $('btDetail').textContent=`${wins.length}/${bes.length}/${sls.length}/${exps.length}`;
+    $('btDist').textContent=`S级:${dist.BS+dist.SS} · A级:${dist.BA+dist.SA} · 候选:${dist.BC+dist.SC}`;
     const t0=new Date(d.t[warmup]*1000),t1=new Date(d.t[n-1]*1000);
     $('btRange').textContent=`${t0.toLocaleDateString('zh-CN')} ~ ${t1.toLocaleDateString('zh-CN')}`;
     $('btList').innerHTML=done.length?done.slice().sort((a,b)=>b.time-a.time).slice(0,30).map(s=>`<div class="hrow"><div class="htag ${s.side==='buy'?'up':'down'}">${s.side==='buy'?'BUY':'SELL'} ${s.score}/6</div><div class="hmain"><b>$${fmtPrice(s.entry,s.symbol)} → $${fmtPrice(s.exitPrice,s.symbol)}</b><div class="small">${s.result} ${s.returnPct>=0?'+':''}${s.returnPct.toFixed(2)}% · ${s.barsOpen}根 · ${new Date(s.time).toLocaleDateString('zh-CN')} ${new Date(s.time).toLocaleTimeString('zh-CN')}</div></div></div>`).join(''):'<div class="empty">回测区间内无信号</div>';
