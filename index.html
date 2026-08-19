@@ -76,8 +76,8 @@
       <div class="tfrow"><span>买卖比</span><span class="tfstate neutral" id="bookRatio">--</span></div>
       <div class="small" style="margin-top:8px">订单簿只做确认，不单独制造交易信号。</div>
       <div style="height:10px"></div><h3>💵 资金确认层 <span id="fundingAge" class="small" style="color:var(--d)"></span></h3>
-      <div class="tfrow"><span>资金流·中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
       <div class="tfrow"><span>资金流·短期(30m-2h)</span><span class="tfstate neutral" id="fundShort">--</span></div>
+      <div class="tfrow"><span>资金流·中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
       <div class="tfrow"><span>资金流·长期(1d-7d)</span><span class="tfstate neutral" id="fundLong">--</span></div>
       <div class="tfrow"><span>Spot 净流入</span><span class="tfstate neutral" id="fundSpot">--</span></div>
       <div class="tfrow"><span>OI 持仓量 <span class="small" style="color:var(--d)">(1h/24h)</span></span><span class="tfstate neutral" id="fundOi">--</span></div>
@@ -301,13 +301,13 @@ const FUND_TF=[
 ];
 async function autoFetchFunding(){
   const $m=$('fundMsg');
-  $m.textContent='⏳ 正在读取 CoinAnk 资金流...';
+  $m.textContent='⏳ 正在读取 Binance 资金流...';
   try{
     const r=await fetch(`data/funding.json?t=${Date.now()}`,{signal:AbortSignal.timeout(10000)});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const j=await r.json();
     const c=j.coins?j.coins[symbol.toUpperCase()]:null;
-    if(!c){$m.textContent='❌ CoinAnk 暂无此币种数据，可手动粘贴';return}
+    if(!c){$m.textContent='❌ Binance 暂无此币种数据，可手动粘贴';return}
     const rows=FUND_TF.map(t=>{
       const perp=c.SWAP&&c.SWAP[t.f]!=null?c.SWAP[t.f]:null;
       const spt=c.SPOT&&c.SPOT[t.f]!=null?c.SPOT[t.f]:null;
@@ -317,8 +317,8 @@ async function autoFetchFunding(){
     if(!okRows.length){$m.textContent='❌ 数据为空，可手动粘贴';return}
     fundingData={rows:okRows,_ts:j._ts||Date.now(),source:'auto',symbol,oi:c.OI||null};
     saveFunding();
-    $m.textContent=`✅ CoinAnk 资金流(${symbol}) ${okRows.length} 周期 · 每5分钟自动更新`;
-    $('fundPreview').innerHTML='自动获取预览（CoinAnk 合约+现货净流入）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
+    $m.textContent=`✅ Binance 资金流(${symbol}) ${okRows.length} 周期 · 每5分钟自动更新`;
+    $('fundPreview').innerHTML='自动获取预览（Binance 合约主动买卖净流入）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
   }catch(e){$m.textContent='❌ 读取失败：'+e.message+'（可手动粘贴）'}
 }
 // ── 资金确认层：资金流(Perp中期+Spot) + OI变化 → 统一评分(0-100) ──
