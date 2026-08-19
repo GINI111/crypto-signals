@@ -192,8 +192,8 @@ function signal(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m
   {name:'MACD顶背离/转弱',score:macdDivBear(d)?1:0,partial:m.h[n]<m.h[n-1],desc:macdDivBear(d)?'✓ 顶背离+柱线连续转弱':'观察MACD结构'},
   {name:'RSI反转',score:rsiSell?1:0,partial:r[n]<r[n-1]&&r[n]>50,desc:rsiSell?`✓ RSI ${r[n].toFixed(1)} 从高位反转`:`RSI ${r[n].toFixed(1)}`},
   {name:'收盘跌破 + 放量',score:(breakDn&&vr>=1.3&&!lowVol)?1:0,partial:breakDn&&vr>=1&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%) 突破可靠性低`:(breakDn&&vr>=1.3)?`✓ 跌破 + ${vr.toFixed(2)}x 成交量`:'需收盘跌破且成交量≥1.3x'}
-];let buyGate=t4==='多头'&&t1==='多头',sellGate=t4==='空头'&&t1==='空头';return {b,s,buyGate,sellGate,raw:{t1,t4,tc:trend(d)}}}
-function evalSignal(d){let x=signal(d);x.sellGate=x.raw.t1==='空头'&&x.raw.t4==='空头';return x}
+];let buyGate=t4!=='空头'&&t1!=='空头',sellGate=t4!=='多头'&&t1!=='多头';return {b,s,buyGate,sellGate,raw:{t1,t4,tc:trend(d)}}}
+function evalSignal(d){let x=signal(d);x.sellGate=x.raw.t1!=='多头'&&x.raw.t4!=='多头';return x}
 function renderSignals(d,isClosed){let x=evalSignal(d),bs=x.b.reduce((a,r)=>a+r.score,0),ss=x.s.reduce((a,r)=>a+r.score,0);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let bOK=x.buyGate&&bs>=4, sOK=x.sellGate&&ss>=4;let warning=tf==='5m';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
 function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?'S级 · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(p?'高质量多头信号':'高质量空头信号'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 4H=${x.raw.t4} · 1H=${x.raw.t1} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
@@ -455,7 +455,7 @@ function btEval(d,htf1,htf4){
   let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf1),t4=trend(htf4),s25=(e25[n]-e25[n-3])/3,aa=atr(d)/d.c[n]*100,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),lowVol=aa<CFG.lowVolATR[tf],rsiBuy=r[n]<55&&r[n]>30&&r[n]>r[n-2]&&(Math.min(...r.slice(n-10,n))<35),rsiSell=r[n]>40&&r[n]<70&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>55);
   let bs=(t4==='多头'?1:0)+(t1==='多头'?1:0)+((e7[n]>e25[n]&&s25>=0)?1:0)+(macdDivBull(d)?1:0)+(rsiBuy?1:0)+((breakUp&&vr>=1.3&&!lowVol)?1:0);
   let ss=(t4==='空头'?1:0)+(t1==='空头'?1:0)+((e7[n]<e25[n]&&s25<=0)?1:0)+(macdDivBear(d)?1:0)+(rsiSell?1:0)+((breakDn&&vr>=1.3&&!lowVol)?1:0);
-  return {bs,ss,buyGate:t4==='多头'&&t1==='多头',sellGate:t4==='空头'&&t1==='空头'};
+  return {bs,ss,buyGate:t4!=='空头'&&t1!=='空头',sellGate:t4!=='多头'&&t1!=='多头'};
 }
 function btSimulateLifecycle(sig,d,startIdx){
   // 与实时 updateSignalLifecycle 一致：TP1后保本，同K线先止损
