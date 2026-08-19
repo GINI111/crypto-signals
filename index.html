@@ -195,7 +195,22 @@ function signal(d){let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m
 function evalSignal(d){let x=signal(d);x.sellGate=x.raw.t1==='空头'&&x.raw.t4==='空头';return x}
 function renderSignals(d,isClosed){let x=evalSignal(d),bs=x.b.reduce((a,r)=>a+r.score,0),ss=x.s.reduce((a,r)=>a+r.score,0);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let bOK=x.buyGate&&bs>=4, sOK=x.sellGate&&ss>=4;let warning=tf==='5m';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
-function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?'S级 · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(p?'高质量多头信号':'高质量空头信号'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 4H=${x.raw.t4} · 1H=${x.raw.t1} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}`}
+function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?'S级 · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(p?'高质量多头信号':'高质量空头信号'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 4H=${x.raw.t4} · 1H=${x.raw.t1} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
+function fundTag(side){
+  // 资金流确认标注：基于当前币种资金面方向
+  const fv=fundingVerdict();
+  if(!fv)return ' · 💵 资金流无数据';
+  const bull=fv.label==='偏多', bear=fv.label==='偏空';
+  if(side==='buy'){
+    if(bull)return ' · 💵 资金流确认 ✅ 顺向';
+    if(bear)return ' · 💵 资金流背离 ⚠️ 逆向';
+    return ' · 💵 资金流中性';
+  }else{
+    if(bear)return ' · 💵 资金流确认 ✅ 顺向';
+    if(bull)return ' · 💵 资金流背离 ⚠️ 逆向';
+    return ' · 💵 资金流中性';
+  }
+}
 function storageScope(){return `${symbol}|${tf}`}
 function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
@@ -345,7 +360,9 @@ function maybeSignal(side,score,d,conds){
   if(storedSignals.some(x=>x.scope===storageScope()&&x.side===side&&!x.result))return;
   const entry=d.c[d.c.length-1],atrVal=atr(d),plan=tradePlan(side,entry,atrVal);
   if(plan.rr<2)return;
-  const item={key,scope:storageScope(),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0};
+  const fv2=fundingVerdict();
+  const fundTag=fv2?(fv2.label==='偏多'?'多':(fv2.label==='偏空'?'空':'中')):'-';
+  const item={key,scope:storageScope(),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
   storedSignals.push(item);saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 function updateSignalLifecycle(d){
@@ -376,7 +393,7 @@ function updateSignalLifecycle(d){
   history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 
-function renderHistory(){let el=$('history');const hs=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${h.returnPct>=0?'+':''}${h.returnPct.toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';return `<div class="hrow"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/6 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${h.rr.toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%</div></div><div class="small ${cls}">${status}<br>${new Date(h.createdAt).toLocaleTimeString('zh-CN')}</div></div>`}).join('')}
+function renderHistory(){let el=$('history');const hs=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${h.returnPct>=0?'+':''}${h.returnPct.toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';const ft=h.fundTag?`<span class="${h.fundTag==='多'?'up':h.fundTag==='空'?'down':'neutral'}"> · 💵${h.fundTag}</span>`:'';return `<div class="hrow"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/6 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${h.rr.toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%${ft}</div></div><div class="small ${cls}">${status}<br>${new Date(h.createdAt).toLocaleTimeString('zh-CN')}</div></div>`}).join('')}
 function fmtPrice(p,s){return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
 function renderPerformance(){
   const hs=storedSignals.filter(x=>x.scope===storageScope());const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
