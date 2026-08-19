@@ -253,14 +253,7 @@ function fundingAgeHours(){
   if(!fundingData||!fundingData._ts)return null;
   return (Date.now()-fundingData._ts)/36e5;
 }
-// ── 自动获取（CoinAnk 资金流 API：合约SWAP + 现货SPOT 净流入）──
-const FUND_API='https://api.coinank.com/api/fund/fundReal';
-const FUND_HEAD={
-  'coinank-apikey':'LWIzMWUtYzU0Ny1kMjk5LWI2ZDA3Yjc2MzFhYmIyZDkwM2RkfDQwMDkzMjM4ODY3MzAzNDc=',
-  'client':'web','web-version':'102','token':'',
-  'accept':'application/json, text/plain, */*'
-};
-// CoinAnk 字段周期 → 展示周期映射（net 字段直接就是该周期累计净流入）
+// ── 自动获取（CoinAnk 资金流：服务器每5分钟抓取 → data/funding.json，同源读取无 CORS 问题）──
 const FUND_TF=[
   {l:'5m',f:'m5net'},{l:'15m',f:'m15net'},{l:'30m',f:'m30net'},
   {l:'1h',f:'h1net'},{l:'2h',f:'h2net'},{l:'4h',f:'h4net'},
@@ -268,39 +261,27 @@ const FUND_TF=[
   {l:'1d',f:'d1net'},{l:'3d',f:'d3net'},{l:'7d',f:'d7net'},
   {l:'15d',f:'d15net'},{l:'30d',f:'d30net'}
 ];
-async function fundFetchCoinAnk(productType){
-  try{
-    const r=await fetch(`${FUND_API}?page=1&size=100&type=1&productType=${productType}&sortBy=&baseCoin=&isFollow=false`,{
-      method:'POST',headers:Object.assign({'Content-Type':'application/json'},FUND_HEAD),body:'{}',signal:AbortSignal.timeout(10000)
-    });
-    if(!r.ok)return null;
-    const j=await r.json();
-    if(!j.success||!j.data?.list?.length)return null;
-    const map={};j.data.list.forEach(c=>{if(c.baseCoin)map[c.baseCoin.toUpperCase()]=c});
-    return map;
-  }catch{return null}
-}
 async function autoFetchFunding(){
   const $m=$('fundMsg');
-  const sym=symbol.toUpperCase();
-  $m.textContent='⏳ 正在获取 CoinAnk 资金流...';
+  $m.textContent='⏳ 正在读取 CoinAnk 资金流...';
   try{
-    const [swapMap,spotMap]=await Promise.all([fundFetchCoinAnk('SWAP'),fundFetchCoinAnk('SPOT')]);
-    const swap=swapMap?swapMap[sym]:null;
-    const spot=spotMap?spotMap[sym]:null;
-    if(!swap){$m.textContent='❌ 获取失败（CoinAnk 无此币种或网络异常），可手动粘贴';return}
+    const r=await fetch(`data/funding.json?t=${Date.now()}`,{signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    const c=j.coins?j.coins[symbol.toUpperCase()]:null;
+    if(!c){$m.textContent='❌ CoinAnk 暂无此币种数据，可手动粘贴';return}
     const rows=FUND_TF.map(t=>{
-      const perp=swap&&swap[t.f]!=null?swap[t.f]:null;
-      const spt=spot&&spot[t.f]!=null?spot[t.f]:null;
+      const perp=c.SWAP&&c.SWAP[t.f]!=null?c.SWAP[t.f]:null;
+      const spt=c.SPOT&&c.SPOT[t.f]!=null?c.SPOT[t.f]:null;
       return {period:t.l,perp,spot:spt};
     });
     const okRows=rows.filter(r=>r.perp!==null||r.spot!==null);
-    if(!okRows.length){$m.textContent='❌ 获取失败，请检查网络或手动粘贴';return}
-    fundingData={rows:okRows,_ts:Date.now(),source:'auto',symbol};
+    if(!okRows.length){$m.textContent='❌ 数据为空，可手动粘贴';return}
+    fundingData={rows:okRows,_ts:j._ts||Date.now(),source:'auto',symbol};
     saveFunding();
-    $m.textContent=`✅ 自动获取成功(${symbol}) ${okRows.length} 周期 · CoinAnk`;
+    $m.textContent=`✅ CoinAnk 资金流(${symbol}) ${okRows.length} 周期 · 每5分钟自动更新`;
     $('fundPreview').innerHTML='自动获取预览（CoinAnk 合约+现货净流入）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
-  }catch(e){$m.textContent='❌ 自动获取异常：'+e.message}
+  }catch(e){$m.textContent='❌ 读取失败：'+e.message+'（可手动粘贴）'}
 }
 function fundingVerdict(){
   // 用户手动暂停时直接返回 null（不拦截）
