@@ -181,44 +181,43 @@ function macdDivBull(d){let r=dsi=rsi(d.c),m=macd(d.c),n=d.c.length-1,lb=24,p1=M
 function macdDivBear(d){let m=macd(d.c),n=d.c.length-1,lb=24,p1=Math.max(...d.h.slice(n-lb*2,n-lb)),p2=Math.max(...d.h.slice(n-lb,n+1)),h1=Math.max(...m.h.slice(n-lb*2,n-lb)),h2=Math.max(...m.h.slice(n-lb,n+1)),fall=[m.h[n],m.h[n-1],m.h[n-2]].every((x,i,a)=>i===0||x<a[i-1]);return p2>=p1*.998&&h2<h1&&fall}
 function signal(d){let obB=0,obS=0;try{const br=$('bookRatio').textContent||'';const mm=br.match(/([\d.]+)x/);if(mm){const rr=parseFloat(mm[1]);obB=rr>=1.1?0.5:0;obS=rr<=0.9?0.5:0}}catch(e){}
 let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf['1h']),t4=trend(htf['4h']),s25=(e25[n]-e25[n-3])/3,aa=atr(d)/d.c[n]*100,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),lowVol=aa<CFG.lowVolATR[tf],rsiBuy=r[n]<55&&r[n]>30&&r[n]>r[n-2]&&(Math.min(...r.slice(n-10,n))<35),rsiSell=r[n]>40&&r[n]<70&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>55),slopePct=s25/e25[n]*100,strongBear=t1==='空头'&&slopePct<-0.08,strongBull=t1==='多头'&&slopePct>0.08,
-  // V2.2 评分：技术核心4 + 增强2（Volume/FundFlow），Orderbook 附加0.5
-  emaB=(e7[n]>e25[n]&&s25>=0)?1:0, macdB=macdDivBull(d)?1:0, rsiB=rsiBuy?1:0, brkB=(breakUp&&!lowVol)?1:0,
-  emaS=(e7[n]<e25[n]&&s25<=0)?1:0, macdS=macdDivBear(d)?1:0, rsiS=rsiSell?1:0, brkS=(breakDn&&!lowVol)?1:0,
-  volB=(vr>=1.3&&!lowVol)?1:0, volS=(vr>=1.3&&!lowVol)?1:0,
-  fc=fundConfirm(), fundB=fc&&fc.score>0?1:0, fundS=fc&&fc.score<0?1:0,
-  techB=emaB+macdB+rsiB+brkB+volB, techS=emaS+macdS+rsiS+brkS+volS,
-  coreDirB=emaB+macdB+rsiB+brkB, coreDirS=emaS+macdS+rsiS+brkS,
-  tb=techB+fundB+obB, ts=techS+fundS+obS,
-  // V2.2.1 等级：S级=≥4分且核心方向≥2且方向闸门通过；A级=≥3重点观察；C级=≥2候选
-  // 参数来自 CFG.v22（可调）
-  gradeB=(tb>=CFG.v22.s&&coreDirB>=CFG.v22.coreDir&&sGateB)?'S':(tb>=CFG.v22.a?'A':(tb>=CFG.v22.cand?'C':'—')),
-  gradeS=(ts>=CFG.v22.s&&coreDirS>=CFG.v22.coreDir&&sGateS)?'S':(ts>=CFG.v22.a?'A':(ts>=CFG.v22.cand?'C':'—')),
-  sPlusB=gradeB==='S'&&(fundB||obB>=0.5||vr>=CFG.v22.volSurge), sPlusS=gradeS==='S'&&(fundS||obS>=0.5||vr>=CFG.v22.volSurge),
-  // 方向闸门：4H/1H 只禁逆势（不参与打分）。4H空头或1H强空头→禁S级；A级/候选不受限
+  // ── V3 状态机：A/B/C/D 四类条件组合（不混总分）──
+  // A 趋势结构：EMA7>EMA25 且 EMA25 斜率向上
+  A=e7[n]>e25[n]&&s25>=0, As=e7[n]<e25[n]&&s25<=0,
+  // B 动量：MACD 柱改善 或 RSI 反转
+  B=(m.h[n]>m.h[n-1])||rsiBuy, Bs=(m.h[n]<m.h[n-1])||rsiSell,
+  // C 价格行为：收盘突破前高/前低（排除低波动）
+  C=breakUp&&!lowVol, Cs=breakDn&&!lowVol,
+  // D 市场确认：Volume 放量（实时加资金/OI/订单簿确认）
+  D=vr>=1.3&&!lowVol, Ds=vr>=1.3&&!lowVol,
+  fc=fundConfirm(), fundB=fc&&fc.score>0, fundS=fc&&fc.score<0,
+  DliveB=D||fundB||obB>=0.5, DliveS=Ds||fundS||obS>=0.5,
+  // 矩阵：🟡=A+B或A+C（观察）；🟢=A+B+C或A+B+D（确认）；🔥=A+C+D（交易）；🔥🔥=A+B+C+D（强交易）
+  rawGradeB=(A&&C&&DliveB)?'S':((A&&B&&C)||(A&&B&&DliveB))?'A':((A&&B)||(A&&C)||(A&&DliveB))?'C':'—',
+  rawGradeS=(As&&Cs&&DliveS)?'S':((As&&Bs&&Cs)||(As&&Bs&&DliveS))?'A':((As&&Bs)||(As&&Cs)||(As&&DliveS))?'C':'—',
+  // 方向闸门：4H/1H 只禁明显逆势（4H空头或1H强空头→S级降为A级；观察/确认不受限）
   sGateB=t4!=='空头'&&!strongBear, sGateS=t4!=='多头'&&!strongBull,
+  tb=(A?1:0)+(B?1:0)+(C?1:0)+(DliveB?1:0), ts=(As?1:0)+(Bs?1:0)+(Cs?1:0)+(DliveS?1:0),
   b=[
-  {name:'EMA 结构',score:emaB,partial:e7[n]>e25[n],desc:e7[n]>e25[n]?`EMA多头 · 斜率 ${slopePct.toFixed(2)}%`:'EMA结构未确认'},
-  {name:'MACD',score:macdB,partial:m.h[n]>m.h[n-1],desc:macdDivBull(d)?'✓ 底背离+柱线连续改善':'观察MACD结构'},
-  {name:'RSI 反转',score:rsiB,partial:r[n]>r[n-1]&&r[n]<50,desc:rsiBuy?`✓ RSI ${r[n].toFixed(1)} 从极端区反转`:`RSI ${r[n].toFixed(1)}`},
-  {name:'突破 / 结构',score:brkB,partial:breakUp&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%)`:(breakUp?`✓ 收盘突破前高`:'需收盘突破前高')},
-  {name:'Volume',score:volB,partial:vr>=1&&!lowVol,desc:vr>=1.3?`✓ ${vr.toFixed(2)}x 放量`:`量比 ${vr.toFixed(2)}x (需≥1.3)`},
-  {name:'Fund Flow',score:fundB,partial:fc&&fc.score>=-10&&fc.score<=10,desc:fc?`${fc.label} ${fc.score>0?'+':''}${Math.round(fc.score)}`:'资金面无数据'},
-  {name:'Orderbook',score:obB,partial:false,desc:$('bookRatio').textContent||'--'}
+  {name:'A·趋势结构',cat:'A',score:A?1:0,partial:e7[n]>e25[n],desc:e7[n]>e25[n]?`EMA7>EMA25 · 斜率 ${slopePct.toFixed(2)}%`:'EMA结构未确认'},
+  {name:'B·动量',cat:'B',score:B?1:0,partial:m.h[n]>m.h[n-1]||r[n]>r[n-1],desc:(m.h[n]>m.h[n-1]?'MACD柱改善':'')+(rsiBuy?' RSI反转':'')||'MACD/RSI无改善'},
+  {name:'C·价格行为',cat:'C',score:C?1:0,partial:breakUp&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%)`:(C?`✓ 收盘突破前高`:'需收盘突破前高')},
+  {name:'D·市场确认',cat:'D',score:DliveB?1:0,partial:vr>=1&&!lowVol,desc:[vr>=1.3?`量${vr.toFixed(2)}x`:'',fundB?`资金${fc.label}`:'',obB>=0.5?'订单簿买压':''].filter(Boolean).join('+')||'需放量/资金/订单簿确认'}
 ];let s=[
-  {name:'EMA 结构',score:emaS,partial:e7[n]<e25[n],desc:e7[n]<e25[n]?`EMA空头 · 斜率 ${slopePct.toFixed(2)}%`:'EMA结构未确认'},
-  {name:'MACD',score:macdS,partial:m.h[n]<m.h[n-1],desc:macdDivBear(d)?'✓ 顶背离+柱线连续转弱':'观察MACD结构'},
-  {name:'RSI 反转',score:rsiS,partial:r[n]<r[n-1]&&r[n]>50,desc:rsiSell?`✓ RSI ${r[n].toFixed(1)} 从高位反转`:`RSI ${r[n].toFixed(1)}`},
-  {name:'突破 / 结构',score:brkS,partial:breakDn&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%)`:(breakDn?`✓ 收盘跌破前低`:'需收盘跌破前低')},
-  {name:'Volume',score:volS,partial:vr>=1&&!lowVol,desc:vr>=1.3?`✓ ${vr.toFixed(2)}x 放量`:`量比 ${vr.toFixed(2)}x (需≥1.3)`},
-  {name:'Fund Flow',score:fundS,partial:fc&&fc.score>=-10&&fc.score<=10,desc:fc?`${fc.label} ${fc.score>0?'+':''}${Math.round(fc.score)}`:'资金面无数据'},
-  {name:'Orderbook',score:obS,partial:false,desc:$('bookRatio').textContent||'--'}
+  {name:'A·趋势结构',cat:'A',score:As?1:0,partial:e7[n]<e25[n],desc:e7[n]<e25[n]?`EMA7<EMA25 · 斜率 ${slopePct.toFixed(2)}%`:'EMA结构未确认'},
+  {name:'B·动量',cat:'B',score:Bs?1:0,partial:m.h[n]<m.h[n-1]||r[n]<r[n-1],desc:(m.h[n]<m.h[n-1]?'MACD柱转弱':'')+(rsiSell?' RSI反转':'')||'MACD/RSI无改善'},
+  {name:'C·价格行为',cat:'C',score:Cs?1:0,partial:breakDn&&!lowVol,desc:lowVol?`✗ 低波动(${aa.toFixed(2)}%)`:(Cs?`✓ 收盘跌破前低`:'需收盘跌破前低')},
+  {name:'D·市场确认',cat:'D',score:DliveS?1:0,partial:vr>=1&&!lowVol,desc:[vr>=1.3?`量${vr.toFixed(2)}x`:'',fundS?`资金${fc.label}`:'',obS>=0.5?'订单簿卖压':''].filter(Boolean).join('+')||'需放量/资金/订单簿确认'}
 ];
-  return {b,s,bs:tb,ss:ts,techB,techS,coreDirB,coreDirS,buyGate:sGateB,sellGate:sGateS,gradeB,gradeS,sPlusB,sPlusS,raw:{t1,t4,tc:trend(d),strongBear,strongBull}}}
+  let gradeB=sGateB?rawGradeB:(rawGradeB==='S'?'A':rawGradeB), gradeS=sGateS?rawGradeS:(rawGradeS==='S'?'A':rawGradeS);
+  const sPlusB=gradeB==='S'&&(fundB||obB>=0.5||vr>=CFG.v22.volSurge), sPlusS=gradeS==='S'&&(fundS||obS>=0.5||vr>=CFG.v22.volSurge);
+  return {b,s,bs:tb,ss:ts,A,B,C,DliveB,As,Bs,Cs,DliveS,buyGate:sGateB,sellGate:sGateS,gradeB,gradeS,sPlusB,sPlusS,raw:{t1,t4,tc:trend(d),strongBear,strongBull}}}
+
 function evalSignal(d){let x=signal(d);return x}
-function gradeInfo(g,plus){return g==='S'?(plus?{txt:'🔥🔥 S+级',cls:'s'}:{txt:'🔥 S级',cls:'s'}):g==='A'?{txt:'🟢 A级 · 观察',cls:'a'}:g==='C'?{txt:'🟡 候选',cls:'c'}:{txt:'WAIT',cls:'w'}}
+function gradeInfo(g,plus){return g==='S'?(plus?{txt:'🔥🔥 S+级',cls:'s'}:{txt:'🔥 S级',cls:'s'}):g==='A'?{txt:'🟢 A级 · 确认',cls:'a'}:g==='C'?{txt:'🟡 观察',cls:'c'}:{txt:'WAIT',cls:'w'}}
 function renderSignals(d,isClosed){let x=evalSignal(d),bs=+x.bs.toFixed(1),ss=+x.ss.toFixed(1);$('buyScore').textContent=bs+'/6';$('sellScore').textContent=ss+'/6';renderConds('buy',x.b);renderConds('sell',x.s);let warning=tf==='5m';let bOK=!warning&&x.gradeB==='S', sOK=!warning&&x.gradeS==='S';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
-function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');const g=gradeInfo(p?x.gradeB:x.gradeS,p?x.sPlusB:x.sPlusS);b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?g.txt+' · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(g.txt==='🔥🔥 S+级'?(p?'🔥 高质量多头信号 + 资金确认':'🔥 高质量空头信号 + 资金确认'):(p?'🔥 高质量多头信号':'🔥 高质量空头信号')):g==='S'?(p?'多头被方向闸门拦截':'空头被方向闸门拦截'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 技术${p?x.techB:x.techS}项(核心方向${p?x.coreDirB:x.coreDirS}) · 4H=${x.raw.t4} · 1H=${x.raw.t1}${x.raw.strongBear?' · 1H强空头':''}${x.raw.strongBull?' · 1H强多头':''} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
+function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');const g=gradeInfo(p?x.gradeB:x.gradeS,p?x.sPlusB:x.sPlusS);b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?g.txt+' · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(g.txt==='🔥🔥 S+级'?(p?'🔥 高质量多头信号 + 资金确认':'🔥 高质量空头信号 + 资金确认'):(p?'🔥 高质量多头信号':'🔥 高质量空头信号')):g==='S'?(p?'多头被方向闸门拦截':'空头被方向闸门拦截'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`A${p?x.A?'✓':'✗':x.As?'✓':'✗'} B${p?x.B?'✓':'✗':x.Bs?'✓':'✗'} C${p?x.C?'✓':'✗':x.Cs?'✓':'✗'} D${p?x.DliveB?'✓':'✗':x.DliveS?'✓':'✗'} · 4H=${x.raw.t4} · 1H=${x.raw.t1}${x.raw.strongBear?' · 1H强空头':''}${x.raw.strongBull?' · 1H强多头':''} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
 function fundTag(side){
   // 资金确认层标注：基于当前币种资金面方向（强多/偏多=多，强空/偏空=空）
   const fv=fundingVerdict();
@@ -468,17 +467,18 @@ document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dat
 // 回测：用历史K线模拟信号 + 持仓生命周期
 const BT_MAXBARS=CFG.maxBars[tf]||48;
 function btEval(d,htf1,htf4){
-  // 复刻 signal() V2.2（回测无资金/订单簿历史 → 只算技术核心4 + Volume，与实时 S级 对齐）
+  // V3 状态机回测版：A/B/C/D 矩阵（回测 D 只算 Volume，资金/订单簿无历史）
   let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/(d.v.slice(n-20,n).reduce((a,b)=>a+b,0)/20||1),t1=trend(htf1),t4=trend(htf4),s25=(e25[n]-e25[n-3])/3,aa=atr(d)/d.c[n]*100,breakUp=d.c[n]>Math.max(...d.h.slice(n-4,n)),breakDn=d.c[n]<Math.min(...d.l.slice(n-4,n)),lowVol=aa<CFG.lowVolATR[tf],rsiBuy=r[n]<55&&r[n]>30&&r[n]>r[n-2]&&(Math.min(...r.slice(n-10,n))<35),rsiSell=r[n]>40&&r[n]<70&&r[n]<r[n-2]&&(Math.max(...r.slice(n-8,n))>55),slopePct=s25/e25[n]*100,strongBear=t1==='空头'&&slopePct<-0.08,strongBull=t1==='多头'&&slopePct>0.08;
-  const emaB=(e7[n]>e25[n]&&s25>=0)?1:0, macdB=macdDivBull(d)?1:0, rsiB=rsiBuy?1:0, brkB=(breakUp&&!lowVol)?1:0;
-  const emaS=(e7[n]<e25[n]&&s25<=0)?1:0, macdS=macdDivBear(d)?1:0, rsiS=rsiSell?1:0, brkS=(breakDn&&!lowVol)?1:0;
-  const volB=(vr>=1.3&&!lowVol)?1:0, volS=(vr>=1.3&&!lowVol)?1:0;
-  const techB=emaB+macdB+rsiB+brkB+volB, techS=emaS+macdS+rsiS+brkS+volS;
-  const coreDirB=emaB+macdB+rsiB+brkB, coreDirS=emaS+macdS+rsiS+brkS;
-  const tb=techB, ts=techS;
-  const gradeB=(tb>=CFG.v22.s&&coreDirB>=CFG.v22.coreDir&&t4!=='空头'&&!strongBear)?'S':(tb>=CFG.v22.a?'A':(tb>=CFG.v22.cand?'C':'—'));
-  const gradeS=(ts>=CFG.v22.s&&coreDirS>=CFG.v22.coreDir&&t4!=='多头'&&!strongBull)?'S':(ts>=CFG.v22.a?'A':(ts>=CFG.v22.cand?'C':'—'));
-  return {bs:tb,ss:ts,techB,techS,coreDirB,coreDirS,buyGate:t4!=='空头'&&!strongBear,sellGate:t4!=='多头'&&!strongBull,gradeB,gradeS};
+  const A=e7[n]>e25[n]&&s25>=0, As=e7[n]<e25[n]&&s25<=0;
+  const B=(m.h[n]>m.h[n-1])||rsiBuy, Bs=(m.h[n]<m.h[n-1])||rsiSell;
+  const C=breakUp&&!lowVol, Cs=breakDn&&!lowVol;
+  const D=vr>=1.3&&!lowVol, Ds=vr>=1.3&&!lowVol;
+  let gradeB=(A&&C&&D)?'S':((A&&B&&C)||(A&&B&&D))?'A':((A&&B)||(A&&C)||(A&&D))?'C':'—';
+  let gradeS=(As&&Cs&&Ds)?'S':((As&&Bs&&Cs)||(As&&Bs&&Ds))?'A':((As&&Bs)||(As&&Cs)||(As&&Ds))?'C':'—';
+  const sGateB=t4!=='空头'&&!strongBear, sGateS=t4!=='多头'&&!strongBull;
+  gradeB=sGateB?gradeB:(gradeB==='S'?'A':gradeB);
+  gradeS=sGateS?gradeS:(gradeS==='S'?'A':gradeS);
+  return {bs:(A?1:0)+(B?1:0)+(C?1:0)+(D?1:0),ss:(As?1:0)+(Bs?1:0)+(Cs?1:0)+(Ds?1:0),buyGate:sGateB,sellGate:sGateS,gradeB,gradeS};
 }
 function btSimulateLifecycle(sig,d,startIdx){
   // 与实时 updateSignalLifecycle 一致：TP1后保本，同K线先止损
