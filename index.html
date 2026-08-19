@@ -75,12 +75,13 @@
       <div style="height:10px"></div><h3>🏦 ORDERBOOK</h3>
       <div class="tfrow"><span>买卖比</span><span class="tfstate neutral" id="bookRatio">--</span></div>
       <div class="small" style="margin-top:8px">订单簿只做确认，不单独制造交易信号。</div>
-      <div style="height:10px"></div><h3>💵 FUNDING <span id="fundingAge" class="small" style="color:var(--d)"></span></h3>
-      <div class="tfrow"><span>Perp 短期(30m-2h)</span><span class="tfstate neutral" id="fundShort">--</span></div>
-      <div class="tfrow"><span>Perp 中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
-      <div class="tfrow"><span>Perp 长期(1d-7d)</span><span class="tfstate neutral" id="fundLong">--</span></div>
+      <div style="height:10px"></div><h3>💵 资金确认层 <span id="fundingAge" class="small" style="color:var(--d)"></span></h3>
+      <div class="tfrow"><span>资金流·中期(4h-12h)</span><span class="tfstate neutral" id="fundMid">--</span></div>
+      <div class="tfrow"><span>资金流·短期(30m-2h)</span><span class="tfstate neutral" id="fundShort">--</span></div>
+      <div class="tfrow"><span>资金流·长期(1d-7d)</span><span class="tfstate neutral" id="fundLong">--</span></div>
       <div class="tfrow"><span>Spot 净流入</span><span class="tfstate neutral" id="fundSpot">--</span></div>
-      <div class="tfrow" id="fundVerdictRow" style="cursor:pointer" title="点击暂停/恢复资金面过滤"><span>资金面结论 <span class="small" style="color:var(--d)">(点击切换)</span></span><span class="tfstate neutral" id="fundVerdict">未录入</span></div>
+      <div class="tfrow"><span>OI 持仓量 <span class="small" style="color:var(--d)">(1h/24h)</span></span><span class="tfstate neutral" id="fundOi">--</span></div>
+      <div class="tfrow" id="fundVerdictRow" style="cursor:pointer" title="点击暂停/恢复资金面过滤"><span>资金确认 <span class="small" style="color:var(--d)">(点击切换)</span></span><span class="tfstate neutral" id="fundVerdict">未录入</span></div>
       <div class="small" style="margin-top:8px" id="fundHint">点击上方 💵 资金面 粘贴 Funding Data。</div>
     </div>
     <div class="panel">
@@ -197,18 +198,19 @@ function renderSignals(d,isClosed){let x=evalSignal(d),bs=x.b.reduce((a,r)=>a+r.
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
 function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?'S级 · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(p?'高质量多头信号':'高质量空头信号'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`${score}/6 · 4H=${x.raw.t4} · 1H=${x.raw.t1} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
 function fundTag(side){
-  // 资金流确认标注：基于当前币种资金面方向
+  // 资金确认层标注：基于当前币种资金面方向（强多/偏多=多，强空/偏空=空）
   const fv=fundingVerdict();
   if(!fv)return ' · 💵 资金流无数据';
-  const bull=fv.label==='偏多', bear=fv.label==='偏空';
+  const bull=fv.label==='偏多'||fv.label==='强多', bear=fv.label==='偏空'||fv.label==='强空';
+  const tag=bull?'多':(bear?'空':'中');
   if(side==='buy'){
-    if(bull)return ' · 💵 资金流确认 ✅ 顺向';
-    if(bear)return ' · 💵 资金流背离 ⚠️ 逆向';
-    return ' · 💵 资金流中性';
+    if(bull)return ' · 💵 资金确认 ✅ 顺向('+tag+')';
+    if(bear)return ' · 💵 资金背离 ⚠️ 逆向('+tag+')';
+    return ' · 💵 资金中性('+tag+')';
   }else{
-    if(bear)return ' · 💵 资金流确认 ✅ 顺向';
-    if(bull)return ' · 💵 资金流背离 ⚠️ 逆向';
-    return ' · 💵 资金流中性';
+    if(bear)return ' · 💵 资金确认 ✅ 顺向('+tag+')';
+    if(bull)return ' · 💵 资金背离 ⚠️ 逆向('+tag+')';
+    return ' · 💵 资金中性('+tag+')';
   }
 }
 function storageScope(){return `${symbol}|${tf}`}
@@ -292,30 +294,52 @@ async function autoFetchFunding(){
     });
     const okRows=rows.filter(r=>r.perp!==null||r.spot!==null);
     if(!okRows.length){$m.textContent='❌ 数据为空，可手动粘贴';return}
-    fundingData={rows:okRows,_ts:j._ts||Date.now(),source:'auto',symbol};
+    fundingData={rows:okRows,_ts:j._ts||Date.now(),source:'auto',symbol,oi:c.OI||null};
     saveFunding();
     $m.textContent=`✅ CoinAnk 资金流(${symbol}) ${okRows.length} 周期 · 每5分钟自动更新`;
     $('fundPreview').innerHTML='自动获取预览（CoinAnk 合约+现货净流入）：<br>'+okRows.slice(0,8).map(r=>`<code style="color:var(--m)">${r.period} · Perp ${fmtFund(r.perp)} · Spot ${fmtFund(r.spot)}</code>`).join('<br>')+(okRows.length>8?'<br>...': '');
   }catch(e){$m.textContent='❌ 读取失败：'+e.message+'（可手动粘贴）'}
 }
-function fundingVerdict(){
-  // 用户手动暂停时直接返回 null（不拦截）
-  if(fundingFilterOff)return null;
-  // 返回 {allow,side,label,desc} 用于信号过滤；数据缺失/过期(>48h)/币种不符时返回 null = 不拦截
+// ── 资金确认层：资金流(Perp中期+Spot) + OI变化 → 统一评分(0-100) ──
+function fundConfirm(){
+  // 返回 {score,label,desc,bullish,bearish}；数据不足返回 null
   if(!fundingData||!fundingData.rows||!fundingData.rows.length)return null;
-  // 旧数据无 symbol 字段视为 BTC；币种不符时不拦截（避免用错币种数据过滤信号）
   if((fundingData.symbol||'BTC')!==symbol)return null;
   const age=fundingAgeHours();if(age===null||age>48)return null;
   const mid=fundAgg(['4h','6h','8h','12h']);if(mid===null)return null;
   const spot=fundSpotAgg(['4h','6h','8h','12h','1d']);if(spot===null)return null;
   const short=fundAgg(['30m','1h','2h']);
   const long=fundAgg(['1d','3d','7d']);
-  const buyOk=mid>0&&spot>0;
-  const sellOk=mid<0&&spot<0;
+  const oi=fundingData.oi||null;
+  // 资金流分（0-60）：Perp中期 40 + Spot 20
+  let s=0;
+  const midW=Math.min(Math.abs(mid)/5e7,1)*40, spotW=Math.min(Math.abs(spot)/5e7,1)*20;
+  if(mid>0)s+=midW;else if(mid<0)s-=midW;
+  if(spot>0)s+=spotW;else if(spot<0)s-=spotW;
+  // OI 分（0-40）：1h变化 30 + 24h变化 10（OI增=资金进场，方向同向加分）
+  let oiTxt='';
+  if(oi){
+    const c1h=oi.change1H!=null?oi.change1H:0, c24=oi.change24H!=null?oi.change24H:0;
+    const w1h=Math.min(Math.abs(c1h)/0.02,1)*30, w24=Math.min(Math.abs(c24)/0.05,1)*10;
+    if(c1h>0)s+=w1h;else if(c1h<0)s-=w1h;
+    if(c24>0)s+=w24;else if(c24<0)s-=w24;
+    oiTxt=`OI 1h ${(c1h*100).toFixed(2)}% · 24h ${(c24*100).toFixed(2)}%`;
+  }else{oiTxt='OI 无数据';}
+  const score=Math.max(-100,Math.min(100,s));
+  const label=score>=50?'强多':score>=20?'偏多':score<=-50?'强空':score<=-20?'偏空':'中性';
+  const desc=`资金流 ${fmtFund(mid)}/Spot ${fmtFund(spot)} · ${oiTxt}`+(short!=null?` · 短期 ${fmtFund(short)}`:'')+(long!=null?` · 长期 ${fmtFund(long)}`:'');
+  return {score,label,desc,bullish:score>0,bearish:score<0,mid,spot,oi};
+}
+function fundingVerdict(){
+  // 用户手动暂停时直接返回 null（不拦截）
+  if(fundingFilterOff)return null;
+  // 资金确认层：score>0 允许多，score<0 允许空；数据缺失/过期/币种不符时返回 null = 不拦截
+  const fc=fundConfirm();
+  if(!fc)return null;
   return {
-    allowBuy:buyOk,allowSell:sellOk,
-    label:buyOk?'偏多':(sellOk?'偏空':'中性'),
-    desc:`中期Perp ${fmtFund(mid)} · Spot ${fmtFund(spot)}`+(short!=null?` · 短期 ${fmtFund(short)}`:'')+(long!=null?` · 长期 ${fmtFund(long)}`:'')
+    allowBuy:fc.bullish,allowSell:fc.bearish,
+    label:fc.label,desc:fc.desc,
+    score:fc.score
   };
 }
 function renderFunding(){
@@ -324,13 +348,13 @@ function renderFunding(){
   const ageTxt=age===null?'':`· ${age<1?'<1h':Math.round(age)+'h'}前`;
   el('fundingAge',ageTxt,'');
   if(!fundingData||!fundingData.rows||!fundingData.rows.length){
-    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundVerdict','未录入');
+    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundOi','--');el('fundVerdict','未录入');
     $('fundHint').textContent='点击上方 💵 资金面 粘贴 Funding Data。';
     return;
   }
   // 旧数据无 symbol 字段视为 BTC；币种不符时显示提示而非旧币种数据
   if((fundingData.symbol||'BTC')!==symbol){
-    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundVerdict','未录入');
+    el('fundShort','--');el('fundMid','--');el('fundLong','--');el('fundSpot','--');el('fundOi','--');el('fundVerdict','未录入');
     $('fundHint').textContent=`当前数据是 ${fundingData.symbol||'BTC'} 资金面，切换币种后请重新获取或粘贴 ${symbol} 数据。`;
     return;
   }
@@ -339,8 +363,13 @@ function renderFunding(){
   el('fundMid',fmtFund(mid),mid>0?'ok':(mid<0?'bad':'neutral'));
   el('fundLong',fmtFund(long),long>0?'ok':(long<0?'bad':'neutral'));
   el('fundSpot',fmtFund(spot),spot>0?'ok':(spot<0?'bad':'neutral'));
+  const oi=fundingData.oi;
+  if(oi){
+    const c1=oi.change1H!=null?(oi.change1H*100):null,c24=oi.change24H!=null?(oi.change24H*100):null;
+    el('fundOi',`$${(oi.total/1e9).toFixed(2)}B · ${c1!=null?(c1>=0?'+':'')+c1.toFixed(2)+'%':'--'}/${c24!=null?(c24>=0?'+':'')+c24.toFixed(2)+'%':'--'}`,(c1!=null&&c1>0)?'ok':(c1!=null&&c1<0?'bad':'neutral'));
+  }else{el('fundOi','--','neutral')}
   const v=fundingVerdict();
-  if(v){el('fundVerdict',v.label,v.label==='偏多'?'ok':(v.label==='偏空'?'bad':'neutral'));$('fundHint').textContent=v.desc+(age!==null&&age>48?' · ⚠️ 数据已超48h，过滤已暂停':'')+(fundingFilterOff?' · ⏸ 已手动暂停':'')}  else if(age!==null&&age>48){el('fundVerdict','已过期','neutral');$('fundHint').textContent='⚠️ 数据超过48小时，资金面过滤暂停。请重新粘贴更新。'}
+  if(v){el('fundVerdict',v.label+(v.score!=null?` ${v.score>0?'+':''}${Math.round(v.score)}`:'') ,v.label==='偏多'||v.label==='强多'?'ok':(v.label==='偏空'||v.label==='强空'?'bad':'neutral'));$('fundHint').textContent=v.desc+(age!==null&&age>48?' · ⚠️ 数据已超48h，过滤已暂停':'')+(fundingFilterOff?' · ⏸ 已手动暂停':'')}  else if(age!==null&&age>48){el('fundVerdict','已过期','neutral');$('fundHint').textContent='⚠️ 数据超过48小时，资金面过滤暂停。请重新粘贴更新。'}
   else if(fundingFilterOff){el('fundVerdict','⏸ 已暂停','neutral');$('fundHint').textContent='资金面过滤已手动暂停，信号不受资金面限制。点击"资金面结论"恢复。'}
   else {el('fundVerdict','中性','neutral');$('fundHint').textContent='Perp/Spot 方向不一致，过滤不拦截但仅作参考。'}
 }
