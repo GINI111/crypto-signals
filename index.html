@@ -243,7 +243,7 @@ function fundTag(side){
 function storageScope(){return `${symbol}|${tf}`}
 function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
-function tradePlan(side,entry,atrVal){const risk=Math.max(atrVal*CFG.stopATR,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+atrVal*CFG.tp1ATR:entry-atrVal*CFG.tp1ATR;const tp2=side==='buy'?entry+atrVal*CFG.tp2ATR:entry-atrVal*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
+function tradePlan(side,entry,atrVal,d){let struct=0;if(d&&d.h&&d.h.length>=6){const lo=Math.min(...d.l.slice(-6,-1)),hi=Math.max(...d.h.slice(-6,-1));struct=side==='buy'?(entry-lo):(hi-entry)}const risk=Math.max(atrVal*CFG.stopATR,struct,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+risk*CFG.tp1ATR:entry-risk*CFG.tp1ATR;const tp2=side==='buy'?entry+risk*CFG.tp2ATR:entry-risk*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
 const FUND_KEY='crypto_signal_pro_v21_funding';
 let fundingData=null;
 let fundingFilterOff=false; // 用户手动暂停资金面过滤
@@ -409,7 +409,7 @@ function maybeSignal(side,score,d,conds){
   if(dup)return;
   if(prev&&now-prev.createdAt<CFG.cooldownMs[tf])return;
   if(storedSignals.some(x=>x.scope===storageScope()&&x.side===side&&!x.result))return;
-  const entry=d.c[d.c.length-1],atrVal=atr(d),plan=tradePlan(side,entry,atrVal);
+  const entry=d.c[d.c.length-1],atrVal=atr(d),plan=tradePlan(side,entry,atrVal,d);
   if(plan.rr<2)return;
   const fv2=fundingVerdict();
   const fundTag=fv2?((fv2.label==='偏多'||fv2.label==='强多')?'多':((fv2.label==='偏空'||fv2.label==='强空')?'空':'中')):'-';
@@ -533,13 +533,13 @@ async function runBacktest(){
       const entry=d.c[i];
       if(ev.gradeB==='S'&&ev.buyGate){
         if(!openBuy&&tNow-lastBuyT>=cooldown){
-          const atrVal=atr(slice),plan=tradePlan('buy',entry,atrVal);
+          const atrVal=atr(slice),plan=tradePlan("buy",entry,atrVal,slice);
           if(plan.rr>=2){openBuy={side:'buy',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.bs,time:tNow,entryIdx:i};lastBuyT=tNow}
         }
       }
       if(ev.gradeS==='S'&&ev.sellGate){
         if(!openSell&&tNow-lastSellT>=cooldown){
-          const atrVal=atr(slice),plan=tradePlan('sell',entry,atrVal);
+          const atrVal=atr(slice),plan=tradePlan("sell",entry,atrVal,slice);
           if(plan.rr>=2){openSell={side:'sell',entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,barsOpen:0,tp1Hit:false,score:ev.ss,time:tNow,entryIdx:i};lastSellT=tNow}
         }
       }
