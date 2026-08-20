@@ -463,8 +463,34 @@ function drawCharts(d){$('chartTitle').textContent=`${symbol}/USDT · ${tf}`;let
 function canvas(id,fn){let c=$(id),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight,dpr=devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);fn(ctx,w,h)}
 function drawMACD(d){let m=macd(d.c),a=m.h.slice(-70);canvas('macdCanvas',(ctx,w,h)=>{let mx=Math.max(...a.map(Math.abs))||1,mid=h*.72,bar=w/a.length;ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(w,mid);ctx.stroke();a.forEach((v,i)=>{ctx.fillStyle=v>=0?'#00c896':'#ff4466';let hh=Math.abs(v)/mx*h*.55;ctx.fillRect(i*bar, v>=0?mid-hh:mid, Math.max(1,bar-1),hh)})})}
 function drawRSI(d){let a=rsi(d.c).slice(-70);canvas('rsiCanvas',(ctx,w,h)=>{ctx.strokeStyle='rgba(255,255,255,.08)';[30,50,70].forEach(v=>{let y=h-(v/100)*h;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()});ctx.strokeStyle='#00aaff';ctx.lineWidth=1.5;ctx.beginPath();a.forEach((v,i)=>{let x=i/(a.length-1)*w,y=h-(v||50)/100*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()})}
-function connectPriceWS(){if(priceWS){priceWS.onclose=null;priceWS.close()}priceWS=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@ticker`);priceWS.onmessage=e=>{try{const d=JSON.parse(e.data);livePrice=+d.c;liveChange=+d.P;updateCards(last)}catch(err){console.error('price WS error',err)}};priceWS.onclose=()=>setTimeout(()=>{if(priceWS)connectPriceWS()},3000)}
-function connectWS(){if(ws){ws.onclose=null;ws.close()}livePrice=null;liveChange=null;connectPriceWS();ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@kline_${tf}`);ws.onmessage=e=>{try{let k=JSON.parse(e.data).k;if(!last)return;let kt=Math.floor(k.t/1000),i=last.t.indexOf(kt),closed=!!k.x;if(i===-1){last.t.push(kt);last.o.push(+k.o);last.h.push(+k.h);last.l.push(+k.l);last.c.push(+k.c);last.v.push(+k.v);i=last.c.length-1}else{last.o[i]=+k.o;last.h[i]=+k.h;last.l[i]=+k.l;last.c[i]=+k.c;last.v[i]=+k.v}updateCards(last);updateFilters(last);renderSignals(last,closed);if(closed){updateSignalLifecycle(last)}if(candle)candle.update({time:kt,open:+k.o,high:+k.h,low:+k.l,close:+k.c});$('footer').textContent=`Binance WebSocket · ${symbol}/USDT ${tf} · ${closed?'刚刚收盘':'实时未收盘'} · S级自动跟踪中`}catch(e){console.error('WS render error',e)}};ws.onclose=()=>setTimeout(()=>{if(ws)connectWS()},3000)}
+function connectPriceWS(){if(priceWS){priceWS.onclose=null;priceWS.close()}priceWS=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@ticker`);priceWS.onmessage=e=>{try{const d=JSON.parse(e.data);livePrice=+d.c;liveChange=+d.P;updateCards(last)}catch(err){console.error('price WS error',err)}};priceWS.onclose=()=>setTimeout(()=>{if(priceWS)connectPriceWS()},1000)}
+function connectWS(){if(ws){ws.onclose=null;ws.close()}livePrice=null;liveChange=null;connectPriceWS();ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@kline_${tf}`);ws.onmessage=e=>{try{let k=JSON.parse(e.data).k;if(!last)return;wsLastMsg=Date.now();let kt=Math.floor(k.t/1000),i=last.t.indexOf(kt),closed=!!k.x;if(i===-1){last.t.push(kt);last.o.push(+k.o);last.h.push(+k.h);last.l.push(+k.l);last.c.push(+k.c);last.v.push(+k.v);i=last.c.length-1}else{last.o[i]=+k.o;last.h[i]=+k.h;last.l[i]=+k.l;last.c[i]=+k.c;last.v[i]=+k.v}updateCards(last);updateFilters(last);renderSignals(last,closed);if(closed){updateSignalLifecycle(last)}if(candle)candle.update({time:kt,open:+k.o,high:+k.h,low:+k.l,close:+k.c});$('footer').textContent=`Binance WebSocket · ${symbol}/USDT ${tf} · ${closed?'刚刚收盘':'实时未收盘'} · S级自动跟踪中`}catch(e){console.error('WS render error',e)}};ws.onclose=()=>setTimeout(()=>{if(ws)connectWS()},1000)}
+// ── REST 兜底轮询：WS 断线/卡顿时保证价格和K线持续更新（双通道）──
+let wsLastMsg=0,restPollN=0;
+async function restPoll(){
+  try{
+    const [k,t]=await Promise.all([
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${tf}&limit=3`,{cache:'no-store'}).then(r=>r.json()),
+      fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`,{cache:'no-store'}).then(r=>r.json())
+    ]);
+    if(!last||!Array.isArray(k)||!k.length)return;
+    livePrice=+t.lastPrice;liveChange=+t.priceChangePercent;
+    for(const x of k){
+      const kt=Math.floor(x[0]/1000);let i=last.t.indexOf(kt);
+      if(i===-1){last.t.push(kt);last.o.push(+x[1]);last.h.push(+x[2]);last.l.push(+x[3]);last.c.push(+x[4]);last.v.push(+x[5]);i=last.c.length-1}
+      else{last.o[i]=+x[1];last.h[i]=+x[2];last.l[i]=+x[3];last.c[i]=+x[4];last.v[i]=+x[5]}
+    }
+    const closed=Date.now()>=+k[k.length-1][6]; // 最后一根 closeTime 已过 = 已收盘
+    updateCards(last);updateFilters(last);renderSignals(last,closed);
+    if(closed)updateSignalLifecycle(last);
+    if(candle&&k.length){const x=k[k.length-1];candle.update({time:Math.floor(x[0]/1000),open:+x[1],high:+x[2],low:+x[3],close:+x[4]})}
+    // 每 10 次轮询（5分钟）刷新 1h/4h 趋势过滤数据
+    if(++restPollN%10===0){const [a1,a4]=await Promise.all([getTF('1h',120),getTF('4h',120)]);htf['1h']=a1;htf['4h']=a4}
+    // WS 看门狗：20s 无消息则强制重连（REST 兜底期间自动恢复 WS）
+    if(wsLastMsg&&Date.now()-wsLastMsg>20000){console.warn('WS 卡顿，强制重连');connectWS()}
+  }catch(e){/* REST 失败静默，等下一轮 */}
+}
+setInterval(restPoll,30e3);
 
 function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b=>b.classList.toggle('active',b.dataset.sym===s));$('fundAuto').textContent=`🔄 自动获取(${symbol})`;resetAndLoad();renderFunding();if(!fundingData||fundingData.symbol!==symbol)autoFetchFunding()}
 function chooseTF(v){tf=v;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===v));resetAndLoad()}
