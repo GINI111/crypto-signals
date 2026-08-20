@@ -85,6 +85,12 @@
       <div class="small" style="margin-top:8px" id="fundHint">点击上方 💵 资金面 粘贴 Funding Data。</div>
     </div>
     <div class="panel">
+      <div class="panelHead"><span>🔄 大盘反转 <span class="small" style="color:var(--d)">(BTC 24h ±5~10%)</span></span><span class="score" id="revStatus">--</span></div>
+      <div class="conds" id="revConds" style="padding:8px 9px;font-size:11px;line-height:1.6;color:var(--m)">
+        加载中...
+      </div>
+    </div>
+    <div class="panel">
       <div class="panelHead"><span>多头条件</span><span class="score" id="buyScore">0/4</span></div>
       <div class="conds" id="buyConds"></div>
     </div>
@@ -578,6 +584,51 @@ $('fundAuto').onclick=autoFetchFunding;
 $('fundVerdictRow').onclick=toggleFundingFilter;
 $('fundClear').onclick=()=>{fundingData=null;localStorage.removeItem(FUND_KEY);renderFunding();$('fundMsg').textContent='🗑 已清除';$('fundPreview').textContent=''};
 loadFunding();
+// ── 🔄 大盘反转监控（BTC 24h ±5~10% 反向开仓）──
+let revTimer=null;
+async function refreshReversal(){
+  try{
+    const t=await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT`).then(r=>r.json());
+    const chg=parseFloat(t.priceChangePercent), price=parseFloat(t.lastPrice);
+    const k=await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=25`).then(r=>r.json());
+    const bars=k.map(x=>({o:+x[1],h:+x[2],l:+x[3],c:+x[4]}));
+    const ema20=bars.slice(0,20).reduce((a,b)=>a+b.c,0)/20;
+    let atrV=null;
+    if(bars.length>=15){let s=0;for(let j=bars.length-14;j<bars.length;j++){const b=bars[j],pc=bars[j-1].c;s+=Math.max(b.h-b.l,Math.abs(b.h-pc),Math.abs(b.l-pc))}atrV=s/14}
+    atrV=atrV||(price*0.005);
+    const el=$('revStatus'),cond=$('revConds');
+    const inRange=Math.abs(chg)>=5&&Math.abs(chg)<=10;
+    const side=chg>=5?'SELL':chg<=-5?'BUY':null;
+    // 趋势过滤（与 reversal_monitor.js 一致）
+    let filtered=false,filterWhy='';
+    if(side==='SELL'&&price>ema20*1.02){filtered=true;filterWhy='强势上涨中(价>EMA20×1.02)，不开空'}
+    if(side==='BUY'&&price<ema20*0.98){filtered=true;filterWhy='恐慌下跌中(价<EMA20×0.98)，不开多'}
+    const sl=side==='SELL'?price+1.5*atrV:price-1.5*atrV;
+    const tp1=side==='SELL'?price-1.5*atrV:price+1.5*atrV;
+    const tp2=side==='SELL'?price-2.0*atrV:price+2.0*atrV;
+    const fmt=n=>'$'+n.toLocaleString('en',{maximumFractionDigits:0});
+    const chgTxt=(chg>=0?'+':'')+chg.toFixed(2)+'%';
+    if(!inRange){
+      el.textContent='区间外';el.className='score';
+      cond.innerHTML=`BTC 24h <b style="color:var(--t)">${chgTxt}</b> · 现价 ${fmt(price)}<br>`+
+        `⏳ 等待 ±5%~10% 波动（当前 |${chg.toFixed(2)}|% < 5%）<br>`+
+        `<span style="color:var(--d)">触发后：涨5~10%开空 · 跌5~10%开多（1.5ATR止损，回测胜率55%）</span>`;
+    }else if(filtered){
+      el.textContent=side==='SELL'?'拦截🔴':'拦截🟢';el.className='score';
+      cond.innerHTML=`BTC 24h <b style="color:var(--y)">${chgTxt}</b> · 现价 ${fmt(price)} → ${side==='SELL'?'🔴 开空':'🟢 开多'}<br>`+
+        `<span style="color:var(--y)">⛔ 趋势过滤拦截：${filterWhy}</span><br>`+
+        `<span style="color:var(--d)">EMA20 ${fmt(ema20)} · 等待滞涨/企稳后再触发</span>`;
+    }else{
+      el.textContent=side==='SELL'?'🔴 开空':'🟢 开多';el.className='score';
+      cond.innerHTML=`BTC 24h <b style="color:${side==='SELL'?'var(--r)':'var(--g)'}">${chgTxt}</b> · 现价 ${fmt(price)} → <b>${side==='SELL'?'🔴 开空':'🟢 开多'}</b><br>`+
+        `✅ 过滤通过（EMA20 ${fmt(ema20)}，趋势未过度）<br>`+
+        `📐 止损 ${fmt(sl)} (${(1.5*atrV/price*100).toFixed(2)}%) · TP1 ${fmt(tp1)} · TP2 ${fmt(tp2)}<br>`+
+        `<span style="color:var(--d)">同步推送 Telegram 信号群 · 同方向48h冷却</span>`;
+    }
+  }catch(e){$('revStatus').textContent='--';$('revConds').textContent='加载失败: '+e.message}
+}
+refreshReversal();
+revTimer=setInterval(refreshReversal,60e3);
 // 资金面定时自动刷新：每30分钟拉一次（仅刷新 auto 来源；手动粘贴的数据不覆盖；币种不匹配时也刷新）
 setInterval(()=>{
   if(!document.hidden&&(!fundingData||fundingData.source==='auto'||fundingData.symbol!==symbol))autoFetchFunding();
