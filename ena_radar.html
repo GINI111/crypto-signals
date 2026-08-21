@@ -218,7 +218,18 @@ function drawChart(r){
 
 // 自动扫描
 scanAll();
-setInterval(()=>{if(!document.hidden)scanAll()},5*60*1000);
+// 每3分钟自动刷新（去掉 hidden 判断，保证前台必刷）
+let countdown = 180;
+setInterval(() => {
+  countdown--;
+  const st = $('status');
+  // 只在非扫描时更新倒计时
+  if (!st.textContent.includes('扫描中')) {
+    const m = Math.floor(countdown / 60), s = countdown % 60;
+    st.textContent = `⏱ 下次刷新 ${m}:${String(s).padStart(2,'0')} · ${st.textContent.replace(/^⏱[^·]*· /,'')}`;
+  }
+  if (countdown <= 0) { countdown = 180; scanAll(); }
+}, 1000);
 </script>
 </body>
 </html>
