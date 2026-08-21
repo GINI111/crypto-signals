@@ -142,6 +142,42 @@ function renderTable(rows){
   });
 }
 
+// 指标解读备注
+function noteDist(d){
+  if(d<0)return '⚠️ 价格跌破MA7，趋势暂弱';
+  if(d<=1)return '📌 刚站上均线，早期';
+  if(d<=4)return '✅ 最佳区间，贴线健康上涨';
+  if(d<=6)return '🟡 偏离加大，注意回踩';
+  if(d<=8)return '⚠️ 偏离较多，追高风险';
+  return '🚨 严重偏离，警惕均值回归';
+}
+function noteGain(g){
+  if(g<5)return '📉 涨幅不足，趋势未成';
+  if(g<10)return '📌 趋势启动初期';
+  if(g<20)return '✅ 健康趋势区间';
+  if(g<=35)return '🔥 强趋势，加速段';
+  return '⚠️ 涨幅过大，或近末端';
+}
+function noteMono(m){
+  if(m>=95)return '✅ 均线一路向上，极强';
+  if(m>=85)return '🟡 整体向上，偶有反复';
+  if(m>=75)return '⚠️ 趋势不连贯';
+  return '❌ 均线反复，无趋势';
+}
+function noteSlope(s){
+  if(s<=2)return '📌 斜率平缓，蓄势中';
+  if(s<=6)return '✅ 稳定加速中';
+  if(s<=9)return '🟡 加速偏快';
+  if(s<=12)return '⚠️ 快速拉升，防回落';
+  return '🚨 陡峭拉升，风险高';
+}
+function noteDD(d){
+  if(d<=1)return '✅ 无回撤，走势干净';
+  if(d<=3)return '🟡 小幅回撤，正常';
+  if(d<=5)return '⚠️ 回撤加深，关注';
+  return '❌ 深回撤，趋势受损';
+}
+
 // ── 详情 ──
 let detailChart=null;
 async function showDetail(r){
@@ -150,11 +186,11 @@ async function showDetail(r){
   const cls=r.total>=10.5?'s':(r.total>=8.5?'a':'n');
   d.innerHTML=`<h2>${r.sym} <span class="tag ${cls}">${r.level}</span> <span style="font-size:13px;color:var(--dim)">ENA ${r.total.toFixed(1)}/12</span></h2>
   <div class="metrics">
-    <div class="metric"><div class="k">① 距 MA7</div><div class="v ${p.d1.dist>4?'down':(p.d1.dist>=0?'up':'down')}">${p.d1.dist>=0?'+':''}${p.d1.dist.toFixed(1)}%</div><div class="s">得分 ${p.d1.s}/3 · 0~1%起步, 1~4%最佳, &gt;8%降级</div></div>
-    <div class="metric"><div class="k">② MA7 20根累计涨幅</div><div class="v up">+${p.d2.gain.toFixed(1)}%</div><div class="s">得分 ${p.d2.s}/3 · 10~35%最佳区间</div></div>
-    <div class="metric"><div class="k">③ MA7 单调性</div><div class="v ${p.d3.ratio>=95?'up':'n'}">${p.d3.ratio.toFixed(0)}%</div><div class="s">得分 ${p.d3.s}/2 · ≥95% 满分</div></div>
-    <div class="metric"><div class="k">④ 末5根斜率</div><div class="v ${p.d4.slope>6?'down':(p.d4.slope>=2?'up':'n')}">${p.d4.slope>=0?'+':''}${p.d4.slope.toFixed(1)}%</div><div class="s">得分 ${p.d4.s}/2 · 2~6% 加速最佳</div></div>
-    <div class="metric"><div class="k">⑤ 峰值回撤</div><div class="v ${p.d5.dd>3?'down':'up'}">-${p.d5.dd.toFixed(1)}%</div><div class="s">得分 ${p.d5.s}/2 · ≤1% 满分</div></div>
+    <div class="metric"><div class="k">① 距 MA7 · ${p.d1.dist>=0?'+':''}${p.d1.dist.toFixed(1)}% <span style="color:var(--dim)">(${p.d1.s}/3)</span></div><div class="v ${p.d1.dist>4?'down':(p.d1.dist>=0?'up':'down')}">${noteDist(p.d1.dist)}</div></div>
+    <div class="metric"><div class="k">② MA7 20根累计涨幅 · +${p.d2.gain.toFixed(1)}% <span style="color:var(--dim)">(${p.d2.s}/3)</span></div><div class="v up">${noteGain(p.d2.gain)}</div></div>
+    <div class="metric"><div class="k">③ MA7 单调性 · ${p.d3.ratio.toFixed(0)}% <span style="color:var(--dim)">(${p.d3.s}/2)</span></div><div class="v ${p.d3.ratio>=95?'up':'n'}">${noteMono(p.d3.ratio)}</div></div>
+    <div class="metric"><div class="k">④ 末5根斜率 · ${p.d4.slope>=0?'+':''}${p.d4.slope.toFixed(1)}% <span style="color:var(--dim)">(${p.d4.s}/2)</span></div><div class="v ${p.d4.slope>6?'down':(p.d4.slope>=2?'up':'n')}">${noteSlope(p.d4.slope)}</div></div>
+    <div class="metric"><div class="k">⑤ 峰值回撤 · -${p.d5.dd.toFixed(1)}% <span style="color:var(--dim)">(${p.d5.s}/2)</span></div><div class="v ${p.d5.dd>3?'down':'up'}">${noteDD(p.d5.dd)}</div></div>
     <div class="metric"><div class="k">24h 涨跌</div><div class="v ${r.chg>=0?'up':'down'}">${r.chg>=0?'+':''}${r.chg.toFixed(1)}%</div><div class="s">市场热度参考</div></div>
   </div>
   <div class="entry">
