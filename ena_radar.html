@@ -266,6 +266,22 @@ setInterval(() => {
   }
   if (countdown <= 0) { countdown = 180; scanAll(); }
 }, 1000);
+// 后台标签页节能修复：切回前台立即刷新（浏览器对后台标签 setInterval 会节流/暂停）
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const st = $('status');
+    const m = st.textContent.match(/(\d{1,2}:\d{2}:\d{2})/);
+    if (m) {
+      const parts = m[1].split(':').map(Number);
+      const now = new Date();
+      const last = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parts[0], parts[1], parts[2]);
+      // 距上次扫描 > 60 秒 → 立即刷新
+      if (now - last > 60000) { countdown = 180; scanAll(); }
+    } else {
+      countdown = 180; scanAll();
+    }
+  }
+});
 </script>
 </body>
 </html>
