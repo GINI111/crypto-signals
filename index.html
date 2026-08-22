@@ -175,7 +175,12 @@ async function loadAll(){
   loadStoredSignals();
   const [cur,a1,a4]=await Promise.all([getTF(tf),getTF('1h'),getTF('4h')]);
   htf['1h']=a1;htf['4h']=a4;last=cur;n=cur.c.length-1;
-  updateCards(cur);updateFilters(cur);drawCharts(cur);renderSignals(cur,true);
+  updateCards(cur);updateFilters(cur);drawCharts(cur);
+  // 防回放误记录：加载时只有最后一根K线刚收盘(90秒内)才允许记录信号，否则只预览（等WS收盘事件）
+  // 否则每次刷新/重启都会把"最后一根已收盘的旧K线"（如1d的前天日线）当新信号记录
+  const tfSec={'5m':300,'15m':900,'1h':3600,'4h':14400,'1d':86400}[tf]||900;
+  const justClosed=(Date.now()/1000-(cur.t[cur.t.length-1]+tfSec))<90;
+  renderSignals(cur,justClosed);
   updateSignalLifecycle(cur);renderPerformance();
   await orderbook();connectWS();$('footer').textContent=`Binance · ${symbol}/USDT · ${tf} · S级只在收盘K线确认 · SL ${CFG.stopATR}ATR / TP2 ${CFG.tp2ATR}ATR`;
 }
