@@ -107,7 +107,7 @@ async function scanAll(){
           const t=tickers.find(x=>x.symbol===c+'USDT');
           results.push({sym:c,ena:r,total:r.total,level:r.level,chg:t?+t.priceChangePercent:0,
             dist:r.parts.d1.dist,gain:r.parts.d2.gain,mono:r.parts.d3.ratio,slope:r.parts.d4.slope,dd:r.parts.d5.dd,
-            closes:kl.map(x=>x.c),times:kl.map(x=>x.t)});
+            closes:kl.map(x=>x.c),times:kl.map(x=>x.t),kl:kl});
         }catch(e){}
       }));
       $('status').textContent=`扫描中... ${Math.min(i+6,coins.length)}/${coins.length}`;
@@ -178,6 +178,54 @@ function noteDD(d){
   return '❌ 深回撤，趋势受损';
 }
 
+// ── 交易计划（参考动态止盈止损框架）──
+function calcATR(kl, n=14){
+  if(!kl||kl.length<n+1)return null;
+  const trs=[];
+  for(let i=1;i<kl.length;i++){
+    const h=kl[i].h,l=kl[i].l,pc=kl[i-1].c;
+    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+  }
+  const seg=trs.slice(-n);
+  return seg.reduce((a,b)=>a+b,0)/n;
+}
+function calcPlan(kl){
+  if(!kl||kl.length<30)return null;
+  const closes=kl.map(x=>x.c);
+  const entry=closes[closes.length-1];
+  const atr=calcATR(kl);
+  if(!atr||atr<=0)return null;
+  const look=kl.slice(-24); // 24根1H = 1天结构
+  const swingLow=Math.min(...look.map(x=>x.l));
+  const swingHigh=Math.max(...look.map(x=>x.h));
+  // 做多计划：止损=结构失效位(swing low下方留缓冲)，TP1=前高，TP2=前高+1.5ATR
+  const slLong=swingLow-atr*0.3;
+  const tp1Long=swingHigh;
+  const tp2Long=swingHigh+atr*1.5;
+  const rr1=(tp1Long-entry)/(entry-slLong);
+  const rr2=(tp2Long-entry)/(entry-slLong);
+  // 做空计划（趋势向下时参考）
+  const slShort=swingHigh+atr*0.3;
+  const tp1Short=swingLow;
+  const tp2Short=swingLow-atr*1.5;
+  const rrS1=(slShort-entry)/(entry-tp1Short);
+  // 动态止损：已突破前高 → 止损上移至前高下方锁利润
+  const brokeHigh=entry>swingHigh;
+  const dynSL=brokeHigh?swingHigh-atr*0.2:slLong;
+  return {entry,atr,swingLow,swingHigh,slLong,tp1Long,tp2Long,rr1,rr2,
+          slShort,tp1Short,tp2Short,rrS1,brokeHigh,dynSL};
+}
+function rrNote(rr){
+  if(rr>=2.5)return '✅ 盈亏比理想 (≥2.5)';
+  if(rr>=1.5)return '🟡 盈亏比合格 (≥1.5)';
+  return '❌ 盈亏比不足 (<1.5)，建议放弃';
+}
+function posAdvice(total){
+  if(total>=10.5)return {pct:'20~30%',note:'🔥 S级趋势：信号强，积极做多',cls:'ok'};
+  if(total>=8.5)return {pct:'15~20%',note:'🟡 A级趋势：试探性参与',cls:'wait'};
+  return {pct:'0%',note:'⚪️ 信号弱：空仓观望',cls:'no'};
+}
+
 // ── 详情 ──
 let detailChart=null;
 async function showDetail(r){
@@ -199,11 +247,36 @@ async function showDetail(r){
     <span>15m 状态：<span id="m15state" class="wait">检测中...</span></span>
     <span>入场：<span id="entryState" class="wait">等待 15m 回踩+突破</span></span></div>
   </div>
+  <div class="entry" id="planBox" style="margin-top:10px">
+    <div style="font-weight:bold;color:var(--yellow)">📐 交易计划（动态止盈止损框架）</div>
+    <div class="row" id="planBody">计算中...</div>
+  </div>
   <div id="chartBox"></div>`;
   // 15m 入场检测
   checkEntry15m(r);
+  // 交易计划
+  renderPlan(r);
   // 画 1H K线 + MA7
   drawChart(r);
+}
+
+function renderPlan(r){
+  const plan=calcPlan(r.kl||[]);
+  const body=$('planBody');
+  if(!plan){body.innerHTML='<span class="no">数据不足，无法计算</span>';return}
+  const pa=posAdvice(r.total);
+  const fmt=v=>'$'+v.toFixed(v>=1000?0:2);
+  // 动态止损提示
+  const dynNote=plan.brokeHigh
+    ? `<span class="ok">🔒 已突破前高 → 止损上移 ${fmt(plan.dynSL)}（锁利润）</span>`
+    : `<span class="wait">📌 结构止损 ${fmt(plan.slLong)}（跌破=多头失效）</span>`;
+  body.innerHTML=`
+    <span>入场参考：<b class="up">${fmt(plan.entry)}</b>（现价）· ATR(1H)：${fmt(plan.atr)}</span>
+    <span>🛡 止损：<b class="down">${fmt(plan.brokeHigh?plan.dynSL:plan.slLong)}</b> ${dynNote}</span>
+    <span>🎯 TP1：<b class="up">${fmt(plan.tp1Long)}</b>（前高）· TP2：<b class="up">${fmt(plan.tp2Long)}</b>（前高+1.5ATR）</span>
+    <span>📊 盈亏比：<b>1:${plan.rr1>=0?plan.rr1.toFixed(1):'∞'}</b> <span class="${plan.rr1>=2.5?'ok':(plan.rr1>=1.5?'wait':'no')}">${rrNote(plan.rr1)}</span></span>
+    <span>💼 仓位建议：<b class="${pa.cls}">${pa.pct}</b> ${pa.note}</span>
+    ${plan.brokeHigh?'':`<span class="dim" style="color:var(--dim)">💡 TP1 平一半锁利，剩余看 TP2；跌破止损无条件离场</span>`}`;
 }
 
 async function checkEntry15m(r){
