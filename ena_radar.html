@@ -319,18 +319,42 @@ function calcATR(kl,n=14){
   const seg=trs.slice(-n);
   return seg.reduce((a,b)=>a+b,0)/n;
 }
+// ═══════════ 斐波那契回撤/扩展（止盈止损参考）═══════════
+function calcFib(kl){
+  // 基于最近24根K线的 swing high/low 计算回撤位与扩展位
+  if(!kl||kl.length<30)return null;
+  const look=kl.slice(-24);
+  const hi=Math.max(...look.map(x=>x.h));
+  const lo=Math.min(...look.map(x=>x.l));
+  const range=hi-lo;
+  if(range<=0)return null;
+  return {
+    hi, lo,
+    f236: hi-range*0.236,   // 0.236 回撤
+    f382: hi-range*0.382,   // 0.382 回撤（浅回踩）
+    f500: hi-range*0.5,     // 0.5 回撤（中位）
+    f618: hi-range*0.618,   // 0.618 回撤（黄金分割，强支撑）
+    f786: hi-range*0.786,   // 0.786 回撤（深回撤，跌破=趋势失效）
+    ext1272: hi+range*0.272, // 1.272 扩展（TP1）
+    ext1618: hi+range*0.618, // 1.618 扩展（TP2）
+  };
+}
 function calcPlan(kl){
   if(!kl||kl.length<30)return null;
   const closes=kl.map(x=>x.c);
   const entry=closes[closes.length-1];
   const atr=calcATR(kl);
   if(!atr||atr<=0)return null;
+  const fib=calcFib(kl);
   const look=kl.slice(-24);
   const swingLow=Math.min(...look.map(x=>x.l));
   const swingHigh=Math.max(...look.map(x=>x.h));
-  const slLong=swingLow-atr*0.3;
-  const tp1Long=swingHigh;
-  const tp2Long=swingHigh+atr*1.5;
+  // 斐波那契参考：止损=0.786回撤下方（结构失效），止盈=1.272/1.618扩展
+  // 回撤位低于结构低点时用结构低点兜底（避免止损过近）
+  const fibSL=fib?Math.min(fib.f786,swingLow+atr*0.1):null;
+  const slLong=fibSL!==null?fibSL:swingLow-atr*0.3;
+  const tp1Long=fib?fib.ext1272:swingHigh;
+  const tp2Long=fib?fib.ext1618:swingHigh+atr*1.5;
   const rr1=(tp1Long-entry)/(entry-slLong);
   const rr2=(tp2Long-entry)/(entry-slLong);
   const slShort=swingHigh+atr*0.3;
@@ -338,8 +362,8 @@ function calcPlan(kl){
   const tp2Short=swingLow-atr*1.5;
   const rrS1=(slShort-entry)/(entry-tp1Short);
   const brokeHigh=entry>swingHigh;
-  const dynSL=brokeHigh?swingHigh-atr*0.2:slLong;
-  return {entry,atr,swingLow,swingHigh,slLong,tp1Long,tp2Long,rr1,rr2,slShort,tp1Short,tp2Short,rrS1,brokeHigh,dynSL};
+  const dynSL=brokeHigh?Math.max(swingHigh-atr*0.2,(fib?fib.f236:swingHigh)):slLong;
+  return {entry,atr,fib,swingLow,swingHigh,slLong,tp1Long,tp2Long,rr1,rr2,slShort,tp1Short,tp2Short,rrS1,brokeHigh,dynSL};
 }
 function rrNote(rr){
   if(rr>=2.5)return'✅ 盈亏比理想 (≥2.5)';
@@ -399,13 +423,17 @@ function renderPlan(r){
   const fmt=v=>'$'+v.toFixed(v>=1000?0:2);
   const dynNote=plan.brokeHigh
     ? `<span class="ok">🔒 已突破前高 → 止损上移 ${fmt(plan.dynSL)}（锁利润）</span>`
-    : `<span class="wait">📌 结构止损 ${fmt(plan.slLong)}（跌破=多头失效）</span>`;
+    : `<span class="wait">📌 斐波那契止损 ${fmt(plan.slLong)}（跌破0.786回撤=多头失效）</span>`;
+  const fibRow=plan.fib?`
+    <span class="dim" style="color:var(--dim)">🔢 斐波那契回撤：0.382 <b>${fmt(plan.fib.f382)}</b> · 0.5 <b>${fmt(plan.fib.f500)}</b> · 0.618 <b>${fmt(plan.fib.f618)}</b> · 0.786 <b>${fmt(plan.fib.f786)}</b></span>
+    <span class="dim" style="color:var(--dim)">📍 现价${plan.entry>plan.fib.f618?'高于0.618（强势区）':(plan.entry>plan.fib.f382?'处于0.382~0.618（回踩区）':'跌破0.382（弱势）')} · 回踩0.5/0.618可加仓，跌破0.786止损</span>`:'';
   body.innerHTML=`
     <span>入场参考：<b class="up">${fmt(plan.entry)}</b>（现价）· ATR(1H)：${fmt(plan.atr)}</span>
     <span>🛡 止损：<b class="down">${fmt(plan.brokeHigh?plan.dynSL:plan.slLong)}</b> ${dynNote}</span>
-    <span>🎯 TP1：<b class="up">${fmt(plan.tp1Long)}</b>（前高）· TP2：<b class="up">${fmt(plan.tp2Long)}</b>（前高+1.5ATR）</span>
+    <span>🎯 TP1：<b class="up">${fmt(plan.tp1Long)}</b>（1.272扩展）· TP2：<b class="up">${fmt(plan.tp2Long)}</b>（1.618扩展）</span>
     <span>📊 盈亏比：<b>1:${plan.rr1>=0?plan.rr1.toFixed(1):'∞'}</b> <span class="${plan.rr1>=2.5?'ok':(plan.rr1>=1.5?'wait':'no')}">${rrNote(plan.rr1)}</span></span>
     <span>💼 仓位建议：<b class="${pa.cls}">${pa.pct}</b> ${pa.note}</span>
+    ${fibRow}
     ${plan.brokeHigh?'':`<span class="dim" style="color:var(--dim)">💡 TP1 平一半锁利，剩余看 TP2；跌破止损无条件离场</span>`}`;
 }
 
