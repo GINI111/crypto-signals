@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ENA TREND RADAR · 趋势雷达 v2</title>
+<title>ENA 趋势雷达 v2</title>
 <style>
 :root{--bg:#08111a;--panel:#0d1a26;--panel2:#101f2e;--line:#1a2f42;--txt:#c8e6dc;--dim:rgba(200,230,220,.45);--green:#00c896;--red:#ff4466;--yellow:#f5c518;--cyan:#00aaff;--orange:#ff9f43}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -62,8 +62,8 @@ tr:hover td{background:rgba(0,200,150,.04)}
 </style>
 </head>
 <body>
-<h1>🔥 ENA TREND RADAR <span style="font-size:13px;color:var(--dim)">v2 · 趋势质量+阶段+入场</span></h1>
-<div class="sub">Quality 0~10 趋势质量 · Stage 趋势阶段 · Entry 0~5 入场质量 · Health 0~100 健康度 · 1H 周期</div>
+<h1>🔥 ENA 趋势雷达 <span style="font-size:13px;color:var(--dim)">v2 · 趋势质量+阶段+入场</span></h1>
+<div class="sub">质量 0~10 趋势质量 · 阶段 趋势阶段 · 入场 0~5 入场质量 · 健康度 0~100 健康度 · 1小时 周期</div>
 <div class="bar">
   <button id="btnScan" onclick="scanAll()">🔄 扫描全市场</button>
   <button id="f_all" class="on" onclick="setFilter('all')">全部</button>
@@ -162,10 +162,10 @@ const STG_META={
   DECLINING:{label:'📉 衰退',cls:'decl'}
 };
 function entryMeta(e){
-  if(e>=4)return{label:'🟢 GOOD',cls:'good'};
-  if(e>=2.5)return{label:'🟡 WAIT',cls:'wait'};
-  if(e>=1)return{label:'🔵 EARLY',cls:'early'};
-  return{label:'⛔ AVOID',cls:'avoid'};
+  if(e>=4)return{label:'🟢 优秀',cls:'good'};
+  if(e>=2.5)return{label:'🟡 观望',cls:'wait'};
+  if(e>=1)return{label:'🔵 早期',cls:'early'};
+  return{label:'⛔ 回避',cls:'avoid'};
 }
 function stageNote(st){
   if(st==='STARTING')return'📌 趋势刚形成：MA7 拐头，价格刚站上，早期机会';
@@ -364,9 +364,9 @@ async function showDetail(r){
   d.innerHTML=`<h2>${r.sym} <span class="stg ${stg.cls}">${stg.label}</span> <span class="entryTag et ${em.cls}">入场 ${em.label}</span> ${r.r.pullback?'<span class="pb">🔄 健康回踩</span>':''}</h2>
   <div class="metrics">
     <div class="metric"><div class="k">🎯 趋势质量 Quality</div><div class="v"><span class="qbar" style="width:90px"><i style="width:${q*10}%;background:${q>=8?'var(--green)':(q>=6?'var(--yellow)':'var(--red)')}"></i></span>${q.toFixed(1)}/10</div><div class="s">趋势有多漂亮</div></div>
-    <div class="metric"><div class="k">📈 趋势阶段 Stage</div><div class="v">${stg.label}</div><div class="s">${stageNote(r.r.stage)}</div></div>
-    <div class="metric"><div class="k">🎯 入场质量 Entry</div><div class="v">${r.r.entry}/5 <span class="entryTag et ${em.cls}" style="margin-left:6px">${em.label}</span></div><div class="s">${entryNote(r.r.entry)}</div></div>
-    <div class="metric"><div class="k">💚 趋势健康度 Health</div><div class="v"><span class="hbar"><i style="width:${r.r.health}%;background:${hColor}"></i></span><b class="${hCls}">${r.r.health}</b></div><div class="s">${r.r.health>=80?'✅ 健康':(r.r.health>=60?'🟡 一般':'❌ 脆弱')}</div></div>
+    <div class="metric"><div class="k">📈 趋势阶段</div><div class="v">${stg.label}</div><div class="s">${stageNote(r.r.stage)}</div></div>
+    <div class="metric"><div class="k">🎯 入场质量</div><div class="v">${r.r.entry}/5 <span class="entryTag et ${em.cls}" style="margin-left:6px">${em.label}</span></div><div class="s">${entryNote(r.r.entry)}</div></div>
+    <div class="metric"><div class="k">💚 趋势健康度</div><div class="v"><span class="hbar"><i style="width:${r.r.health}%;background:${hColor}"></i></span><b class="${hCls}">${r.r.health}</b></div><div class="s">${r.r.health>=80?'✅ 健康':(r.r.health>=60?'🟡 一般':'❌ 脆弱')}</div></div>
     <div class="metric"><div class="k">① 距 MA7 · ${ind.dist>=0?'+':''}${ind.dist.toFixed(1)}%</div><div class="v ${ind.dist>4?'down':(ind.dist>=0?'up':'down')}">${noteDist(ind.dist)}</div></div>
     <div class="metric"><div class="k">② MA7 20根涨幅 · ${ind.gain>=0?'+':''}${ind.gain.toFixed(1)}%</div><div class="v ${ind.gain>=25?'down':(ind.gain>=5?'up':'n')}">${noteGain(ind.gain)}</div></div>
     <div class="metric"><div class="k">③ MA7 单调性 · ${ind.mono.toFixed(0)}%</div><div class="v ${ind.mono>=90?'up':(ind.mono>=80?'n':'down')}">${noteMono(ind.mono)}</div></div>
