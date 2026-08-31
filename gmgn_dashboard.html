@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GMGN 雷达后台</title>
+<style>
+:root{--bg:#0a1118;--panel:#0e1720;--panel2:#13202c;--line:#1c2c3a;--text:#d8e6ee;--dim:#7d93a3;--grn:#00c896;--red:#ff4466;--yel:#f5c518;--cyn:#35c8ff;--org:#ff8c42;--pur:#b48cff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:12px/1.5 'PingFang SC','Microsoft YaHei',system-ui,sans-serif;padding:14px}
+h1{font-size:16px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:11px;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.card .v{font-size:20px;font-weight:700}
+.card .k{color:var(--dim);font-size:10px;margin-top:2px}
+.card.g .v{color:var(--grn)}.card.r .v{color:var(--red)}.card.y .v{color:var(--yel)}.card.c .v{color:var(--cyn)}.card.o .v{color:var(--org)}.card.p .v{color:var(--pur)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+button{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px}
+button:hover{border-color:var(--cyn)}
+button.on{background:rgba(53,200,255,.12);border-color:var(--cyn);color:var(--cyn)}
+input[type=text]{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:5px 10px;font-size:11px;width:160px}
+.wrap{display:grid;grid-template-columns:1fr 340px;gap:12px}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.phead{padding:9px 12px;border-bottom:1px solid var(--line);font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+.phead .dim{color:var(--dim);font-weight:400;font-size:10px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{position:sticky;top:0;background:var(--panel2);color:var(--dim);text-align:left;padding:7px 8px;cursor:pointer;white-space:nowrap;user-select:none;border-bottom:1px solid var(--line)}
+th:hover{color:var(--cyn)}
+td{padding:6px 8px;border-bottom:1px solid rgba(28,44,58,.5);white-space:nowrap}
+tr{cursor:pointer}
+tr:hover{background:rgba(53,200,255,.05)}
+.stg{font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid}
+.stg.NEW{color:var(--cyn);border-color:var(--cyn)}
+.stg.ACCUMULATION{color:var(--pur);border-color:var(--pur)}
+.stg.TRENDING{color:var(--grn);border-color:var(--grn)}
+.stg.BREAKOUT{color:var(--org);border-color:var(--org)}
+.stg.RETEST{color:var(--yel);border-color:var(--yel)}
+.stg.EXTENDED{color:var(--red);border-color:var(--red)}
+.stg.DECAY{color:var(--red);border-color:var(--red);opacity:.7}
+.stg.WATCH{color:var(--dim);border-color:var(--dim)}
+.stg.OVEREXTENDED{color:var(--red);border-color:var(--red)}
+.er{font-size:10px;padding:2px 6px;border-radius:4px}
+.er.LOW{color:var(--grn);background:rgba(0,200,150,.1)}
+.er.MEDIUM{color:var(--yel);background:rgba(245,197,24,.1)}
+.er.HIGH{color:var(--org);background:rgba(255,140,66,.12)}
+.er.EXTREME{color:var(--red);background:rgba(255,68,102,.14)}
+.up{color:var(--grn)}.down{color:var(--red)}
+.ev{display:flex;gap:6px;padding:7px 10px;border-bottom:1px solid rgba(28,44,58,.5);font-size:11px;align-items:center}
+.ev:hover{background:rgba(53,200,255,.04)}
+.etag{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;border:1px solid}
+.etag.NEW{color:var(--cyn);border-color:var(--cyn)}
+.etag.BREAKOUT{color:var(--org);border-color:var(--org)}
+.etag.BREAKOUT_STRONG{color:var(--org);border-color:var(--org);background:rgba(255,140,66,.15)}
+.etag.MOMENTUM{color:var(--pur);border-color:var(--pur)}
+.etag.RETEST{color:var(--yel);border-color:var(--yel)}
+.etag.DECAY{color:var(--red);border-color:var(--red)}
+.etag.early{color:var(--dim);border-color:var(--dim)}
+.etag.smart{color:var(--grn);border-color:var(--grn)}
+.etag.highrisk{color:var(--red);border-color:var(--red);opacity:.7}
+.empty{padding:30px;text-align:center;color:var(--dim)}
+/* 详情弹层 */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:50;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:560px;max-width:94vw;max-height:86vh;overflow-y:auto;padding:16px}
+.dlg h2{font-size:15px;margin-bottom:2px}
+.dlg .cls{color:var(--dim);font-size:11px;margin-bottom:10px}
+.dlg .grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;margin-bottom:10px}
+.dlg .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(28,44,58,.6);font-size:11px}
+.dlg .row .k{color:var(--dim)}
+canvas{width:100%;height:90px;display:block;margin-top:6px}
+.x{float:right;cursor:pointer;color:var(--dim);font-size:16px;padding:2px 6px}
+.x:hover{color:var(--red)}
+#evList{max-height:420px;overflow-y:auto}
+#status{color:var(--dim);font-size:10px}
+</style>
+</head>
+<body>
+<h1>📡 GMGN 雷达后台 <span style="font-size:12px;color:var(--dim)">扫链监控 · 实时数据</span></h1>
+<div class="sub" id="sub">加载中...</div>
+
+<div class="cards" id="cards"></div>
+
+<div class="bar">
+  <input type="text" id="q" placeholder="🔍 搜索币名/符号" oninput="render()">
+  <span id="fchain"></span>
+  <span id="fstg"></span>
+  <span id="fer"></span>
+  <span style="flex:1"></span>
+  <button onclick="toggleEv()">📨 事件流</button>
+  <button onclick="load()">↻ 刷新</button>
+  <span id="status"></span>
+</div>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="phead">💰 币种列表 <span class="dim" id="cnt"></span></div>
+    <div class="tbl-wrap"><table id="tbl">
+      <thead><tr id="th"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+  <div class="panel" id="evPanel">
+    <div class="phead">📨 事件流 <span class="dim">最近推送</span></div>
+    <div id="evList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ov" onclick="if(event.target===this)closeD()">
+  <div class="dlg" id="dlg"></div>
+</div>
+
+<script>
+const DATA_URL='data/gmgn_dashboard.json';
+let D=null, SORT={k:'sc',d:-1}, FC='all', FS='all', FE='all';
+const CHAINS=['all','sol','bsc','base','eth','robinhood','arc','stable'];
+const STAGES=['all','NEW','ACCUMULATION','TRENDING','BREAKOUT','RETEST','EXTENDED','DECAY','WATCH'];
+const ERS=['all','LOW','MEDIUM','HIGH','EXTREME'];
+const $=id=>document.getElementById(id);
+const p=n=>String(n).padStart(2,'0');
+const bjFmt=ts=>{const d=new Date((ts||0)*1000+8*3600*1000);return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`};
+const ageFmt=ts=>{const s=Date.now()/1000-(ts||0);if(s<3600)return Math.floor(s/60)+'分';if(s<86400)return Math.floor(s/3600)+'时';return Math.floor(s/86400)+'天'};
+const mcFmt=v=>{if(!v&&v!==0)return'-';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'K';return'$'+v.toFixed(0)};
+const pxFmt=v=>{if(!v&&v!==0)return'-';if(v>=1000)return'$'+v.toFixed(2);if(v>=1)return'$'+v.toFixed(4);if(v>=0.01)return'$'+v.toFixed(6);if(v>=0.0001)return'$'+v.toFixed(8);return'$'+v.toFixed(10)};
+const erLevel=er=>er>=75?'EXTREME':er>=50?'HIGH':er>=25?'MEDIUM':'LOW';
+const chainName=c=>({sol:'SOL',bsc:'BSC',base:'BASE',eth:'ETH',robinhood:'RH',arc:'ARC',stable:'STB'}[c]||c);
+
+function initFilters(){
+  $('fchain').innerHTML=CHAINS.map(c=>`<button class="${FC===c?'on':''}" onclick="setF('FC','${c}')">${c==='all'?'🌐全部':chainName(c)}</button>`).join(' ');
+  $('fstg').innerHTML=STAGES.map(c=>`<button class="${FS===c?'on':''}" onclick="setF('FS','${c}')">${c==='all'?'阶段':c}</button>`).join(' ');
+  $('fer').innerHTML=ERS.map(c=>`<button class="${FE===c?'on':''}" onclick="setF('FE','${c}')">${c==='all'?'风险':c}</button>`).join(' ');
+}
+function setF(k,v){if(k==='FC')FC=v;if(k==='FS')FS=v;if(k==='FE')FE=v;initFilters();render()}
+
+function stats(){
+  const ts=D.tokens, ev=D.events||[];
+  const now=Date.now()/1000;
+  const active24=ts.filter(t=>t.ls>now-86400).length;
+  const high=ts.filter(t=>t.sc>=80).length;
+  const sPlus=ts.filter(t=>t.sc>=85).length;
+  const today=ev.filter(e=>e.ts>now-86400).length;
+  const byType={};ev.slice(0,50).forEach(e=>byType[e.e]=(byType[e.e]||0)+1);
+  const cards=[
+    {v:ts.length,k:'监控中币种',c:''},
+    {v:active24,k:'24h 活跃',c:'c'},
+    {v:sPlus,k:'S+ 级 (≥85)',c:'g'},
+    {v:high,k:'高分 (≥80)',c:'y'},
+    {v:today,k:'今日推送',c:'o'},
+    {v:byType.BREAKOUT||0,k:'近50条中突破',c:'r'},
+  ];
+  $('cards').innerHTML=cards.map(c=>`<div class="card ${c.c}"><div class="v">${c.v}</div><div class="k">${c.k}</div></div>`).join('');
+}
+
+function cols(){
+  return [
+    ['s','币种'],['c','链'],['st','阶段'],['sc','评分'],['er','追高'],
+    ['mc','市值'],['p1h','24h'],['v1h','1h量'],['sm','聪明钱'],['hd','持有人'],
+    ['ls','活跃'],['ct','币龄'],
+  ];
+}
+function sortKey(t,k){
+  if(k==='s')return t.s.toLowerCase();
+  if(k==='c')return t.c;
+  if(k==='st')return t.st;
+  if(k==='er')return t.er;
+  if(k==='ls')return t.ls;
+  if(k==='ct')return t.ct;
+  return t[k]??-Infinity;
+}
+function render(){
+  if(!D)return;
+  const q=($('q').value||'').toLowerCase();
+  let list=D.tokens.filter(t=>{
+    if(FC!=='all'&&t.c!==FC)return false;
+    if(FS!=='all'&&t.st!==FS)return false;
+    if(FE!=='all'&&erLevel(t.er)!==FE)return false;
+    if(q&&!(t.s.toLowerCase().includes(q)||(t.n||'').toLowerCase().includes(q)))return false;
+    return true;
+  });
+  list.sort((a,b)=>{const va=sortKey(a,SORT.k),vb=sortKey(b,SORT.k);if(typeof va==='string')return SORT.d*va.localeCompare(vb);return SORT.d*((va||0)-(vb||0))});
+  $('cnt').textContent=`${list.length} 个`;
+  $('th').innerHTML=cols().map(([k,n])=>`<th onclick="setSort('${k}')">${n}${SORT.k===k?(SORT.d<0?' ▼':' ▲'):''}</th>`).join('');
+  $('tbody').innerHTML=list.slice(0,200).map(t=>{
+    const er=erLevel(t.er);
+    const p1h=t.p1h;
+    return `<tr onclick="showD('${t.c}:${t.a}')">
+      <td><b>${t.s}</b></td>
+      <td style="color:var(--dim)">${chainName(t.c)}</td>
+      <td><span class="stg ${t.st}">${t.st}</span></td>
+      <td><b class="${t.sc>=80?'up':t.sc>=65?'':'down'}">${t.sc??'-'}</b></td>
+      <td><span class="er ${er}">${er} ${t.er??''}</span></td>
+      <td>${mcFmt(t.mc)}</td>
+      <td class="${p1h>=0?'up':'down'}">${p1h!=null?(p1h>=0?'+':'')+p1h.toFixed(1)+'%':'-'}</td>
+      <td>${mcFmt(t.v1h)}</td>
+      <td><b style="color:${t.sm>=100?'var(--grn)':'inherit'}">${t.sm??0}</b></td>
+      <td>${t.hd??0}</td>
+      <td style="color:var(--dim)">${bjFmt(t.ls)}</td>
+      <td style="color:var(--dim)">${ageFmt(t.ct)}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="12" class="empty">无匹配币种</td></tr>';
+}
+function setSort(k){if(SORT.k===k)SORT.d*=-1;else{SORT.k=k;SORT.d=-1}render()}
+
+function renderEv(){
+  if(!D)return;
+  $('evList').innerHTML=(D.events||[]).map(e=>{
+    const cls=e.e==='BREAKOUT_STRONG'?'BREAKOUT':e.e;
+    return `<div class="ev"><span class="etag ${cls}">${e.e}</span><b>${e.s}</b><span style="color:var(--dim)">${chainName(e.c)}</span><span style="flex:1"></span><span class="${e.sc>=80?'up':''}">${e.sc??''}</span><span style="color:var(--dim)">${bjFmt(e.ts)}</span></div>`;
+  }).join('')||'<div class="empty">暂无事件</div>';
+}
+function toggleEv(){const p=$('evPanel');p.style.display=p.style.display==='none'?'':'none'}
+
+function showD(key){
+  const t=D.tokens.find(x=>`${x.c}:${x.a}`===key);
+  if(!t)return;
+  const er=erLevel(t.er);
+  const snaps=(D.detail||{})[key]||[];
+  const rows=[
+    ['阶段',`<span class="stg ${t.st}">${t.st}</span>`],
+    ['Call 评分',`<b class="${t.sc>=80?'up':''}">${t.sc}</b>（Quality ${t.q} / Momentum ${t.m} / Safety ${t.sf}）`],
+    ['追高风险',`<span class="er ${er}">${er} ${t.er}</span>`],
+    ['市值',mcFmt(t.mc)+` <span style="color:var(--dim)">ATH ${mcFmt(t.ath)}</span>`],
+    ['价格',pxFmt(t.px)],
+    ['24h 涨幅',`<span class="${t.p1h>=0?'up':'down'}">${t.p1h!=null?(t.p1h>=0?'+':'')+t.p1h.toFixed(1)+'%':'-'}</span>`],
+    ['5m 涨幅',`${t.p5!=null?(t.p5>=0?'+':'')+t.p5.toFixed(1)+'%':'-'}`],
+    ['流动性',mcFmt(t.liq)],
+    ['24h 成交',mcFmt(t.vol)],
+    ['1h 成交',mcFmt(t.v1h)],
+    ['聪明钱',`${t.sm} <span style="color:var(--dim)">KOL ${t.kol??0}</span>`],
+    ['持有人',t.hd],
+    ['Top10',t.t10!=null?(t.t10*100).toFixed(1)+'%':''],
+    ['Rug',t.rug!=null?(t.rug*100).toFixed(1)+'%':''],
+    ['进度(bonding)',t.pg!=null?(t.pg*100).toFixed(0)+'%':''],
+    ['净买入',t.nb!=null?mcFmt(t.nb):''],
+    ['买/卖 24h',`${t.b24??0} / ${t.sl24??0}`],
+    ['创建',bjFmt(t.ct)+`（${ageFmt(t.ct)}前）`],
+    ['首次发现',bjFmt(t.fs)],
+  ];
+  $('dlg').innerHTML=`
+    <span class="x" onclick="closeD()">✕</span>
+    <h2>${t.s} <span style="color:var(--dim);font-size:12px">${t.n||''}</span></h2>
+    <div class="cls">${t.c} · ${t.a.slice(0,10)}...${t.a.slice(-6)}</div>
+    <div class="grid2">${rows.map(([k,v])=>`<div class="row"><span class="k">${k}</span><span>${v}</span></div>`).join('')}</div>
+    <div style="color:var(--dim);font-size:10px">📈 市值趋势（最近48h快照）</div>
+    <canvas id="mcC"></canvas>
+    <div style="color:var(--dim);font-size:10px;margin-top:6px">🧠 聪明钱趋势</div>
+    <canvas id="smC"></canvas>`;
+  $('ov').classList.add('show');
+  setTimeout(()=>{drawSnap(snaps,'mcC','mc');drawSnap(snaps,'smC','sm')},30);
+}
+function closeD(){$('ov').classList.remove('show')}
+
+function drawSnap(snaps,id,field){
+  const c=$(id);if(!c)return;
+  const ctx=c.getContext('2d'),w=c.clientWidth,h=90,dpr=devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);
+  if(!snaps||snaps.length<2){ctx.fillStyle='rgba(255,255,255,.2)';ctx.font='10px sans-serif';ctx.fillText('快照不足',8,20);return}
+  const vals=snaps.map(s=>s[field]??0);
+  const mn=Math.min(...vals),mx=Math.max(...vals),rg=(mx-mn)||1;
+  const x=i=>i/(vals.length-1)*w, y=v=>h-6-(v-mn)/rg*(h-14);
+  ctx.strokeStyle='#00c896';ctx.lineWidth=1.2;ctx.beginPath();
+  vals.forEach((v,i)=>i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v)));
+  ctx.stroke();
+  ctx.fillStyle='rgba(0,200,150,.85)';
+  ctx.beginPath();ctx.arc(x(vals.length-1),y(vals[vals.length-1]),2,0,7);ctx.fill();
+}
+
+async function load(){
+  $('status').textContent='加载中...';
+  try{
+    const r=await fetch(DATA_URL+'?t='+Date.now());
+    D=await r.json();
+    $('sub').textContent=`⏱️ 数据时间 ${D.generated_str}（北京时间） · 每15分钟自动更新`;
+    stats();render();renderEv();initFilters();
+    $('status').textContent='✅ 已更新';
+  }catch(e){$('status').textContent='❌ 加载失败: '+e.message}
+}
+initFilters();
+load();
+setInterval(load, 15*60*1000);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD()});
+</script>
+</body>
+</html>
