@@ -445,7 +445,13 @@ function renderPlan(r){
   const body=$('planBody');
   if(!plan){body.innerHTML='<span class="no">数据不足，无法计算</span>';return}
   const pa=posAdvice(r.r.quality,r.r.entry,r.r.stage,r.r.ind.dist,r.r.health);
-  const fmt=v=>'$'+v.toFixed(v>=1000?0:2);
+  const fmt=v=>{
+    if(v>=1000)return '$'+v.toFixed(2);
+    if(v>=1)return '$'+v.toFixed(4);
+    if(v>=0.01)return '$'+v.toFixed(6);
+    if(v>=0.0001)return '$'+v.toFixed(8);
+    return '$'+v.toFixed(10);
+  };
   const dynNote=plan.brokeHigh
     ? `<span class="ok">🔒 已突破前高 → 止损上移 ${fmt(plan.dynSL)}（锁利润）</span>`
     : `<span class="wait">📌 斐波那契止损 ${fmt(plan.slLong)}（跌破0.786回撤=多头失效）</span>`;
