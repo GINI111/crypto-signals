@@ -62,7 +62,7 @@ tr:hover td{background:rgba(0,200,150,.04)}
 </style>
 </head>
 <body>
-<h1>🔥 ENA 趋势雷达 <span style="font-size:13px;color:var(--dim)">v2 · 趋势质量+阶段+入场</span></h1>
+<h1>🔥 ENA 趋势雷达 <span style="font-size:13px;color:var(--dim)">v3 · 三档入场（选币 ≠ 入场）</span></h1>
 <div class="sub">质量 0~10 趋势质量 · 阶段 趋势阶段 · 入场 0~5 入场质量 · 健康度 0~100 健康度 · 1小时 周期</div>
 <div class="bar">
   <button id="btnScan" onclick="scanAll()">🔄 扫描全市场</button>
@@ -75,9 +75,13 @@ tr:hover td{background:rgba(0,200,150,.04)}
   <span id="status">就绪</span>
 </div>
 <div class="legend">Δ = 距上次扫描 Quality 变化（浏览器本地记忆）· 点击行看详情</div>
+<div class="legend" style="border:1px solid var(--panel2);padding:8px;border-radius:6px;background:var(--panel2)">
+  🎯 <b>三档入场</b>：🟡 等回踩（普通强势，回踩到位+重新转强再进，仓位100%）· 🔥 强启动可买（Q≥8+H≥85+入场≥4+距MA7≤3%，仓位50~70%）· ⛔ 追高/过热不买<br>
+  💡 <b>趋势强 ≠ 现在适合买</b>：价格远离 MA7 时追入风险收益比差——ENA 负责找好币，15m 突破/回踩确认负责决定何时买
+</div>
 <table id="tbl">
 <thead><tr>
-  <th>#</th><th>币种</th><th>Quality</th><th>阶段</th><th>入场</th><th>距MA7</th><th>20根涨幅</th><th>单调性</th><th>末5斜率</th><th>回撤</th><th>Δ</th><th>24h</th>
+  <th>#</th><th>币种</th><th>Quality</th><th>阶段</th><th>入场</th><th>操作</th><th>距MA7</th><th>20根涨幅</th><th>单调性</th><th>末5斜率</th><th>回撤</th><th>Δ</th><th>24h</th>
 </tr></thead>
 <tbody id="tbody"></tbody>
 </table>
@@ -85,7 +89,7 @@ tr:hover td{background:rgba(0,200,150,.04)}
 <script>
 const $=id=>document.getElementById(id);
 let RADAR_DATA=[], CUR_FILTER='all';
-const LS_KEY='ena_radar_v2_scores';
+const LS_KEY='ena_radar_v3_scores';
 
 // ═══════════ v2 评分（与 ena_score.js 一致）═══════════
 function calcMA7(closes){const ma7=[];for(let i=6;i<closes.length;i++){let s=0;for(let j=i-6;j<=i;j++)s+=closes[j];ma7.push(s/7)}return ma7}
@@ -162,10 +166,22 @@ const STG_META={
   DECLINING:{label:'📉 衰退',cls:'decl'}
 };
 function entryMeta(e){
-  if(e>=4)return{label:'🟢 优秀',cls:'good'};
-  if(e>=2.5)return{label:'🟡 观望',cls:'wait'};
-  if(e>=1)return{label:'🔵 早期',cls:'early'};
-  return{label:'⛔ 回避',cls:'avoid'};
+  if(e>=5)return{label:'🟢 最佳入场',cls:'good'};
+  if(e>=4)return{label:'🟠 突破可追',cls:'good'};
+  if(e>=3)return{label:'🟡 回踩候选',cls:'wait'};
+  if(e>=2)return{label:'🔵 等待',cls:'early'};
+  if(e>=1)return{label:'🔵 太早',cls:'early'};
+  return{label:'⛔ 不可交易',cls:'avoid'};
+}
+// 三档入场状态徽章（1H 口径：选币 → 操作）
+function entryState(r){
+  const q=r.r.quality,h=r.r.health,e=r.r.entry,st=r.r.stage,dist=r.r.ind.dist;
+  if(st==='OVEREXTENDED'||st==='DECLINING')return{label:'⛔ 不交易',cls:'no'};
+  if(q>=8&&h>=85&&e>=4&&(st==='STARTING'||st==='ACCELERATION')&&dist<=3)return{label:'🔥 强启动可买',cls:'ok'};
+  if(q>=7.5&&h>=75&&dist<=2)return{label:'🟢 回踩到位',cls:'ok'};
+  if(q>=8&&h>=80)return{label:'🟡 等回踩',cls:'wait'};
+  if(q>=6.5)return{label:'🔵 观察',cls:'early'};
+  return{label:'⚪️ 观望',cls:'no'};
 }
 function stageNote(st){
   if(st==='STARTING')return'📌 趋势刚形成：MA7 拐头，价格刚站上，早期机会';
@@ -175,10 +191,12 @@ function stageNote(st){
   return'📉 衰退：斜率转负或深回撤，趋势受损';
 }
 function entryNote(e){
-  if(e>=4)return'✅ 入场位置好（贴线/回踩后重新向上）';
-  if(e>=2.5)return'🟡 位置尚可，等回踩或突破确认';
-  if(e>=1)return'🔵 早期/偏离，性价比一般';
-  return'⛔ 当前位置差，不建议入场';
+  if(e>=5)return'✅ 最佳入场：贴线 + 回踩后重新向上 + 结构健康';
+  if(e>=4)return'🟠 突破可追：强趋势 + 位置不差，突破确认可进';
+  if(e>=3)return'🟡 回踩候选：等回到 MA7 附近 + 重新转强再进';
+  if(e>=2)return'🔵 等待：趋势还在形成，别急';
+  if(e>=1)return'🔵 太早：信号未成熟';
+  return'⛔ 不可交易：当前位置差';
 }
 function noteDist(d){
   if(d<0)return'⚠️ 价格跌破MA7，趋势暂弱';
@@ -287,6 +305,7 @@ function renderTable(rows){
     const q=r.r.quality,ind=r.r.ind;
     const stg=STG_META[r.r.stage];
     const em=entryMeta(r.r.entry);
+    const es=entryState(r);
     const qCls=q>=8?'s':(q>=6?'a':'n');
     const deltaHtml=r.delta===null?'<span class="delta new">NEW</span>'
       :(r.delta>=0.3?`<span class="delta up">↑+${r.delta.toFixed(1)}</span>`
@@ -296,6 +315,7 @@ function renderTable(rows){
       <td class="score ${qCls}"><span class="qbar"><i style="width:${q*10}%"></i></span>${q.toFixed(1)}</td>
       <td><span class="stg ${stg.cls}">${stg.label}</span></td>
       <td><span class="entryTag et ${em.cls}">${em.label}</span></td>
+      <td><span class="entryTag et ${es.cls}">${es.label}</span></td>
       <td class="${ind.dist>4?'down':(ind.dist>=0?'up':'down')}">${ind.dist>=0?'+':''}${ind.dist.toFixed(1)}%</td>
       <td class="${ind.gain>=15?'up':(ind.gain>=5?'n':'down')}">${ind.gain>=0?'+':''}${ind.gain.toFixed(1)}%</td>
       <td class="${ind.mono>=90?'up':(ind.mono>=80?'n':'down')}">${ind.mono.toFixed(0)}%</td>
@@ -305,7 +325,7 @@ function renderTable(rows){
       <td class="${r.chg>=0?'up':'down'}">${r.chg>=0?'+':''}${r.chg.toFixed(1)}%</td>`;
     tb.appendChild(tr);
   });
-  if(!tb.children.length)tb.innerHTML='<tr><td colspan="12" style="color:var(--dim);text-align:center;padding:20px">该筛选下暂无币种</td></tr>';
+  if(!tb.children.length)tb.innerHTML='<tr><td colspan="13" style="color:var(--dim);text-align:center;padding:20px">该筛选下暂无币种</td></tr>';
 }
 
 // ═══════════ 交易计划（保留 v1）═══════════
@@ -370,10 +390,13 @@ function rrNote(rr){
   if(rr>=1.5)return'🟡 盈亏比合格 (≥1.5)';
   return'❌ 盈亏比不足 (<1.5)，建议放弃';
 }
-function posAdvice(q,entry,stage){
+function posAdvice(q,entry,stage,dist,health){
   if(stage==='OVEREXTENDED'||stage==='DECLINING')return{pct:'0%',note:'⛔ 阶段不佳：空仓观望',cls:'no'};
-  if(q>=8&&entry>=3)return{pct:'20~30%',note:'🔥 高质量+好位置：积极做多',cls:'ok'};
-  if(q>=6.5&&entry>=2)return{pct:'15~20%',note:'🟡 趋势尚可：试探性参与',cls:'wait'};
+  // 三档：强启动 50~70% / 回踩到位 100% / 普通强势 0% 等回踩
+  if(q>=8&&entry>=4&&(stage==='STARTING'||stage==='ACCELERATION')&&dist<=3&&health>=85)return{pct:'50~70%',note:'🔥 强启动：信号即买（强趋势+不过热+量确认）',cls:'ok'};
+  if(q>=7.5&&health>=75&&dist<=2)return{pct:'100%',note:'🟢 回踩到位：合格回踩后重新转强，最佳买点',cls:'ok'};
+  if(q>=8&&health>=80)return{pct:'0%',note:'🟡 趋势成立但偏离MA7：等回踩（不追高）',cls:'wait'};
+  if(q>=6.5&&entry>=2)return{pct:'20~30%',note:'🔵 提前试仓：确认后再加仓',cls:'wait'};
   return{pct:'0%',note:'⚪️ 信号弱：空仓观望',cls:'no'};
 }
 
@@ -383,9 +406,10 @@ async function showDetail(r){
   const d=$('detail');d.style.display='block';
   const ind=r.r.ind,q=r.r.quality;
   const stg=STG_META[r.r.stage],em=entryMeta(r.r.entry);
+  const es=entryState(r);
   const hCls=r.r.health>=80?'ok':(r.r.health>=60?'wait':'no');
   const hColor=r.r.health>=80?'var(--green)':(r.r.health>=60?'var(--yellow)':'var(--red)');
-  d.innerHTML=`<h2>${r.sym} <span class="stg ${stg.cls}">${stg.label}</span> <span class="entryTag et ${em.cls}">入场 ${em.label}</span> ${r.r.pullback?'<span class="pb">🔄 健康回踩</span>':''}</h2>
+  d.innerHTML=`<h2>${r.sym} <span class="stg ${stg.cls}">${stg.label}</span> <span class="entryTag et ${em.cls}">入场 ${em.label}</span> <span class="entryTag et ${es.cls}">${es.label}</span> ${r.r.pullback?'<span class="pb">🔄 健康回踩</span>':''}</h2>
   <div class="metrics">
     <div class="metric"><div class="k">🎯 趋势质量 Quality</div><div class="v"><span class="qbar" style="width:90px"><i style="width:${q*10}%;background:${q>=8?'var(--green)':(q>=6?'var(--yellow)':'var(--red)')}"></i></span>${q.toFixed(1)}/10</div><div class="s">趋势有多漂亮</div></div>
     <div class="metric"><div class="k">📈 趋势阶段</div><div class="v">${stg.label}</div><div class="s">${stageNote(r.r.stage)}</div></div>
@@ -402,8 +426,9 @@ async function showDetail(r){
     <div style="font-weight:bold;color:var(--cyan)">🎯 综合判断</div>
     <div class="row"><span>1H 趋势：<b class="${q>=8?'ok':(q>=6?'wait':'no')}">${q.toFixed(1)}/10</b></span>
     <span>阶段：<b>${stg.label}</b></span>
-    <span>入场：<span id="entryState" class="${em.cls==='good'?'ok':(em.cls==='wait'?'wait':'no')}">${em.label}</span></span>
+    <span>操作：<span id="entryState" class="${es.cls==='ok'?'ok':(es.cls==='wait'?'wait':'no')}">${es.label}</span></span>
     <span>15m 状态：<span id="m15state" class="wait">检测中...</span></span></div>
+    <div class="row" style="color:var(--dim);font-size:12px">💡 ENA 负责找好币，15m 突破/回踩确认负责决定何时买</div>
   </div>
   <div class="entry" id="planBox" style="margin-top:10px">
     <div style="font-weight:bold;color:var(--yellow)">📐 交易计划（动态止盈止损框架）</div>
@@ -419,7 +444,7 @@ function renderPlan(r){
   const plan=calcPlan(r.kl||[]);
   const body=$('planBody');
   if(!plan){body.innerHTML='<span class="no">数据不足，无法计算</span>';return}
-  const pa=posAdvice(r.r.quality,r.r.entry,r.r.stage);
+  const pa=posAdvice(r.r.quality,r.r.entry,r.r.stage,r.r.ind.dist,r.r.health);
   const fmt=v=>'$'+v.toFixed(v>=1000?0:2);
   const dynNote=plan.brokeHigh
     ? `<span class="ok">🔒 已突破前高 → 止损上移 ${fmt(plan.dynSL)}（锁利润）</span>`
@@ -451,9 +476,16 @@ async function checkEntry15m(r){
     const brokeHigh=cur>prevHigh;
     const volOk=vol>volPrev*1.2;
     const st=$('m15state');
-    if(brokeHigh&&volOk){st.textContent='突破+放量 ✅';st.className='ok';$('entryState').textContent='🟢 BUY 信号';$('entryState').className='ok'}
-    else if(inPullback){st.textContent='回踩中';st.className='wait';$('entryState').textContent='🟡 等待突破前高';$('entryState').className='wait'}
-    else if(cur>curMA7){st.textContent='MA7上方运行';st.className='ok';$('entryState').textContent='🟡 等待回踩或突破';$('entryState').className='wait'}
+    // 三档联动：1H 徽章 + 15m 确认 → 最终操作
+    const es=entryState(r);
+    if(brokeHigh&&volOk){
+      st.textContent='突破+放量 ✅';st.className='ok';
+      if(es.label.includes('强启动')){$('entryState').textContent='🔥 BREAKOUT ENTRY（可买 50~70%）';$('entryState').className='ok'}
+      else if(es.label.includes('回踩到位')){$('entryState').textContent='🟢 RETEST ENTRY（可买 100%）';$('entryState').className='ok'}
+      else{$('entryState').textContent='🟠 突破但偏离MA7 不追（等回踩）';$('entryState').className='wait'}
+    }
+    else if(inPullback){st.textContent='回踩中';st.className='wait';$('entryState').textContent='🟡 回踩中：等企稳+重新突破15m高点';$('entryState').className='wait'}
+    else if(cur>curMA7){st.textContent='MA7上方运行';st.className='ok';$('entryState').textContent='🟡 等待回踩或突破确认';$('entryState').className='wait'}
     else{st.textContent='跌破MA7';st.className='no';$('entryState').textContent='⚪️ 结构破坏，不追';$('entryState').className='no'}
   }catch(e){$('m15state').textContent='--'}
 }
