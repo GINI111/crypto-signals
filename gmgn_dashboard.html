@@ -125,12 +125,16 @@ const ageFmt=ts=>{const s=Date.now()/1000-(ts||0);if(s<3600)return Math.floor(s/
 const mcFmt=v=>{if(!v&&v!==0)return'-';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'K';return'$'+v.toFixed(0)};
 const pxFmt=v=>{if(!v&&v!==0)return'-';if(v>=1000)return'$'+v.toFixed(2);if(v>=1)return'$'+v.toFixed(4);if(v>=0.01)return'$'+v.toFixed(6);if(v>=0.0001)return'$'+v.toFixed(8);return'$'+v.toFixed(10)};
 const erLevel=er=>er>=75?'EXTREME':er>=50?'HIGH':er>=25?'MEDIUM':'LOW';
-const chainName=c=>({sol:'SOL',bsc:'BSC',base:'BASE',eth:'ETH',robinhood:'RH',arc:'ARC',stable:'STB'}[c]||c);
+const chainName=c=>({sol:'Solana',bsc:'BSC',base:'Base',eth:'以太坊',robinhood:'Robinhood',arc:'ARC',stable:'稳定币'}[c]||c);
+const chainShort=c=>({sol:'SOL',bsc:'BSC',base:'BASE',eth:'ETH',robinhood:'RH',arc:'ARC',stable:'STB'}[c]||c);
+const STG_CN={NEW:'🆕 新币',ACCUMULATION:'📊 吸筹',TRENDING:'📈 趋势',BREAKOUT:'🔥 突破',RETEST:'🔄 回踩',EXTENDED:'⚠️ 过热',DECAY:'📉 衰退',WATCH:'👀 观察',OVEREXTENDED:'⚠️ 过热'};
+const ER_CN={LOW:'低',MEDIUM:'中',HIGH:'高',EXTREME:'极高'};
+const EV_CN={NEW:'新币',BREAKOUT:'突破',BREAKOUT_STRONG:'强突破',MOMENTUM:'聪明钱异动',RETEST:'回踩确认',DECAY:'走弱',early:'早期发现',smart:'聪明钱聚集',highrisk:'高风险'};
 
 function initFilters(){
-  $('fchain').innerHTML=CHAINS.map(c=>`<button class="${FC===c?'on':''}" onclick="setF('FC','${c}')">${c==='all'?'🌐全部':chainName(c)}</button>`).join(' ');
-  $('fstg').innerHTML=STAGES.map(c=>`<button class="${FS===c?'on':''}" onclick="setF('FS','${c}')">${c==='all'?'阶段':c}</button>`).join(' ');
-  $('fer').innerHTML=ERS.map(c=>`<button class="${FE===c?'on':''}" onclick="setF('FE','${c}')">${c==='all'?'风险':c}</button>`).join(' ');
+  $('fchain').innerHTML=CHAINS.map(c=>`<button class="${FC===c?'on':''}" onclick="setF('FC','${c}')">${c==='all'?'🌐全部':chainShort(c)}</button>`).join(' ');
+  $('fstg').innerHTML=STAGES.map(c=>`<button class="${FS===c?'on':''}" onclick="setF('FS','${c}')">${c==='all'?'全部阶段':(STG_CN[c]||c)}</button>`).join(' ');
+  $('fer').innerHTML=ERS.map(c=>`<button class="${FE===c?'on':''}" onclick="setF('FE','${c}')">${c==='all'?'全部风险':(ER_CN[c]+'风险')}</button>`).join(' ');
 }
 function setF(k,v){if(k==='FC')FC=v;if(k==='FS')FS=v;if(k==='FE')FE=v;initFilters();render()}
 
@@ -156,7 +160,7 @@ function stats(){
 function cols(){
   return [
     ['s','币种'],['c','链'],['st','阶段'],['sc','评分'],['er','追高'],
-    ['mc','市值'],['p1h','24h'],['v1h','1h量'],['sm','聪明钱'],['hd','持有人'],
+    ['narr','题材'],['mc','市值'],['p1h','24h'],['sm','聪明钱'],['hd','持有人'],
     ['ls','活跃'],['ct','币龄'],
   ];
 }
@@ -187,10 +191,11 @@ function render(){
     const p1h=t.p1h;
     return `<tr onclick="showD('${t.c}:${t.a}')">
       <td><b>${t.s}</b></td>
-      <td style="color:var(--dim)">${chainName(t.c)}</td>
-      <td><span class="stg ${t.st}">${t.st}</span></td>
+      <td style="color:var(--dim)">${chainShort(t.c)}</td>
+      <td><span class="stg ${t.st}">${STG_CN[t.st]||t.st}</span></td>
       <td><b class="${t.sc>=80?'up':t.sc>=65?'':'down'}">${t.sc??'-'}</b></td>
-      <td><span class="er ${er}">${er} ${t.er??''}</span></td>
+      <td><span class="er ${er}">${ER_CN[er]} ${t.er??''}</span></td>
+      <td style="color:var(--cyn);max-width:90px;overflow:hidden;text-overflow:ellipsis">${t.narr||'-'}</td>
       <td>${mcFmt(t.mc)}</td>
       <td class="${p1h>=0?'up':'down'}">${p1h!=null?(p1h>=0?'+':'')+p1h.toFixed(1)+'%':'-'}</td>
       <td>${mcFmt(t.v1h)}</td>
@@ -207,7 +212,7 @@ function renderEv(){
   if(!D)return;
   $('evList').innerHTML=(D.events||[]).map(e=>{
     const cls=e.e==='BREAKOUT_STRONG'?'BREAKOUT':e.e;
-    return `<div class="ev"><span class="etag ${cls}">${e.e}</span><b>${e.s}</b><span style="color:var(--dim)">${chainName(e.c)}</span><span style="flex:1"></span><span class="${e.sc>=80?'up':''}">${e.sc??''}</span><span style="color:var(--dim)">${bjFmt(e.ts)}</span></div>`;
+    return `<div class="ev"><span class="etag ${cls}">${EV_CN[e.e]||e.e}</span><b>${e.s}</b><span style="color:var(--dim)">${chainShort(e.c)}</span><span style="flex:1"></span><span class="${e.sc>=80?'up':''}">${e.sc??''}</span><span style="color:var(--dim)">${bjFmt(e.ts)}</span></div>`;
   }).join('')||'<div class="empty">暂无事件</div>';
 }
 function toggleEv(){const p=$('evPanel');p.style.display=p.style.display==='none'?'':'none'}
@@ -216,11 +221,20 @@ function showD(key){
   const t=D.tokens.find(x=>`${x.c}:${x.a}`===key);
   if(!t)return;
   const er=erLevel(t.er);
-  const snaps=(D.detail||{})[key]||[];
+  const snaps=(D.detail||{})[key]||{};
+  const snapArr=snaps.snaps||[];
+  const llm=snaps.llm;
+  const llmBlock=llm?`<div style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px">
+    <div style="color:var(--org);font-weight:700;margin-bottom:4px">🔥 叙事</div><div style="font-size:11px;margin-bottom:8px">${llm.narr||'-'}</div>
+    <div style="color:var(--cyn);font-weight:700;margin-bottom:4px">📊 分析</div><div style="font-size:11px;margin-bottom:8px">${llm.analysis||'-'}</div>
+    <div style="color:var(--yel);font-weight:700;margin-bottom:4px">💬 结论</div><div style="font-size:11px;margin-bottom:8px">${llm.text||'-'}</div>
+    <div style="color:var(--grn);font-weight:700;margin-bottom:4px">🔮 潜力</div><div style="font-size:11px">${llm.potential||'-'}</div>
+  </div>`:'<div style="color:var(--dim);font-size:11px;margin-bottom:8px">🔮 叙事/潜力：暂未生成（高分币自动生成，30分钟更新）</div>';
   const rows=[
-    ['阶段',`<span class="stg ${t.st}">${t.st}</span>`],
-    ['Call 评分',`<b class="${t.sc>=80?'up':''}">${t.sc}</b>（Quality ${t.q} / Momentum ${t.m} / Safety ${t.sf}）`],
-    ['追高风险',`<span class="er ${er}">${er} ${t.er}</span>`],
+    ['阶段',`<span class="stg ${t.st}">${STG_CN[t.st]||t.st}</span>`],
+    ['Call 评分',`<b class="${t.sc>=80?'up':''}">${t.sc}</b>（质量 ${t.q} / 动量 ${t.m} / 安全 ${t.sf}）`],
+    ['追高风险',`<span class="er ${er}">${ER_CN[er]} ${t.er}</span>`],
+    ['题材',`<span style="color:var(--cyn)">${t.narr||'-'}</span>`],
     ['市值',mcFmt(t.mc)+` <span style="color:var(--dim)">ATH ${mcFmt(t.ath)}</span>`],
     ['价格',pxFmt(t.px)],
     ['24h 涨幅',`<span class="${t.p1h>=0?'up':'down'}">${t.p1h!=null?(t.p1h>=0?'+':'')+t.p1h.toFixed(1)+'%':'-'}</span>`],
@@ -243,12 +257,13 @@ function showD(key){
     <h2>${t.s} <span style="color:var(--dim);font-size:12px">${t.n||''}</span></h2>
     <div class="cls">${t.c} · ${t.a.slice(0,10)}...${t.a.slice(-6)}</div>
     <div class="grid2">${rows.map(([k,v])=>`<div class="row"><span class="k">${k}</span><span>${v}</span></div>`).join('')}</div>
+    ${llmBlock}
     <div style="color:var(--dim);font-size:10px">📈 市值趋势（最近48h快照）</div>
     <canvas id="mcC"></canvas>
     <div style="color:var(--dim);font-size:10px;margin-top:6px">🧠 聪明钱趋势</div>
     <canvas id="smC"></canvas>`;
   $('ov').classList.add('show');
-  setTimeout(()=>{drawSnap(snaps,'mcC','mc');drawSnap(snaps,'smC','sm')},30);
+  setTimeout(()=>{drawSnap(snapArr,'mcC','mc');drawSnap(snapArr,'smC','sm')},30);
 }
 function closeD(){$('ov').classList.remove('show')}
 
