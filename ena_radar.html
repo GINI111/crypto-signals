@@ -328,7 +328,7 @@ function renderTable(rows){
   if(!tb.children.length)tb.innerHTML='<tr><td colspan="13" style="color:var(--dim);text-align:center;padding:20px">该筛选下暂无币种</td></tr>';
 }
 
-// ═══════════ 交易计划（保留 v1）═══════════
+// ═══════════ 交易计划 V3（结构止损 + ATR + 1R/2R 分批 + 移动止盈）═══════════
 function calcATR(kl,n=14){
   if(!kl||kl.length<n+1)return null;
   const trs=[];
@@ -339,51 +339,23 @@ function calcATR(kl,n=14){
   const seg=trs.slice(-n);
   return seg.reduce((a,b)=>a+b,0)/n;
 }
-// ═══════════ 斐波那契回撤/扩展（止盈止损参考）═══════════
-function calcFib(kl){
-  // 基于最近24根K线的 swing high/low 计算回撤位与扩展位
-  if(!kl||kl.length<30)return null;
-  const look=kl.slice(-24);
-  const hi=Math.max(...look.map(x=>x.h));
-  const lo=Math.min(...look.map(x=>x.l));
-  const range=hi-lo;
-  if(range<=0)return null;
-  return {
-    hi, lo,
-    f236: hi-range*0.236,   // 0.236 回撤
-    f382: hi-range*0.382,   // 0.382 回撤（浅回踩）
-    f500: hi-range*0.5,     // 0.5 回撤（中位）
-    f618: hi-range*0.618,   // 0.618 回撤（黄金分割，强支撑）
-    f786: hi-range*0.786,   // 0.786 回撤（深回撤，跌破=趋势失效）
-    ext1272: hi+range*0.272, // 1.272 扩展（TP1）
-    ext1618: hi+range*0.618, // 1.618 扩展（TP2）
-  };
-}
-function calcPlan(kl){
+// 回踩入场: SL = 回踩低点 - 0.7 ATR | 突破入场: SL = 突破位 - 0.6 ATR
+// TP1 = 1R 减30% → TP2 = 2R 再减30% → 剩40% ATR trailing（2.0 ATR）
+function calcPlan(kl, entryType, refPrice){
   if(!kl||kl.length<30)return null;
   const closes=kl.map(x=>x.c);
   const entry=closes[closes.length-1];
   const atr=calcATR(kl);
-  if(!atr||atr<=0)return null;
-  const fib=calcFib(kl);
-  const look=kl.slice(-24);
-  const swingLow=Math.min(...look.map(x=>x.l));
-  const swingHigh=Math.max(...look.map(x=>x.h));
-  // 斐波那契参考：止损=0.786回撤下方（结构失效），止盈=1.272/1.618扩展
-  // 回撤位低于结构低点时用结构低点兜底（避免止损过近）
-  const fibSL=fib?Math.min(fib.f786,swingLow+atr*0.1):null;
-  const slLong=fibSL!==null?fibSL:swingLow-atr*0.3;
-  const tp1Long=fib?fib.ext1272:swingHigh;
-  const tp2Long=fib?fib.ext1618:swingHigh+atr*1.5;
-  const rr1=(tp1Long-entry)/(entry-slLong);
-  const rr2=(tp2Long-entry)/(entry-slLong);
-  const slShort=swingHigh+atr*0.3;
-  const tp1Short=swingLow;
-  const tp2Short=swingLow-atr*1.5;
-  const rrS1=(slShort-entry)/(entry-tp1Short);
-  const brokeHigh=entry>swingHigh;
-  const dynSL=brokeHigh?Math.max(swingHigh-atr*0.2,(fib?fib.f236:swingHigh)):slLong;
-  return {entry,atr,fib,swingLow,swingHigh,slLong,tp1Long,tp2Long,rr1,rr2,slShort,tp1Short,tp2Short,rrS1,brokeHigh,dynSL};
+  if(!atr||atr<=0||!refPrice)return null;
+  const mult=entryType==='BREAKOUT'?0.6:0.7;   // 突破更紧 / 回踩给空间
+  const sl=refPrice-atr*mult;
+  if(sl>=entry)return null;                     // 止损高于现价 = 结构异常
+  const risk=entry-sl;
+  const tp1=entry+risk;                          // 1R
+  const tp2=entry+2*risk;                        // 2R
+  const trail=2.0*atr;                           // ATR 移动止盈
+  const riskPct=risk/entry*100;
+  return {entry,atr,refPrice,entryType,sl,tp1,tp2,trail,risk,riskPct,rr1:1,rr2:2};
 }
 function rrNote(rr){
   if(rr>=2.5)return'✅ 盈亏比理想 (≥2.5)';
@@ -431,7 +403,7 @@ async function showDetail(r){
     <div class="row" style="color:var(--dim);font-size:12px">💡 ENA 负责找好币，15m 突破/回踩确认负责决定何时买</div>
   </div>
   <div class="entry" id="planBox" style="margin-top:10px">
-    <div style="font-weight:bold;color:var(--yellow)">📐 交易计划（动态止盈止损框架）</div>
+    <div style="font-weight:bold;color:var(--yellow)">📐 交易计划（结构止损 + ATR + 1R/2R 分批 + 移动止盈） <span style="float:right;font-weight:normal;font-size:12px;color:var(--dim)">每笔风险 $<input id="riskInput" type="number" value="20" min="1" style="width:60px;background:var(--panel1);border:1px solid var(--panel2);color:var(--text);border-radius:4px;padding:2px 4px" onchange="setRisk(this.value)"></span></div>
     <div class="row" id="planBody">计算中...</div>
   </div>
   <div id="chartBox"></div>`;
@@ -440,11 +412,10 @@ async function showDetail(r){
   drawChart(r);
 }
 
-function renderPlan(r){
-  const plan=calcPlan(r.kl||[]);
+let RISK_AMOUNT=20;  // 每笔愿意亏的钱（$）
+async function renderPlan(r){
   const body=$('planBody');
-  if(!plan){body.innerHTML='<span class="no">数据不足，无法计算</span>';return}
-  const pa=posAdvice(r.r.quality,r.r.entry,r.r.stage,r.r.ind.dist,r.r.health);
+  body.innerHTML='<span class="wait">计算中...</span>';
   const fmt=v=>{
     if(v>=1000)return '$'+v.toFixed(2);
     if(v>=1)return '$'+v.toFixed(4);
@@ -452,20 +423,49 @@ function renderPlan(r){
     if(v>=0.0001)return '$'+v.toFixed(8);
     return '$'+v.toFixed(10);
   };
-  const dynNote=plan.brokeHigh
-    ? `<span class="ok">🔒 已突破前高 → 止损上移 ${fmt(plan.dynSL)}（锁利润）</span>`
-    : `<span class="wait">📌 斐波那契止损 ${fmt(plan.slLong)}（跌破0.786回撤=多头失效）</span>`;
-  const fibRow=plan.fib?`
-    <span class="dim" style="color:var(--dim)">🔢 斐波那契回撤：0.382 <b>${fmt(plan.fib.f382)}</b> · 0.5 <b>${fmt(plan.fib.f500)}</b> · 0.618 <b>${fmt(plan.fib.f618)}</b> · 0.786 <b>${fmt(plan.fib.f786)}</b></span>
-    <span class="dim" style="color:var(--dim)">📍 现价${plan.entry>plan.fib.f618?'高于0.618（强势区）':(plan.entry>plan.fib.f382?'处于0.382~0.618（回踩区）':'跌破0.382（弱势）')} · 回踩0.5/0.618可加仓，跌破0.786止损</span>`:'';
-  body.innerHTML=`
-    <span>入场参考：<b class="up">${fmt(plan.entry)}</b>（现价）· ATR(1H)：${fmt(plan.atr)}</span>
-    <span>🛡 止损：<b class="down">${fmt(plan.brokeHigh?plan.dynSL:plan.slLong)}</b> ${dynNote}</span>
-    <span>🎯 TP1：<b class="up">${fmt(plan.tp1Long)}</b>（1.272扩展）· TP2：<b class="up">${fmt(plan.tp2Long)}</b>（1.618扩展）</span>
-    <span>📊 盈亏比：<b>1:${plan.rr1>=0?plan.rr1.toFixed(1):'∞'}</b> <span class="${plan.rr1>=2.5?'ok':(plan.rr1>=1.5?'wait':'no')}">${rrNote(plan.rr1)}</span></span>
-    <span>💼 仓位建议：<b class="${pa.cls}">${pa.pct}</b> ${pa.note}</span>
-    ${fibRow}
-    ${plan.brokeHigh?'':`<span class="dim" style="color:var(--dim)">💡 TP1 平一半锁利，剩余看 TP2；跌破止损无条件离场</span>`}`;
+  try{
+    // 拉 15m 判断入场类型
+    const kl15=await getKlines(r.sym,'15m',40);
+    const closes15=kl15.map(x=>x.c);
+    const prevHigh15=Math.max(...closes15.slice(-20,-1));
+    const cur15=closes15[closes15.length-1];
+    const broke15=cur15>prevHigh15;
+    const es=entryState(r);
+    const ind=r.r.ind;
+    // 入场类型：强启动+突破 → BREAKOUT；回踩到位 → RETEST
+    let entryType=null, refPrice=null;
+    if(broke15&&es.label.includes('强启动')){
+      entryType='BREAKOUT';refPrice=prevHigh15;
+    }else if(ind.dist<=2&&(r.r.quality>=7.5&&r.r.health>=75)){
+      entryType='RETEST';refPrice=Math.min(...kl15.slice(-20).map(x=>x.l));  // 回踩低点
+    }
+    if(!entryType){
+      body.innerHTML=`
+        <span class="dim" style="color:var(--dim)">⏳ 当前无入场信号（等回踩到位 或 强启动突破）</span>
+        <span class="dim" style="color:var(--dim)">💡 入场后自动显示：SL / TP1 / TP2 / Trailing / R:R / 仓位</span>`;
+      return;
+    }
+    const plan=calcPlan(r.kl||[],entryType,refPrice);
+    if(!plan){body.innerHTML='<span class="no">数据不足，无法计算</span>';return}
+    const pa=posAdvice(r.r.quality,r.r.entry,r.r.stage,ind.dist,r.r.health);
+    const etLabel=entryType==='BREAKOUT'?'🔥 突破入场':'🟢 回踩入场';
+    const etCls=entryType==='BREAKOUT'?'ok':'ok';
+    const riskAmt=RISK_AMOUNT||20;
+    const position=plan.riskPct>0?riskAmt/(plan.riskPct/100):0;
+    body.innerHTML=`
+      <span>🎯 <b>${etLabel}</b> · 入场 <b class="up">${fmt(plan.entry)}</b>（现价）· ATR(1H) ${fmt(plan.atr)}</span>
+      <span>🛡 止损 <b class="down">${fmt(plan.sl)}</b>（${entryType==='BREAKOUT'?'突破位':'回踩低点'} ${fmt(refPrice)} - ${entryType==='BREAKOUT'?'0.6':'0.7'} ATR · 风险 ${plan.riskPct.toFixed(1)}%）</span>
+      <span>🎯 TP1 <b class="up">${fmt(plan.tp1)}</b>（1R ${entryType==='BREAKOUT'?'+':''}${plan.riskPct.toFixed(1)}%）→ 减仓 <b>30%</b> · 剩余止损提到成本</span>
+      <span>🎯 TP2 <b class="up">${fmt(plan.tp2)}</b>（2R）→ 再减仓 <b>30%</b></span>
+      <span>🔄 剩余 <b>40%</b> 仓位 ATR 移动止盈：最高价 - <b>${(plan.trail/plan.atr).toFixed(1)} ATR</b>（让利润奔跑）</span>
+      <span>📊 R:R = <b>1:${plan.rr1}</b>（TP1）· 1:${plan.rr2}（TP2）</span>
+      <span>💼 仓位：每笔风险 <b>$${riskAmt}</b> → 仓位 ≈ <b class="${etCls}">$${position.toFixed(0)}</b>（风险${plan.riskPct.toFixed(1)}%反推）· ${pa.note}</span>
+      <span class="dim" style="color:var(--dim)">⏱ 时间止损：${entryType==='BREAKOUT'?'6~10':'8~12'} 根 15m 后收益 &lt;+0.5R 且趋势恶化 → 退出 · 跌破 ${fmt(plan.sl)} 无条件离场</span>`;
+  }catch(e){body.innerHTML='<span class="no">计算失败: '+e.message+'</span>'}
+}
+function setRisk(v){
+  RISK_AMOUNT=Math.max(1,parseFloat(v)||20);
+  renderPlan(RADAR_DATA.find(x=>x.sym===($('detail').querySelector('h2').textContent.split(' ')[0])));
 }
 
 async function checkEntry15m(r){
