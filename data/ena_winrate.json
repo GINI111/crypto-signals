@@ -1,6 +1,6 @@
 {
- "generated_at": 1788419703,
- "generated_str": "09-03 15:15",
+ "generated_at": 1788423303,
+ "generated_str": "09-03 16:15",
  "types": {
   "strong": {
    "n": 0,
@@ -21,8 +21,8 @@
    "rate24h": null
   },
   "near": {
-   "n": 1,
-   "avg1h": 0.0,
+   "n": 2,
+   "avg1h": -0.79,
    "avg4h": 0.0,
    "avg24h": 0.0,
    "rate1h": 0,
@@ -31,10 +31,10 @@
   },
   "wait": {
    "n": 2,
-   "avg1h": 0.0,
+   "avg1h": 1.0,
    "avg4h": 0.0,
    "avg24h": 0.0,
-   "rate1h": 0,
+   "rate1h": 100,
    "rate4h": 0,
    "rate24h": 0
   }
@@ -42,10 +42,19 @@
  "recent": [
   {
    "sym": "SUI",
+   "type": "near",
+   "ts": 1788422611,
+   "px": 0.7713,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "SUI",
    "type": "wait",
    "ts": 1788418900,
    "px": 0.7656,
-   "r1h": null,
+   "r1h": 0.010188087774294807,
    "r4h": null,
    "r24h": null
   },
@@ -54,7 +63,7 @@
    "type": "wait",
    "ts": 1788418900,
    "px": 0.2051,
-   "r1h": null,
+   "r1h": 0.009751340809361242,
    "r4h": null,
    "r24h": null
   },
@@ -63,7 +72,7 @@
    "type": "near",
    "ts": 1788416501,
    "px": 5.374,
-   "r1h": null,
+   "r1h": -0.015816896166728656,
    "r4h": null,
    "r24h": null
   }
