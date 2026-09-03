@@ -1,6 +1,6 @@
 {
- "generated_at": 1788434101,
- "generated_str": "09-03 19:15",
+ "generated_at": 1788437702,
+ "generated_str": "09-03 20:15",
  "types": {
   "strong": {
    "n": 0,
@@ -22,30 +22,39 @@
   },
   "near": {
    "n": 4,
-   "avg1h": -0.51,
-   "avg4h": -2.24,
+   "avg1h": -0.43,
+   "avg4h": -2.33,
    "avg24h": 0.0,
-   "rate1h": 0,
+   "rate1h": 25,
    "rate4h": 0,
    "rate24h": 0
   },
   "wait": {
-   "n": 3,
-   "avg1h": 0.28,
-   "avg4h": 0.34,
+   "n": 4,
+   "avg1h": 0.21,
+   "avg4h": 0.25,
    "avg24h": 0.0,
-   "rate1h": 67,
-   "rate4h": 33,
+   "rate1h": 50,
+   "rate4h": 25,
    "rate24h": 0
   }
  },
  "recent": [
   {
+   "sym": "XPL",
+   "type": "wait",
+   "ts": 1788436928,
+   "px": 0.088,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "AR",
    "type": "near",
    "ts": 1788433120,
    "px": 2.568,
-   "r1h": null,
+   "r1h": -0.008566978193146557,
    "r4h": null,
    "r24h": null
   },
@@ -54,7 +63,7 @@
    "type": "near",
    "ts": 1788431483,
    "px": 1.961,
-   "r1h": null,
+   "r1h": 0.011728709841917428,
    "r4h": null,
    "r24h": null
   },
@@ -73,7 +82,7 @@
    "ts": 1788422611,
    "px": 0.7713,
    "r1h": -0.004667444574095625,
-   "r4h": null,
+   "r4h": -0.003759885906910454,
    "r24h": null
   },
   {
