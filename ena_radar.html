@@ -284,46 +284,6 @@ function renderTable(rows){
   if(!tb.children.length)tb.innerHTML='<tr><td colspan="13" style="color:var(--dim);text-align:center;padding:20px">该筛选下暂无币种</td></tr>';
 }
 
-// ═══════════ 交易计划 V3（结构止损 + ATR + 1R/2R 分批 + 移动止盈）═══════════
-function calcATR(kl,n=14){
-  if(!kl||kl.length<n+1)return null;
-  const trs=[];
-  for(let i=1;i<kl.length;i++){
-    const h=kl[i].h,l=kl[i].l,pc=kl[i-1].c;
-    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
-  }
-  const seg=trs.slice(-n);
-  return seg.reduce((a,b)=>a+b,0)/n;
-}
-// 回踩入场: SL = 回踩低点 - 0.7 ATR | 突破入场: SL = 突破位 - 0.6 ATR
-// TP1 = 1R 减30% → TP2 = 2R 再减30% → 剩40% ATR trailing（2.0 ATR）
-function calcPlan(kl, entryType, refPrice){
-  if(!kl||kl.length<30)return null;
-  const closes=kl.map(x=>x.c);
-  const entry=closes[closes.length-1];
-  const atr=calcATR(kl);
-  if(!atr||atr<=0||!refPrice)return null;
-  const mult=entryType==='BREAKOUT'?0.6:0.7;   // 突破更紧 / 回踩给空间
-  const sl=refPrice-atr*mult;
-  if(sl>=entry)return null;                     // 止损高于现价 = 结构异常
-  const risk=entry-sl;
-  const tp1=entry+risk;                          // 1R
-  const tp2=entry+2*risk;                        // 2R
-  const trail=2.0*atr;                           // ATR 移动止盈
-  const riskPct=risk/entry*100;
-  return {entry,atr,refPrice,entryType,sl,tp1,tp2,trail,risk,riskPct,rr1:1,rr2:2};
-}
-function rrNote(rr){
-  if(rr>=2.5)return'✅ 盈亏比理想 (≥2.5)';
-  if(rr>=1.5)return'🟡 盈亏比合格 (≥1.5)';
-  return'❌ 盈亏比不足 (<1.5)，建议放弃';
-}
-function posAdvice(r){
-  const ec=r.r.entryClass||{};
-  const m=EC_META[ec.cls]||EC_META.WAIT;
-  return{pct:m.pct,note:ec.note||'',cls:m.cls};
-}
-
 // ═══════════ 详情 ═══════════
 let detailChart=null;
 async function showDetail(r){
