@@ -76,10 +76,10 @@ tr:hover td{background:rgba(0,200,150,.04)}
   <button id="f_decl" onclick="setFilter('decl')">🔴 衰退</button>
   <span id="status">就绪</span>
 </div>
-<div class="legend">Δ = 距上次扫描 Quality 变化（浏览器本地记忆）· 点击行看详情</div>
+<div class="legend">Δ = 距上次扫描 质量分 变化（浏览器本地记忆）· 点击行看详情</div>
 <div class="legend" style="border:1px solid var(--panel2);padding:8px;border-radius:6px;background:var(--panel2)">
-  🎯 <b>三档入场</b>：🟡 等回踩（普通强势，回踩到位+重新转强再进，仓位100%）· 🔥 强启动可买（Q≥8+H≥85+入场≥4+距MA7≤3%，仓位50~70%）· ⛔ 追高/过热不买<br>
-  💡 <b>趋势强 ≠ 现在适合买</b>：价格远离 MA7 时追入风险收益比差——ENA 负责找好币，15m 突破/回踩确认负责决定何时买
+  🎯 <b>入场分类（与质量分离）</b>：🟢 回踩买入（趋势中/回踩后重新转强，标准仓）· 🔥 突破买入（允许追但仓位减半）· 🟡 早期试仓（仅25%）· 🔴 不买（延伸/衰退/健康<60，质量再高也不追）<br>
+  💡 <b>选币 ≠ 买点</b>：质量分负责找好币，阶段+入场分类决定何时买，止损/止盈管理风险
 </div>
 <div id="wrPanel" style="border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2);font-size:12px">
   <div style="font-weight:700;margin-bottom:6px">📊 信号胜率 <span style="font-weight:400;color:var(--dim);font-size:11px">推送信号触发后 1h/4h/24h 上涨率（自动统计，样本积累中）</span></div>
@@ -91,7 +91,7 @@ tr:hover td{background:rgba(0,200,150,.04)}
 </div>
 <table id="tbl">
 <thead><tr>
-  <th>#</th><th>币种</th><th>Quality</th><th>阶段</th><th>入场分类</th><th>风险</th><th>仓位</th><th>距MA7</th><th>20根涨幅</th><th>单调性</th><th>末5斜率</th><th>回撤</th><th>Δ</th><th>24h</th>
+  <th>#</th><th>币种</th><th>质量</th><th>阶段</th><th>入场分类</th><th>风险</th><th>仓位</th><th>距MA7</th><th>20根涨幅</th><th>单调性</th><th>末5斜率</th><th>回撤</th><th>Δ</th><th>24h</th>
 </tr></thead>
 <tbody id="tbody"></tbody>
 </table>
@@ -104,21 +104,21 @@ const LS_KEY='ena_radar_v3_scores';
 
 // ═══════════ 展示辅助 ═══════════
 const STG_META={
-  STARTING:{label:'🆕 STARTING',cls:'start'},
-  ACCUMULATION:{label:'🧠 ACCUMULATION',cls:'accel'},
-  TRENDING:{label:'🟢 TRENDING',cls:'trend'},
-  BREAKOUT:{label:'🔥 BREAKOUT',cls:'accel'},
-  RETEST:{label:'↩️ RETEST',cls:'pb'},
-  EXTENDED:{label:'⚠️ EXTENDED',cls:'over'},
-  DECAY:{label:'🔴 DECAY',cls:'decl'}
+  STARTING:{label:'🆕 启动',cls:'start'},
+  ACCUMULATION:{label:'🧠 蓄势',cls:'accel'},
+  TRENDING:{label:'🟢 趋势中',cls:'trend'},
+  BREAKOUT:{label:'🔥 突破',cls:'accel'},
+  RETEST:{label:'↩️ 回踩',cls:'pb'},
+  EXTENDED:{label:'⚠️ 延伸',cls:'over'},
+  DECAY:{label:'🔴 衰退',cls:'decl'}
 };
-const ER_LABEL={LOW:'🟢 LOW',MED:'🟡 MED',HIGH:'🔴 HIGH'};
+const ER_LABEL={LOW:'🟢 低',MED:'🟡 中',HIGH:'🔴 高'};
 const EC_META={
-  RETEST:{label:'🟢 BUY RETEST',cls:'ok',pct:'100%'},
-  BREAKOUT:{label:'🔥 BREAKOUT',cls:'ok',pct:'50%'},
-  EARLY:{label:'🟡 EARLY',cls:'wait',pct:'25%'},
-  WAIT:{label:'🟡 WAIT RETEST',cls:'wait',pct:'0%'},
-  NO:{label:'🔴 NO ENTRY',cls:'no',pct:'0%'}
+  RETEST:{label:'🟢 回踩买入',cls:'ok',pct:'100%'},
+  BREAKOUT:{label:'🔥 突破买入',cls:'ok',pct:'50%'},
+  EARLY:{label:'🟡 早期试仓',cls:'wait',pct:'25%'},
+  WAIT:{label:'🟡 等回踩',cls:'wait',pct:'0%'},
+  NO:{label:'🔴 不买',cls:'no',pct:'0%'}
 };
 function entryMeta(e){
   if(e>=5)return{label:'🟢 最佳入场',cls:'good'};
@@ -274,7 +274,7 @@ function renderTable(rows){
       <td class="score ${qCls}"><span class="qbar"><i style="width:${q*10}%"></i></span>${q.toFixed(1)}</td>
       <td><span class="stg ${stg.cls}">${stg.label}</span></td>
       <td><span class="entryTag et ${ec==='NO'?'no':(ec==='RETEST'||ec==='BREAKOUT'?'ok':(ec==='EARLY'?'wait':'wait'))}">${EC_META[ec]?EC_META[ec].label:'—'}</span></td>
-      <td title="Entry Risk 追高风险">${er}</td>
+      <td title="追高风险">${er}</td>
       <td><span class="entryTag et ${es.cls}">${es.pct!=='0%'?es.pct+' 仓位':es.label}</span></td>
       <td class="${ind.dist>4?'down':(ind.dist>=0?'up':'down')}">${ind.dist>=0?'+':''}${ind.dist.toFixed(1)}%</td>
       <td class="${ind.gain>=15?'up':(ind.gain>=5?'n':'down')}">${ind.gain>=0?'+':''}${ind.gain.toFixed(1)}%</td>
@@ -298,12 +298,12 @@ async function showDetail(r){
   const hCls=r.r.health>=80?'ok':(r.r.health>=60?'wait':'no');
   const hColor=r.r.health>=80?'var(--green)':(r.r.health>=60?'var(--yellow)':'var(--red)');
   const ecMeta=EC_META[(r.r.entryClass||{}).cls]||EC_META.WAIT;
-  d.innerHTML=`<h2>${r.sym} <span class="stg ${stg.cls}">${stg.label}</span> <span class="entryTag et ${ecMeta.cls==='NO'?'no':(ecMeta.cls==='WAIT'?'wait':'ok')}">${ecMeta.label}</span> <span class="entryTag et ${r.r.entryRisk==='HIGH'?'no':(r.r.entryRisk==='LOW'?'ok':'wait')}">Risk ${ER_LABEL[r.r.entryRisk]||''}</span></h2>
+  d.innerHTML=`<h2>${r.sym} <span class="stg ${stg.cls}">${stg.label}</span> <span class="entryTag et ${ecMeta.cls==='NO'?'no':(ecMeta.cls==='WAIT'?'wait':'ok')}">${ecMeta.label}</span> <span class="entryTag et ${r.r.entryRisk==='HIGH'?'no':(r.r.entryRisk==='LOW'?'ok':'wait')}">风险 ${ER_LABEL[r.r.entryRisk]||''}</span></h2>
   <div class="metrics">
-    <div class="metric"><div class="k">🎯 趋势质量 Quality（选币）</div><div class="v"><span class="qbar" style="width:90px"><i style="width:${q*10}%;background:${q>=8?'var(--green)':(q>=6?'var(--yellow)':'var(--red)')}"></i></span>${q.toFixed(1)}/10</div><div class="s">趋势有多漂亮——只负责选币</div></div>
-    <div class="metric"><div class="k">📈 趋势阶段 Stage</div><div class="v">${stg.label}</div><div class="s">${stageNote(r.r.stage)}</div></div>
-    <div class="metric"><div class="k">🎯 入场分类 Entry</div><div class="v"><span class="entryTag et ${ecMeta.cls==='NO'?'no':(ecMeta.cls==='WAIT'?'wait':'ok')}">${ecMeta.label}</span> <span style="color:var(--dim);font-size:12px">${ecMeta.pct!=='0%'?'仓位 '+ecMeta.pct:''}</span></div><div class="s">${(r.r.entryClass||{}).note||''}</div></div>
-    <div class="metric"><div class="k">💚 趋势健康度 Health</div><div class="v"><span class="hbar"><i style="width:${r.r.health}%;background:${hColor}"></i></span><b class="${hCls}">${r.r.health}</b></div><div class="s">${r.r.health>=80?'✅ 健康':(r.r.health>=60?'🟡 一般':'❌ 脆弱')}</div></div>
+    <div class="metric"><div class="k">🎯 趋势质量（选币）</div><div class="v"><span class="qbar" style="width:90px"><i style="width:${q*10}%;background:${q>=8?'var(--green)':(q>=6?'var(--yellow)':'var(--red)')}"></i></span>${q.toFixed(1)}/10</div><div class="s">趋势有多漂亮——只负责选币</div></div>
+    <div class="metric"><div class="k">📈 趋势阶段</div><div class="v">${stg.label}</div><div class="s">${stageNote(r.r.stage)}</div></div>
+    <div class="metric"><div class="k">🎯 入场分类</div><div class="v"><span class="entryTag et ${ecMeta.cls==='NO'?'no':(ecMeta.cls==='WAIT'?'wait':'ok')}">${ecMeta.label}</span> <span style="color:var(--dim);font-size:12px">${ecMeta.pct!=='0%'?'仓位 '+ecMeta.pct:''}</span></div><div class="s">${(r.r.entryClass||{}).note||''}</div></div>
+    <div class="metric"><div class="k">💚 趋势健康度</div><div class="v"><span class="hbar"><i style="width:${r.r.health}%;background:${hColor}"></i></span><b class="${hCls}">${r.r.health}</b></div><div class="s">${r.r.health>=80?'✅ 健康':(r.r.health>=60?'🟡 一般':'❌ 脆弱')}</div></div>
     <div class="metric"><div class="k">① 距 MA7 · ${ind.dist>=0?'+':''}${ind.dist.toFixed(1)}%</div><div class="v ${ind.dist>4?'down':(ind.dist>=0?'up':'down')}">${noteDist(ind.dist)}</div></div>
     <div class="metric"><div class="k">② MA7 20根涨幅 · ${ind.gain>=0?'+':''}${ind.gain.toFixed(1)}%</div><div class="v ${ind.gain>=25?'down':(ind.gain>=5?'up':'n')}">${noteGain(ind.gain)}</div></div>
     <div class="metric"><div class="k">③ MA7 单调性 · ${ind.mono.toFixed(0)}%</div><div class="v ${ind.mono>=90?'up':(ind.mono>=80?'n':'down')}">${noteMono(ind.mono)}</div></div>
@@ -313,13 +313,13 @@ async function showDetail(r){
   </div>
   <div class="entry">
     <div style="font-weight:bold;color:var(--cyan)">🎯 综合判断（三权分离）</div>
-    <div class="row"><span>选币 Quality：<b class="${q>=8?'ok':(q>=6?'wait':'no')}">${q.toFixed(1)}/10</b></span>
+    <div class="row"><span>选币质量：<b class="${q>=8?'ok':(q>=6?'wait':'no')}">${q.toFixed(1)}/10</b></span>
     <span>选时机：<span id="entryState" class="${es.cls==='ok'?'ok':(es.cls==='wait'?'wait':'no')}">${ecMeta.label}</span></span>
     <span>15m 状态：<span id="m15state" class="wait">检测中...</span></span></div>
-    <div class="row" style="color:var(--dim);font-size:12px">💡 Quality 高分 ≠ 立即买入：Stage 判断阶段，Entry 决定等回踩还是追突破，SL/TP 管理风险</div>
+    <div class="row" style="color:var(--dim);font-size:12px">💡 质量高分 ≠ 立即买入：阶段判断趋势位置，入场分类决定等回踩还是追突破，止损/止盈管理风险</div>
   </div>
   <div class="entry" id="planBox" style="margin-top:10px">
-    <div style="font-weight:bold;color:var(--yellow)">📐 交易计划 V3.1（动态止损 + 1R/2R 分批 20/30/50 + R-Ladder） <span style="float:right;font-weight:normal;font-size:12px;color:var(--dim)">每笔风险 $<input id="riskInput" type="number" value="20" min="1" style="width:60px;background:var(--panel1);border:1px solid var(--panel2);color:var(--text);border-radius:4px;padding:2px 4px" onchange="setRisk(this.value)"></span></div>
+    <div style="font-weight:bold;color:var(--yellow)">📐 交易计划 V3.1（动态止损 + 分批 20/30/50 + 阶梯锁利） <span style="float:right;font-weight:normal;font-size:12px;color:var(--dim)">每笔风险 $<input id="riskInput" type="number" value="20" min="1" style="width:60px;background:var(--panel1);border:1px solid var(--panel2);color:var(--text);border-radius:4px;padding:2px 4px" onchange="setRisk(this.value)"></span></div>
     <div class="row" id="planBody">计算中...</div>
   </div>
   <div id="chartBox"></div>`;
@@ -346,8 +346,8 @@ async function renderPlan(r){
     const ind=r.r.ind;
     if(ec==='NO'||ec==='WAIT'||!kl15){
       const why=ec==='NO'
-        ?'⛔ NO ENTRY：'+(r.r.stage==='EXTENDED'||r.r.stage==='DECAY'?'阶段 '+STG_META[r.r.stage].label:'健康度不足')+'——Quality 再高也不追'
-        :'🟡 WAIT RETEST：趋势成立，等价格回踩 MA7±2% + 缩量企稳 + 重新转强（届时会标 🟢 BUY RETEST）';
+        ?'⛔ 不买：'+(r.r.stage==='EXTENDED'||r.r.stage==='DECAY'?'阶段 '+STG_META[r.r.stage].label:'健康度不足')+'——质量再高也不追'
+        :'🟡 等回踩：趋势成立，等价格回踩 MA7±2% + 缩量企稳 + 重新转强（届时会标 🟢 回踩买入）';
       body.innerHTML=`<span class="${ec==='NO'?'no':'wait'}" style="font-size:13px">${why}</span>
         <span class="dim" style="color:var(--dim)">💡 回踩到位后自动显示完整交易计划（Entry/SL/TP1/TP2/仓位）</span>`;
       return;
@@ -412,8 +412,8 @@ async function checkEntry15m(r){
     const es=entryState(r);
     if(brokeHigh&&volOk){
       st.textContent='突破+放量 ✅';st.className='ok';
-      if(es.label.includes('强启动')){$('entryState').textContent='🔥 BREAKOUT ENTRY（可买 50~70%）';$('entryState').className='ok'}
-      else if(es.label.includes('回踩到位')){$('entryState').textContent='🟢 RETEST ENTRY（可买 100%）';$('entryState').className='ok'}
+      if(es.label.includes('突破买入')){$('entryState').textContent='🔥 突破买入（仓位 50%）';$('entryState').className='ok'}
+      else if(es.label.includes('回踩买入')){$('entryState').textContent='🟢 回踩买入（仓位 100%）';$('entryState').className='ok'}
       else{$('entryState').textContent='🟠 突破但偏离MA7 不追（等回踩）';$('entryState').className='wait'}
     }
     else if(inPullback){st.textContent='回踩中';st.className='wait';$('entryState').textContent='🟡 回踩中：等企稳+重新突破15m高点';$('entryState').className='wait'}
