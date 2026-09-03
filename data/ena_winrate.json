@@ -1,6 +1,6 @@
 {
- "generated_at": 1788444901,
- "generated_str": "09-03 22:15",
+ "generated_at": 1788448502,
+ "generated_str": "09-03 23:15",
  "types": {
   "strong": {
    "n": 0,
@@ -21,25 +21,70 @@
    "rate24h": null
   },
   "near": {
-   "n": 5,
-   "avg1h": -0.54,
-   "avg4h": -1.87,
+   "n": 6,
+   "avg1h": -0.45,
+   "avg4h": -1.04,
    "avg24h": 0.0,
-   "rate1h": 20,
-   "rate4h": 0,
+   "rate1h": 17,
+   "rate4h": 33,
    "rate24h": 0
   },
   "wait": {
-   "n": 4,
-   "avg1h": 1.07,
-   "avg4h": 0.55,
+   "n": 8,
+   "avg1h": 0.53,
+   "avg4h": 0.28,
    "avg24h": 0.0,
-   "rate1h": 75,
-   "rate4h": 50,
+   "rate1h": 38,
+   "rate4h": 25,
    "rate24h": 0
   }
  },
  "recent": [
+  {
+   "sym": "HBAR",
+   "type": "wait",
+   "ts": 1788447995,
+   "px": 0.07885,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ONDO",
+   "type": "wait",
+   "ts": 1788447630,
+   "px": 0.3687,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "TRUMP",
+   "type": "wait",
+   "ts": 1788447629,
+   "px": 2.393,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "CAKE",
+   "type": "near",
+   "ts": 1788445994,
+   "px": 1.972,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "WLD",
+   "type": "wait",
+   "ts": 1788445086,
+   "px": 0.3792,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "CAKE",
    "type": "near",
@@ -64,7 +109,7 @@
    "ts": 1788433120,
    "px": 2.568,
    "r1h": -0.008566978193146557,
-   "r4h": null,
+   "r4h": 0.01985981308411211,
    "r24h": null
   },
   {
@@ -73,7 +118,7 @@
    "ts": 1788431483,
    "px": 1.961,
    "r1h": 0.011728709841917428,
-   "r4h": null,
+   "r4h": 0.010708822029576792,
    "r24h": null
   },
   {
