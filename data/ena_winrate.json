@@ -1,6 +1,6 @@
 {
- "generated_at": 1788459301,
- "generated_str": "09-04 02:15",
+ "generated_at": 1788462901,
+ "generated_str": "09-04 03:15",
  "types": {
   "strong": {
    "n": 0,
@@ -21,31 +21,94 @@
    "rate24h": null
   },
   "near": {
-   "n": 23,
-   "avg1h": -0.06,
-   "avg4h": -0.29,
+   "n": 28,
+   "avg1h": -0.15,
+   "avg4h": -0.19,
    "avg24h": 0.0,
-   "rate1h": 30,
-   "rate4h": 9,
+   "rate1h": 25,
+   "rate4h": 11,
    "rate24h": 0
   },
   "wait": {
-   "n": 18,
-   "avg1h": 0.68,
-   "avg4h": 0.48,
+   "n": 20,
+   "avg1h": 0.61,
+   "avg4h": 0.89,
    "avg24h": 0.0,
-   "rate1h": 61,
-   "rate4h": 17,
+   "rate1h": 65,
+   "rate4h": 30,
    "rate24h": 0
   }
  },
  "recent": [
   {
+   "sym": "XPL",
+   "type": "near",
+   "ts": 1788462766,
+   "px": 0.09659,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "TAO",
+   "type": "wait",
+   "ts": 1788462035,
+   "px": 230,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "AAVE",
+   "type": "wait",
+   "ts": 1788462035,
+   "px": 134.84,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "BCH",
+   "type": "near",
+   "ts": 1788462033,
+   "px": 257.4,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "CHIP",
+   "type": "near",
+   "ts": 1788461121,
+   "px": 0.05526,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "TRUMP",
+   "type": "near",
+   "ts": 1788460208,
+   "px": 2.452,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "HBAR",
+   "type": "near",
+   "ts": 1788460208,
+   "px": 0.07945,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "PEPE",
    "type": "near",
    "ts": 1788458746,
    "px": 3.84e-06,
-   "r1h": null,
+   "r1h": -0.007812499999999889,
    "r4h": null,
    "r24h": null
   },
@@ -54,7 +117,7 @@
    "type": "wait",
    "ts": 1788458563,
    "px": 0.008919,
-   "r1h": null,
+   "r1h": 0.0022424038569346383,
    "r4h": null,
    "r24h": null
   },
@@ -63,7 +126,7 @@
    "type": "wait",
    "ts": 1788458563,
    "px": 257.8,
-   "r1h": null,
+   "r1h": 0.0019394879751746252,
    "r4h": null,
    "r24h": null
   },
@@ -72,7 +135,7 @@
    "type": "wait",
    "ts": 1788458562,
    "px": 2,
-   "r1h": null,
+   "r1h": -0.0050000000000000044,
    "r4h": null,
    "r24h": null
   },
@@ -81,7 +144,7 @@
    "type": "near",
    "ts": 1788458558,
    "px": 0.08945,
-   "r1h": null,
+   "r1h": -0.002906651760760215,
    "r4h": null,
    "r24h": null
   },
@@ -90,7 +153,7 @@
    "type": "near",
    "ts": 1788458558,
    "px": 0.223,
-   "r1h": null,
+   "r1h": -0.007623318385650224,
    "r4h": null,
    "r24h": null
   },
@@ -99,7 +162,7 @@
    "type": "near",
    "ts": 1788458557,
    "px": 0.4028,
-   "r1h": null,
+   "r1h": -0.0049652432969216065,
    "r4h": null,
    "r24h": null
   },
@@ -108,7 +171,7 @@
    "type": "near",
    "ts": 1788458557,
    "px": 0.3685,
-   "r1h": null,
+   "r1h": -0.0051560379918589305,
    "r4h": null,
    "r24h": null
   },
@@ -117,7 +180,7 @@
    "type": "near",
    "ts": 1788458557,
    "px": 1.4627,
-   "r1h": null,
+   "r1h": -0.0012989676625417834,
    "r4h": null,
    "r24h": null
   },
@@ -244,69 +307,6 @@
    "ts": 1788451453,
    "px": 3.83e-06,
    "r1h": 0,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "XRP",
-   "type": "near",
-   "ts": 1788451270,
-   "px": 1.4602,
-   "r1h": -0.0014381591562799834,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "ADA",
-   "type": "near",
-   "ts": 1788451270,
-   "px": 0.2217,
-   "r1h": 0.0009021199819574388,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "WLD",
-   "type": "near",
-   "ts": 1788451269,
-   "px": 0.3903,
-   "r1h": 0.011017166282347057,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "ONDO",
-   "type": "near",
-   "ts": 1788451269,
-   "px": 0.3707,
-   "r1h": -0.004585918532506006,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "HBAR",
-   "type": "wait",
-   "ts": 1788447995,
-   "px": 0.07885,
-   "r1h": 0.000253646163601573,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "ONDO",
-   "type": "wait",
-   "ts": 1788447630,
-   "px": 0.3687,
-   "r1h": -0.0016273393002441683,
-   "r4h": null,
-   "r24h": null
-  },
-  {
-   "sym": "TRUMP",
-   "type": "wait",
-   "ts": 1788447629,
-   "px": 2.393,
-   "r1h": -0.008775595486836596,
    "r4h": null,
    "r24h": null
   }
