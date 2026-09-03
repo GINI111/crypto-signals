@@ -1,6 +1,6 @@
 {
- "generated_at": 1788441301,
- "generated_str": "09-03 21:15",
+ "generated_at": 1788444901,
+ "generated_str": "09-03 22:15",
  "types": {
   "strong": {
    "n": 0,
@@ -22,7 +22,7 @@
   },
   "near": {
    "n": 5,
-   "avg1h": -0.35,
+   "avg1h": -0.54,
    "avg4h": -1.87,
    "avg24h": 0.0,
    "rate1h": 20,
@@ -45,7 +45,7 @@
    "type": "near",
    "ts": 1788438740,
    "px": 1.987,
-   "r1h": null,
+   "r1h": -0.009562154001006573,
    "r4h": null,
    "r24h": null
   },
