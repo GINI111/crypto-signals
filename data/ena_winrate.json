@@ -1,0 +1,43 @@
+{
+ "generated_at": 1788405273,
+ "generated_str": "09-03 11:14",
+ "types": {
+  "strong": {
+   "n": 0,
+   "avg1h": null,
+   "avg4h": null,
+   "avg24h": null,
+   "rate1h": null,
+   "rate4h": null,
+   "rate24h": null
+  },
+  "retest": {
+   "n": 0,
+   "avg1h": null,
+   "avg4h": null,
+   "avg24h": null,
+   "rate1h": null,
+   "rate4h": null,
+   "rate24h": null
+  },
+  "near": {
+   "n": 0,
+   "avg1h": null,
+   "avg4h": null,
+   "avg24h": null,
+   "rate1h": null,
+   "rate4h": null,
+   "rate24h": null
+  },
+  "wait": {
+   "n": 0,
+   "avg1h": null,
+   "avg4h": null,
+   "avg24h": null,
+   "rate1h": null,
+   "rate4h": null,
+   "rate24h": null
+  }
+ },
+ "recent": []
+}
