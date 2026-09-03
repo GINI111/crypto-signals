@@ -1,6 +1,6 @@
 {
- "generated_at": 1788416101,
- "generated_str": "09-03 14:15",
+ "generated_at": 1788419703,
+ "generated_str": "09-03 15:15",
  "types": {
   "strong": {
    "n": 0,
@@ -21,23 +21,51 @@
    "rate24h": null
   },
   "near": {
-   "n": 0,
-   "avg1h": null,
-   "avg4h": null,
-   "avg24h": null,
-   "rate1h": null,
-   "rate4h": null,
-   "rate24h": null
+   "n": 1,
+   "avg1h": 0.0,
+   "avg4h": 0.0,
+   "avg24h": 0.0,
+   "rate1h": 0,
+   "rate4h": 0,
+   "rate24h": 0
   },
   "wait": {
-   "n": 0,
-   "avg1h": null,
-   "avg4h": null,
-   "avg24h": null,
-   "rate1h": null,
-   "rate4h": null,
-   "rate24h": null
+   "n": 2,
+   "avg1h": 0.0,
+   "avg4h": 0.0,
+   "avg24h": 0.0,
+   "rate1h": 0,
+   "rate4h": 0,
+   "rate24h": 0
   }
  },
- "recent": []
+ "recent": [
+  {
+   "sym": "SUI",
+   "type": "wait",
+   "ts": 1788418900,
+   "px": 0.7656,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ADA",
+   "type": "wait",
+   "ts": 1788418900,
+   "px": 0.2051,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "EGLD",
+   "type": "near",
+   "ts": 1788416501,
+   "px": 5.374,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  }
+ ]
 }
