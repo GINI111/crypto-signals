@@ -210,3 +210,146 @@ if (typeof module !== 'undefined') module.exports = {
   calcENA, calcENA2, calcIndicators, calcQuality, calcStage, calcEntry, calcHealth,
   detectPullback, calcMA7, scoreDistMA7, scoreMA7Gain, scoreMonotonic, scoreSlope5, scoreDrawdown
 };
+if (typeof window !== 'undefined') window.ENAScore = {
+  calcENA, calcENA2, calcIndicators, calcQuality, calcStage, calcEntry, calcHealth,
+  detectPullback, calcMA7
+};
+
+// ═══════════════════════════════════════════════════════
+// V3.1 交易计划生成器（评分器 → 计划生成器）
+// 三权分离：Quality 选币 / Entry 选时机 / SL-TP 管风险
+// ═══════════════════════════════════════════════════════
+
+// ── 7 阶段模型 ──
+// STARTING → ACCUMULATION → TRENDING → BREAKOUT → RETEST → BREAKOUT AGAIN → EXTENDED → DECAY
+function calcStageV31(ind, pullback) {
+  if (ind.dist > 6 || ind.slope > 12 || ind.gain > 35) return 'EXTENDED';   // 过热延伸
+  if (ind.slope < 0 || ind.mono < 60 || ind.dd > 5) return 'DECAY';         // 趋势失效
+  if (pullback) return 'RETEST';                                            // 强趋势健康回踩（独立状态）
+  if (ind.dist <= 1.5 && ind.gain < 12 && ind.slope >= 0) return 'STARTING';   // 刚启动
+  if (ind.dist <= 3 && ind.slope < 2 && ind.gain < 15) return 'ACCUMULATION';  // 蓄势整理
+  if (ind.slope >= 2 && ind.dist > 4) return 'BREAKOUT';                    // 突破上行（偏离MA7渐大）
+  return 'TRENDING';                                                        // 健康上行（2<dist≤4）
+}
+
+// ── Entry Risk（追高风险）──
+function calcEntryRisk(ind, stage, health) {
+  if (stage === 'EXTENDED' || stage === 'DECAY' || ind.dist > 6 || health < 60) return 'HIGH';
+  if (ind.dist > 4 || ind.slope > 8 || health < 75 || ind.gain > 25) return 'MED';
+  return 'LOW';
+}
+
+// ── 入场分类（与 Quality 彻底分离）──
+const STAGE_V31_LABEL = {
+  STARTING: '🆕 STARTING', ACCUMULATION: '🧠 ACCUMULATION', TRENDING: '🟢 TRENDING',
+  BREAKOUT: '🔥 BREAKOUT', RETEST: '↩️ RETEST', EXTENDED: '⚠️ EXTENDED', DECAY: '🔴 DECAY'
+};
+const STAGE_V31_ORDER = ['STARTING', 'ACCUMULATION', 'TRENDING', 'BREAKOUT', 'RETEST', 'EXTENDED', 'DECAY'];
+
+function classifyEntry(q, h, stage, dist) {
+  const bad = stage === 'EXTENDED' || stage === 'DECAY';
+  if (bad || h < 60) return { cls: 'NO', label: '🔴 NO ENTRY', pct: '0%', note: '⛔ 不买：阶段不佳/健康度不足，Quality再高也不追' };
+  if (stage === 'RETEST' && q >= 7.5 && h >= 75)
+    return { cls: 'RETEST', label: '🟢 BUY ON RETEST', pct: '100%', note: '回踩确认：结构未破+缩量企稳，标准仓位' };
+  if (stage === 'BREAKOUT' && q >= 8 && h >= 85 && dist <= 5)
+    return { cls: 'BREAKOUT', label: '🔥 BREAKOUT ENTRY', pct: '50%', note: '突破追入：仓位减半，破位即走' };
+  if ((stage === 'STARTING' || stage === 'ACCUMULATION') && q >= 8 && dist <= 3)
+    return { cls: 'EARLY', label: '🟡 EARLY ENTRY', pct: '25%', note: '早期试仓：突破确认后再加' };
+  return { cls: 'WAIT', label: '🟡 WAIT RETEST', pct: '0%', note: '趋势成立，等回踩至MA7再进（届时推RETEST）' };
+}
+
+// ── ATR(14) ──
+function calcATR(kl, n) {
+  n = n || 14;
+  if (!kl || kl.length < n + 1) return null;
+  const trs = [];
+  for (let i = kl.length - n; i < kl.length; i++) {
+    const h = kl[i].h, l = kl[i].l, pc = kl[i - 1] ? kl[i - 1].c : kl[i].o;
+    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+  }
+  return trs.reduce((a, b) => a + b, 0) / trs.length;
+}
+
+// ── 结构低点：最近 n 根 15m 最低价（回踩结构/早期结构用）───
+function structLow(kl, n) {
+  n = n || 24;
+  const slice = kl.slice(-n);
+  return Math.min(...slice.map(x => x.l));
+}
+
+// ── 交易计划 V3.1 ──
+// ctx: {type:'RETEST'|'BREAKOUT'|'EARLY', refPrice, breakoutLevel?, kl15}
+// SL 公式：回踩=回踩低点-0.4ATR / 突破=突破位-0.6ATR / 早期=结构低点-0.5ATR
+// 风险边界：2.5%~10%（超10% 放弃）
+function calcPlanV31(ctx) {
+  const kl15 = ctx.kl15;
+  if (!kl15 || kl15.length < 30) return null;
+  const atr = calcATR(kl15, 14);
+  if (!atr || atr <= 0) return null;
+  const entry = ctx.refPrice || kl15[kl15.length - 1].c;
+  let sl;
+  if (ctx.type === 'RETEST') {
+    const pl = ctx.pullbackLow || structLow(kl15, 24);
+    sl = pl - 0.4 * atr;
+  } else if (ctx.type === 'BREAKOUT') {
+    const bl = ctx.breakoutLevel || structLow(kl15, 24) + atr * 2;
+    sl = bl - 0.6 * atr;
+  } else { // EARLY
+    const sl0 = structLow(kl15, 30);
+    sl = sl0 - 0.5 * atr;
+  }
+  const riskPct = (entry - sl) / entry * 100;
+  if (riskPct < 2.5) { sl = entry * (1 - 0.025); }        // 最小风险 2.5%
+  if (riskPct > 10) return { valid: false, reason: '风险>10% 放弃交易（不扩大止损）', entry, sl, riskPct };
+  const r = entry - sl;
+  return {
+    valid: true, entry: +entry.toFixed(6), sl: +sl.toFixed(6),
+    riskPct: +((entry - sl) / entry * 100).toFixed(1),
+    tp1: +(entry + r).toFixed(6), tp2: +(entry + 2 * r).toFixed(6),
+    r: +r.toFixed(6), atr: +atr.toFixed(6),
+    // 分批：TP1 20% / TP2 30% / 50% trailing；TP1后 SL=Entry+0.1R
+    ladder: [
+      { at: '+1R', act: 'TP1 卖20%', sl: 'Entry+0.1R' },
+      { at: '+1.5R', act: 'SL→Entry+0.7R', sl: '' },
+      { at: '+2R', act: 'TP2 卖30%', sl: 'SL→Entry+1R' },
+      { at: '+3R', act: 'SL→Entry+2R', sl: '' },
+      { at: '+4R', act: 'SL→Entry+3R', sl: '' }
+    ],
+    trail: 'max(最高价-2ATR, 结构低点-0.2ATR) 取高者',
+    timeStop: ctx.type === 'RETEST' ? '8~12 × 15m' : (ctx.type === 'BREAKOUT' ? '6~8 × 15m' : '12~16 × 15m')
+  };
+}
+
+// ── V3.1 汇总：评分 + 阶段 + 入场分类 + 风险 ──
+// kl1h: 1h klines（[{c,h,l,...}]）评分用；kl15: 15m klines 计划用（可空）
+function calcENA3(kl1h, kl15, opts) {
+  if (!kl1h || kl1h.length < 30) return null;
+  opts = opts || {};
+  const closes1h = kl1h.map(x => x.c);
+  const ind = calcIndicators(closes1h);
+  const quality = calcQuality(ind);
+  const pullback = detectPullback(closes1h, ind.ma7);
+  const stage = calcStageV31(ind, pullback);
+  const health = calcHealth(ind);
+  const entryScore = calcEntry(ind, pullback);
+  const entryRisk = calcEntryRisk(ind, stage, health);
+  const dist = ind.dist;
+  const ec = classifyEntry(quality, health, stage, dist);
+  const plan = (kl15 && ec.cls !== 'NO' && ec.cls !== 'WAIT')
+    ? calcPlanV31(Object.assign({ kl15 }, opts.planCtx || {}))
+    : null;
+  return {
+    quality, health, stage, stageLabel: STAGE_V31_LABEL[stage],
+    entry: entryScore, pullback,
+    entryRisk, entryClass: ec, dist,
+    ind: { dist: ind.dist, slope: ind.slope, gain: ind.gain, mono: ind.mono, dd: ind.dd },
+    plan, ts: Date.now()
+  };
+}
+
+const V31 = {
+  calcStageV31, calcEntryRisk, classifyEntry, calcPlanV31, calcENA3, calcATR, structLow,
+  STAGE_V31_LABEL, STAGE_V31_ORDER
+};
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, V31);
+if (typeof window !== 'undefined' && window.ENAScore) Object.assign(window.ENAScore, V31);
