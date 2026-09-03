@@ -1,6 +1,6 @@
 {
- "generated_at": 1788437702,
- "generated_str": "09-03 20:15",
+ "generated_at": 1788441301,
+ "generated_str": "09-03 21:15",
  "types": {
   "strong": {
    "n": 0,
@@ -21,31 +21,40 @@
    "rate24h": null
   },
   "near": {
-   "n": 4,
-   "avg1h": -0.43,
-   "avg4h": -2.33,
+   "n": 5,
+   "avg1h": -0.35,
+   "avg4h": -1.87,
    "avg24h": 0.0,
-   "rate1h": 25,
+   "rate1h": 20,
    "rate4h": 0,
    "rate24h": 0
   },
   "wait": {
    "n": 4,
-   "avg1h": 0.21,
-   "avg4h": 0.25,
+   "avg1h": 1.07,
+   "avg4h": 0.55,
    "avg24h": 0.0,
-   "rate1h": 50,
-   "rate4h": 25,
+   "rate1h": 75,
+   "rate4h": 50,
    "rate24h": 0
   }
  },
  "recent": [
   {
+   "sym": "CAKE",
+   "type": "near",
+   "ts": 1788438740,
+   "px": 1.987,
+   "r1h": null,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "XPL",
    "type": "wait",
    "ts": 1788436928,
    "px": 0.088,
-   "r1h": null,
+   "r1h": 0.03454545454545466,
    "r4h": null,
    "r24h": null
   },
@@ -73,7 +82,7 @@
    "ts": 1788426107,
    "px": 2.567,
    "r1h": -0.011686793922867311,
-   "r4h": null,
+   "r4h": 0.012076353720295918,
    "r24h": null
   },
   {
