@@ -85,6 +85,10 @@ tr:hover td{background:rgba(0,200,150,.04)}
   <div style="font-weight:700;margin-bottom:6px">📊 信号胜率 <span style="font-weight:400;color:var(--dim);font-size:11px">推送信号触发后 1h/4h/24h 上涨率（自动统计，样本积累中）</span></div>
   <div id="wrBody" style="color:var(--dim)">加载中...</div>
 </div>
+<div id="rpPanel" style="border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2);font-size:12px">
+  <div style="font-weight:700;margin-bottom:6px">📼 V3.1 交易回放 <span style="font-weight:400;color:var(--dim);font-size:11px">信号按 V3.1 计划模拟执行（分批20/30/50 + R-Ladder + 时间止损）→ MFE/MAE/实际R</span></div>
+  <div id="rpBody" style="color:var(--dim)">加载中...</div>
+</div>
 <table id="tbl">
 <thead><tr>
   <th>#</th><th>币种</th><th>Quality</th><th>阶段</th><th>入场分类</th><th>风险</th><th>仓位</th><th>距MA7</th><th>20根涨幅</th><th>单调性</th><th>末5斜率</th><th>回撤</th><th>Δ</th><th>24h</th>
@@ -492,7 +496,30 @@ async function loadWinrate(){
       return `<span style="color:var(--dim)">${ts} ${x.sym} ${TY[x.type]?TY[x.type][0]:x.type}</span> <span style="color:${col}">${mark}${r24!=null?(r24>0?'+':'')+(r24*100).toFixed(1)+'%':''}</span>`;
     }).join(' &nbsp;|&nbsp; ');
     $('wrBody').innerHTML=rows+(rec?'<div style="margin-top:6px;font-size:11px">最近: '+rec+'</div>':'');
-  }catch(e){$('wrBody').textContent='暂无数据（等信号推送后自动积累）'}
+    // 📼 V3.1 交易回放面板
+    const rp=$('rpBody');
+    const st=d.replay&&d.replay.stats?d.replay.stats:{};
+    const RC={strong:['🔥突破买','var(--grn)'],retest:['🟢回踩买','var(--cyn)']};
+    const rpRows=Object.entries(RC).map(([k,[name,col]])=>{
+      const s=st[k]||{n:0};
+      if(!s.n)return `<div style="display:flex;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)"><span style="width:70px;color:${col};font-weight:600">${name}</span><span style="color:var(--dim)">n=0 样本积累中</span></div>`;
+      return `<div style="display:flex;gap:10px;align-items:center;padding:3px 0;border-bottom:1px dashed var(--line)">
+        <span style="width:70px;color:${col};font-weight:600">${name}</span>
+        <span style="width:44px;color:var(--dim)">n=${s.n}</span>
+        <span>胜率 <b class="${s.winRate>=50?'up':'down'}">${s.winRate}%</b></span>
+        <span>均R <b class="${s.avgR>=0?'up':'down'}">${s.avgR>0?'+':''}${s.avgR}</b></span>
+        <span style="color:var(--dim)">MFE +${s.avgMfe}R</span>
+        <span style="color:var(--dim)">MAE ${s.avgMae}R</span>
+        <span style="color:var(--dim)">均持 ${s.avgHoldMin}min</span>
+      </div>`}).join('');
+    const rpT=(d.replay&&d.replay.last||[]).filter(t=>t&&!t.skip).slice(0,5).map(t=>{
+      const tt=new Date(t.ts*1000);
+      const ts=('0'+(tt.getMonth()+1)).slice(-2)+'-'+('0'+tt.getDate()).slice(-2)+' '+('0'+tt.getHours()).slice(-2)+':'+('0'+tt.getMinutes()).slice(-2);
+      const col=t.finalR>0?'var(--grn)':'var(--red)';
+      return `<span style="color:var(--dim)">${ts} ${t.sym} ${RC[t.type]?RC[t.type][0]:t.type}</span> <span style="color:${col}">${t.finalR>0?'+':''}${t.finalR}R</span><span style="color:var(--dim)">(MFE+${t.mfeR}/MAE${t.maeR})</span>`;
+    }).join(' &nbsp;|&nbsp; ');
+    rp.innerHTML=rpRows+(rpT?'<div style="margin-top:6px;font-size:11px">最近: '+rpT+'</div>':'')+'<div style="margin-top:4px;font-size:10px;color:var(--dim)">💡 期望值 = 胜率×均盈 − 败率×均亏；回放每30分钟自动更新</div>';
+  }catch(e){$('wrBody').textContent='暂无数据（等信号推送后自动积累）';const rp=$('rpBody');if(rp)rp.textContent='暂无回放（等可买信号产生）'}
 }
 </script>
 </body>
