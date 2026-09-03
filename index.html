@@ -141,7 +141,7 @@
 
 <script>
 const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
-let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let livePrice=null,liveChange=null;
+let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
 function ema(a,p){const k=2/(p+1),r=[a[0]];for(let i=1;i<a.length;i++)r.push(a[i]*k+r[i-1]*(1-k));return r}
@@ -246,7 +246,20 @@ function fundTag(side){
   }
 }
 function storageScope(){return `${symbol}|${tf}`}
-function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory()}
+function scopeSignals(){
+  const byKey={};
+  storedSignals.forEach(x=>{byKey[x.key]=x});
+  serverSignals.forEach(x=>{if(x&&x.key&&x.scope===storageScope())byKey[x.key]=x});
+  return Object.values(byKey);
+}
+async function loadServerSignals(){
+  try{
+    const r=await fetch('data/signals.json?t='+Date.now(),{cache:'no-store'});
+    const d=await r.json();
+    if(d&&Array.isArray(d.signals)){serverSignals=d.signals;renderHistory();renderPerformance()}
+  }catch(e){/* 服务器暂不可用则只用本地 */}
+}
+function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();loadServerSignals()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
 function tradePlan(side,entry,atrVal,d){let struct=0;if(d&&d.h&&d.h.length>=6){const lo=Math.min(...d.l.slice(-6,-1)),hi=Math.max(...d.h.slice(-6,-1));struct=side==='buy'?(entry-lo):(hi-entry)}const risk=Math.max(atrVal*CFG.stopATR,struct,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+risk*CFG.tp1ATR:entry-risk*CFG.tp1ATR;const tp2=side==='buy'?entry+risk*CFG.tp2ATR:entry-risk*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
 const FUND_KEY='crypto_signal_pro_v21_funding';
@@ -413,13 +426,13 @@ function maybeSignal(side,score,d,conds){
   const prev=storedSignals.filter(x=>x.scope===storageScope()&&x.side===side).sort((a,b)=>b.createdAt-a.createdAt)[0];
   if(dup)return;
   if(prev&&now-prev.createdAt<CFG.cooldownMs[tf])return;
-  if(storedSignals.some(x=>x.scope===storageScope()&&x.side===side&&!x.result))return;
+  if(scopeSignals().some(x=>x.side===side&&!x.result))return;
   const entry=d.c[d.c.length-1],atrVal=atr(d),plan=tradePlan(side,entry,atrVal,d);
   if(plan.rr<2)return;
   const fv2=fundingVerdict();
   const fundTag=fv2?((fv2.label==='偏多'||fv2.label==='强多')?'多':((fv2.label==='偏空'||fv2.label==='强空')?'空':'中')):'-';
   const item={key,scope:storageScope(),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
-  storedSignals.push(item);saveStoredSignals();history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
+  storedSignals.push(item);saveStoredSignals();history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 function updateSignalLifecycle(d){
   let changed=false;
@@ -446,10 +459,10 @@ function updateSignalLifecycle(d){
     }
   });
   if(changed)saveStoredSignals();
-  history=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
+  history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 
-function renderHistory(){let el=$('history');const hs=storedSignals.filter(x=>x.scope===storageScope()).sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${h.returnPct>=0?'+':''}${h.returnPct.toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';const ft=h.fundTag?`<span class="${h.fundTag==='多'?'up':h.fundTag==='空'?'down':'neutral'}"> · 💵${h.fundTag}</span>`:'';return `<div class="hrow"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/4 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${h.rr.toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%${ft}</div></div><div class="small ${cls}">${status}<br>${fmtDT(h.createdAt)}</div></div>`}).join('')}
+function renderHistory(){let el=$('history');const hs=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${h.returnPct>=0?'+':''}${h.returnPct.toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';const ft=h.fundTag?`<span class="${h.fundTag==='多'?'up':h.fundTag==='空'?'down':'neutral'}"> · 💵${h.fundTag}</span>`:'';return `<div class="hrow"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/4 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${h.rr.toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%${ft}</div></div><div class="small ${cls}">${status}<br>${fmtDT(h.createdAt)}</div></div>`}).join('')}
 function fmtDT(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`}
 // 北京时间（UTC+8）工具：强制显示北京时间，不受浏览器时区影响
 function bjDate(ts){return new Date(ts+8*3600*1000)}
@@ -457,7 +470,7 @@ function bjFmt(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d
 function bjFmtShort(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`}
 function fmtPrice(p,s){return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
 function renderPerformance(){
-  const hs=storedSignals.filter(x=>x.scope===storageScope());const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
+  const hs=scopeSignals();const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
   const grossWin=done.reduce((a,x)=>a+Math.max(0,x.returnPct||0),0),grossLoss=done.reduce((a,x)=>a+Math.max(0,-(x.returnPct||0)),0);
   // 胜率 = TP2 / (TP2 + SL)，BE保本单不计入分母
   const decided=wins.length+sls.length;
@@ -500,12 +513,12 @@ async function restPoll(){
     if(wsLastMsg&&Date.now()-wsLastMsg>20000){console.warn('WS 卡顿，强制重连');connectWS()}
   }catch(e){/* REST 失败静默，等下一轮 */}
 }
-setInterval(restPoll,30e3);
+setInterval(restPoll,30e3);setInterval(loadServerSignals,30e3);
 
 function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b=>b.classList.toggle('active',b.dataset.sym===s));$('fundAuto').textContent=`🔄 自动获取(${symbol})`;resetAndLoad();renderFunding();if(!fundingData||fundingData.symbol!==symbol)autoFetchFunding()}
 function chooseTF(v){tf=v;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===v));resetAndLoad()}
 function resetAndLoad(){history=[];lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};loadAll().catch(e=>$('footer').textContent='加载失败：'+e.message)}
-document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dataset.sym));document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>chooseTF(b.dataset.tf));$('refresh').onclick=()=>loadAll().catch(e=>$('footer').textContent='刷新失败：'+e.message);$('clear').onclick=()=>{storedSignals=storedSignals.filter(x=>x.scope!==storageScope());saveStoredSignals();history=[];renderHistory();renderPerformance()};
+document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dataset.sym));document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>chooseTF(b.dataset.tf));$('refresh').onclick=()=>loadAll().catch(e=>$('footer').textContent='刷新失败：'+e.message);$('clear').onclick=()=>{storedSignals=storedSignals.filter(x=>x.scope!==storageScope());saveStoredSignals();history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance()};
 // 回测：用历史K线模拟信号 + 持仓生命周期
 const BT_MAXBARS=CFG.maxBars[tf]||48;
 function btEval(d,htf1,htf4){
