@@ -288,6 +288,13 @@ function renderTable(rows){
   if(!tb.children.length)tb.innerHTML='<tr><td colspan="13" style="color:var(--dim);text-align:center;padding:20px">该筛选下暂无币种</td></tr>';
 }
 
+// V3.1 仓位建议（由入场分类决定）
+function posAdvice(r){
+  const ec=r.r.entryClass||{};
+  const m=EC_META[ec.cls]||EC_META.WAIT;
+  return{pct:m.pct,note:ec.note||'',cls:m.cls};
+}
+
 // ═══════════ 详情 ═══════════
 let detailChart=null;
 async function showDetail(r){
@@ -384,7 +391,7 @@ async function renderPlan(r){
         <span class="entryTag et wait">剩 50% 移动止盈</span>
         <span class="entryTag et wait">⏱ 时间止损 ${plan.timeStop}</span>
       </div>
-      <div style="font-size:11px;color:var(--dim);margin:4px 0">R-Ladder（利润锁定）：${plan.ladder.map(l=>l.at+'→'+l.act+(l.sl?'，SL→'+l.sl:'')).join(' ｜ ')}</div>
+      <div style="font-size:11px;color:var(--dim);margin:4px 0">R-Ladder（利润锁定）：${plan.ladder.map(l=>l.at+'→'+l.act+(l.sl?'，'+l.sl:'')).join(' ｜ ')}</div>
       <div style="font-size:11px;color:var(--dim);margin:2px 0">🔄 移动止盈：${plan.trail} · TP1 成交后 SL 提到 Entry+0.1R（锁利不卡成本）</div>
       <div style="font-size:12px;margin-top:4px">💼 每笔风险 <b>$${riskAmt}</b> → 仓位 ≈ <b class="${pa.cls==='ok'?'up':(pa.cls==='wait'?'wait':'no')}">$${position.toFixed(0)}</b>（风险反推，止损宽则仓小）· ${pa.note}</div>`;
   }catch(e){body.innerHTML='<span class="no">计算失败: '+e.message+'</span>'}
