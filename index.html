@@ -119,7 +119,6 @@
 
   <div class="panel history">
     <div class="panelHead"><span>📋 S级交易信号历史 / 生命周期</span><button class="refresh" style="margin:0" id="clear">清空</button></div>
-    <div id="serverFeed" style="display:none"></div>
     <div class="historyBody" id="history"><div class="empty">暂无已确认交易信号</div></div>
   </div>
   <div class="panel history" id="btPanel" style="display:none">
@@ -264,28 +263,9 @@ async function loadServerSignals(){
   try{
     const r=await fetch('data/signals.json?t='+Date.now(),{cache:'no-store'});
     const d=await r.json();
-    if(d&&Array.isArray(d.signals)){serverSignals=d.signals;renderHistory();renderPerformance();renderServerFeed()}
+    if(d&&Array.isArray(d.signals)){serverSignals=d.signals;renderHistory();renderPerformance()}
   }catch(e){/* 服务器暂不可用则只用本地 */}
 }
-// 📡 服务器信号全览：跨币种/周期显示 signals.json 全部最新信号（TG 推送的都能看到），点击跳转对应视图
-function renderServerFeed(){
-  const el=document.getElementById('serverFeed');
-  const list=(serverSignals||[]).slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,12);
-  if(!list.length){if(el)el.style.display='none';return}
-  el.style.display='block';
-  el.innerHTML='<div style="padding:6px 12px;border-bottom:1px solid rgba(0,200,150,.15);font-size:11px;color:var(--d)">📡 服务器信号全览（'+list.length+' 条 · 点击切换视图）</div>'+
-    list.map(s=>{
-      const st=s.result?((s.result==='TP2'?'✅ ':s.result==='SL'?'⛔ ':s.result==='BE'?'🔒 ':'⏳ ')+s.result+' '+((s.returnPct||0)>=0?'+':'')+(s.returnPct||0).toFixed(2)+'%'):'🟡 进行中';
-      const cls=s.result?((s.returnPct||0)>=0?'profit':'loss'):'yellow';
-      const sc=s.scope||'';const coin=(sc.split('|')[0]||'?'),tf=(sc.split('|')[1]||'?');
-      return '<div class="hrow" style="cursor:pointer" onclick="goScope(\''+coin+'\',\''+tf+'\')">'+
-        '<div class="htag '+(s.side==='buy'?'up':'down')+'">'+(s.side==='buy'?'BUY':'SELL')+'</div>'+
-        '<div class="hmain"><b>'+coin+'/USDT · '+tf+'</b>'+
-        '<div class="small">'+(s.score||'?')+'/4 · 入场 $'+fmtPrice(s.entry,coin)+' · SL $'+fmtPrice(s.stop||s.sl,coin)+' · TP2 $'+fmtPrice(s.tp2,coin)+'</div></div>'+
-        '<div class="small '+cls+'">'+st+'<br>'+fmtDT(s.createdAt)+'</div></div>';
-    }).join('');
-}
-function goScope(coin,tf){if(coin&&tf){chooseSym(coin);chooseTF(tf)}}
 function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();loadServerSignals()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
 function tradePlan(side,entry,atrVal,d){let struct=0;if(d&&d.h&&d.h.length>=6){const lo=Math.min(...d.l.slice(-6,-1)),hi=Math.max(...d.h.slice(-6,-1));struct=side==='buy'?(entry-lo):(hi-entry)}const risk=Math.max(atrVal*CFG.stopATR,struct,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+risk*CFG.tp1ATR:entry-risk*CFG.tp1ATR;const tp2=side==='buy'?entry+risk*CFG.tp2ATR:entry-risk*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
