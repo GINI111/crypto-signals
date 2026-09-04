@@ -1,6 +1,6 @@
 {
- "generated_at": 1788513301,
- "generated_str": "09-04 17:15",
+ "generated_at": 1788516901,
+ "generated_str": "09-04 18:15",
  "types": {
   "strong": {
    "n": 2,
@@ -22,10 +22,10 @@
   },
   "near": {
    "n": 52,
-   "avg1h": -0.07,
+   "avg1h": -0.13,
    "avg4h": -0.58,
    "avg24h": -0.31,
-   "rate1h": 38,
+   "rate1h": 40,
    "rate4h": 23,
    "rate24h": 0
   },
@@ -45,7 +45,7 @@
    "type": "near",
    "ts": 1788513070,
    "px": 53.83,
-   "r1h": null,
+   "r1h": -0.033252832992754944,
    "r4h": null,
    "r24h": null
   },
@@ -54,7 +54,7 @@
    "type": "near",
    "ts": 1788511981,
    "px": 6.295,
-   "r1h": null,
+   "r1h": 0.003335980937251737,
    "r4h": null,
    "r24h": null
   },
