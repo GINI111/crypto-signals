@@ -133,7 +133,15 @@ function entryMeta(e){
 function entryState(r){
   const ec=r.r.entryClass||{cls:'WAIT'};
   const m=EC_META[ec.cls]||EC_META.WAIT;
-  return{label:m.label,cls:m.cls,pct:m.pct};
+  let label=m.label;
+  // TRADE STATUS：阶段感知文案（V3.2，一眼该干什么）
+  const stg=r.r.stage;
+  if(ec.cls==='NO'){
+    if(stg==='EXTENDED')label='⚠️ EXTENDED — NO CHASE';
+    else if(stg==='DECAY')label='🔴 TREND INVALID';
+    else if(r.r.health<60)label='🔴 HEALTH FAIL';
+  }else if(ec.cls==='WAIT'&&stg==='RETEST')label='🟡 WAIT RETEST';
+  return{label,cls:m.cls,pct:m.pct,stage:stg};
 }
 function entryRiskMeta(rk){return ER_LABEL[rk]||ER_LABEL.MED}
 function stageNote(st){

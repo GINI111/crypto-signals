@@ -353,3 +353,84 @@ const V31 = {
 };
 if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, V31);
 if (typeof window !== 'undefined' && window.ENAScore) Object.assign(window.ENAScore, V31);
+
+// ═══════════════════════════════════════════════════════
+// V3.2 持仓生命周期（入场后管理）：趋势失效退出 + 重新入场
+// 用户方案落地：5 失效信号 ≥2 WARNING / ≥3 EXIT；
+// 止损后 Quality≥7.5+Health≥70+站回MA7+破局部高+量恢复 → SECOND ENTRY
+// ═══════════════════════════════════════════════════════
+// ctx: { kl1h, kl15, pullbackLow?, entryType? }
+// 返回: { level:'OK'|'WARNING'|'EXIT', count, sig:{s1..s5}, reasons:[], ind }
+function calcExitSignal(ctx) {
+  if (!ctx || !ctx.kl1h || ctx.kl1h.length < 30 || !ctx.kl15 || ctx.kl15.length < 30) return null;
+  const closes1h = ctx.kl1h.map(x => x.c);
+  const ind = calcIndicators(closes1h);
+  const health = calcHealth(ind);
+  const ma7now = ind.ma7[ind.ma7.length - 1];
+  const price1h = closes1h[closes1h.length - 1];
+  const kl15 = ctx.kl15;
+  const closes15 = kl15.map(x => x.c);
+  const price15 = closes15[closes15.length - 1];
+  const sig = {}, reasons = [];
+
+  // S1: 跌破结构低点（回踩低点/15m 24根最低）
+  const structLow = ctx.pullbackLow || Math.min(...kl15.slice(-24).map(x => x.l));
+  sig.s1 = price15 < structLow;
+  if (sig.s1) reasons.push('跌破结构低点/回踩低点');
+
+  // S2: 1H 价格跌回 MA7 下方
+  sig.s2 = price1h < ma7now;
+  if (sig.s2) reasons.push('1H 跌回 MA7 下方');
+
+  // S3: MA7 斜率转负（末5根）
+  sig.s3 = ind.slope < 0;
+  if (sig.s3) reasons.push('MA7 斜率转负');
+
+  // S4: Health < 60
+  sig.s4 = health < 60;
+  if (sig.s4) reasons.push(`Health ${health} < 60`);
+
+  // S5: Smart Money 流出（量价代理：近12根15m 下跌量 > 上涨量×1.3 = 卖压主导出货特征）
+  let upV = 0, dnV = 0;
+  for (const k of kl15.slice(-12)) { if (k.c >= k.o) upV += k.v; else dnV += k.v; }
+  sig.s5 = dnV > upV * 1.3 && upV > 0;
+  if (sig.s5) reasons.push(`量价出货（下跌量 ${(dnV / (upV || 1)).toFixed(1)}x 上涨量）`);
+
+  const count = [sig.s1, sig.s2, sig.s3, sig.s4, sig.s5].filter(Boolean).length;
+  return {
+    level: count >= 3 ? 'EXIT' : (count >= 2 ? 'WARNING' : 'OK'),
+    count, sig, reasons,
+    health, price15, structLow,
+    pnlPct: ctx.entryPrice ? (price15 / ctx.entryPrice - 1) * 100 : null,
+    ind: { dist: ind.dist, slope: ind.slope }
+  };
+}
+
+// 重新入场判定（止损/退出后）：ctx = { kl1h, kl15 }
+// 返回: { level:'SECOND ENTRY'|'RE-ENTRY WATCH'|'NO', quality, health, aboveMA7, broke, volBack }
+function calcReentry(ctx) {
+  if (!ctx || !ctx.kl1h || ctx.kl1h.length < 30 || !ctx.kl15 || ctx.kl15.length < 30) return null;
+  const closes1h = ctx.kl1h.map(x => x.c);
+  const ind = calcIndicators(closes1h);
+  const quality = calcQuality(ind);
+  const health = calcHealth(ind);
+  const ma7now = ind.ma7[ind.ma7.length - 1];
+  const kl15 = ctx.kl15;
+  const closes15 = kl15.map(x => x.c);
+  const price = closes15[closes15.length - 1];
+  const aboveMA7 = price > ma7now;
+  const localHigh = Math.max(...closes15.slice(-25, -1));
+  const broke = price > localHigh;
+  const vols = kl15.map(x => x.v);
+  const vNow = vols.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const vPrev = vols.slice(-8, -3).reduce((a, b) => a + b, 0) / 5;
+  const volBack = vPrev > 0 && vNow / vPrev >= 1.2;   // Volume 恢复 ≥1.2x
+  const base = quality >= 7.5 && health >= 70;
+  let level = 'NO';
+  if (base && aboveMA7 && broke && volBack) level = 'SECOND ENTRY';
+  else if (base && (aboveMA7 || broke)) level = 'RE-ENTRY WATCH';
+  return { level, quality, health, aboveMA7, broke, volBack, price, ma7now };
+}
+
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { calcExitSignal, calcReentry });
+if (typeof window !== 'undefined' && window.ENAScore) Object.assign(window.ENAScore, { calcExitSignal, calcReentry });
