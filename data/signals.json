@@ -1,1 +1,55 @@
-{"_ts":1788512044124,"signals":[]}
+{
+ "_ts": 1788512318407,
+ "signals": [
+  {
+   "key": "BTC|15m|buy|81260",
+   "scope": "BTC|15m",
+   "symbol": "BTC",
+   "tf": "15m",
+   "side": "buy",
+   "entry": 81260,
+   "score": 3,
+   "sl": 80777,
+   "stop": 80777,
+   "tp2": 82225,
+   "rr": 2,
+   "fundTag": "\u591a",
+   "result": "TP2",
+   "returnPct": 1.19,
+   "createdAt": 1788459300000
+  },
+  {
+   "key": "BTC|15m|sell|77509",
+   "scope": "BTC|15m",
+   "symbol": "BTC",
+   "tf": "15m",
+   "side": "sell",
+   "entry": 77509,
+   "score": 3,
+   "sl": 77914,
+   "stop": 77914,
+   "tp2": 76698,
+   "rr": 2,
+   "fundTag": "\u7a7a",
+   "result": "SL",
+   "returnPct": -0.52,
+   "createdAt": 1788432322000
+  },
+  {
+   "key": "ETH|15m|buy|2506.84",
+   "scope": "ETH|15m",
+   "symbol": "ETH",
+   "tf": "15m",
+   "side": "buy",
+   "entry": 2506.84,
+   "score": 3,
+   "sl": 2490.13,
+   "stop": 2490.13,
+   "tp2": 2540.26,
+   "rr": 2,
+   "fundTag": "\u591a",
+   "returnPct": null,
+   "createdAt": 1788479188000
+  }
+ ]
+}
