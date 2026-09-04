@@ -248,7 +248,8 @@ function fundTag(side){
 function storageScope(){return `${symbol}|${tf}`}
 function scopeSignals(){
   const byKey={};
-  storedSignals.forEach(x=>{byKey[x.key]=x});
+  // 本地与服务器信号都按当前视图（币种|周期）过滤，历史列表不混币
+  storedSignals.forEach(x=>{if(x&&x.scope===storageScope())byKey[x.key]=x});
   serverSignals.forEach(x=>{if(x&&x.key&&x.scope===storageScope())byKey[x.key]=x});
   return Object.values(byKey);
 }
