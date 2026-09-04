@@ -1,6 +1,6 @@
 {
- "generated_at": 1788534901,
- "generated_str": "09-04 23:15",
+ "generated_at": 1788538502,
+ "generated_str": "09-05 00:15",
  "types": {
   "strong": {
    "n": 2,
@@ -24,7 +24,7 @@
    "n": 54,
    "avg1h": -0.1,
    "avg4h": -0.87,
-   "avg24h": -0.21,
+   "avg24h": -0.66,
    "rate1h": 41,
    "rate4h": 24,
    "rate24h": 6
@@ -33,7 +33,7 @@
    "n": 27,
    "avg1h": 0.59,
    "avg4h": 0.98,
-   "avg24h": 0.48,
+   "avg24h": -0.12,
    "rate1h": 63,
    "rate4h": 56,
    "rate24h": 15
