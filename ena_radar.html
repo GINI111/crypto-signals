@@ -137,10 +137,10 @@ function entryState(r){
   // TRADE STATUS：阶段感知文案（V3.2，一眼该干什么）
   const stg=r.r.stage;
   if(ec.cls==='NO'){
-    if(stg==='EXTENDED')label='⚠️ EXTENDED — NO CHASE';
-    else if(stg==='DECAY')label='🔴 TREND INVALID';
-    else if(r.r.health<60)label='🔴 HEALTH FAIL';
-  }else if(ec.cls==='WAIT'&&stg==='RETEST')label='🟡 WAIT RETEST';
+    if(stg==='EXTENDED')label='⚠️ 已延伸 — 禁止追高';
+    else if(stg==='DECAY')label='🔴 趋势失效';
+    else if(r.r.health<60)label='🔴 健康度不合格';
+  }else if(ec.cls==='WAIT'&&stg==='RETEST')label='🟡 等待回踩';
   return{label,cls:m.cls,pct:m.pct,stage:stg};
 }
 function entryRiskMeta(rk){return ER_LABEL[rk]||ER_LABEL.MED}
