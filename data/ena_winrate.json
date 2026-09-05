@@ -1,6 +1,6 @@
 {
- "generated_at": 1788632102,
- "generated_str": "09-06 02:15",
+ "generated_at": 1788635702,
+ "generated_str": "09-06 03:15",
  "types": {
   "strong": {
    "n": 4,
@@ -31,7 +31,7 @@
   },
   "wait": {
    "n": 35,
-   "avg1h": 0.56,
+   "avg1h": 0.49,
    "avg4h": 0.81,
    "avg24h": 0.93,
    "rate1h": 60,
@@ -45,7 +45,7 @@
    "type": "wait",
    "ts": 1788631317,
    "px": 0.0938,
-   "r1h": null,
+   "r1h": -0.024946695095948823,
    "r4h": null,
    "r24h": null
   },
