@@ -68,7 +68,7 @@ function analyze(kl) {
 }
 
 const E5 = { NONE: 0, PRE_ENTRY: 3, ARMED: 4, TRIGGER: 5 };
-const E5_LABEL = ['❌ 0/5 NO ENTRY', '⚪️ 1/5 TOO EARLY', '🟡 2/5 WATCH', '🟡 3/5 PRE-ENTRY', '🟢 4/5 ARMED', '🔥 5/5 ENTRY'];
+const E5_LABEL = ['❌ 0/5 不可入场', '⚪️ 1/5 太早', '🟡 2/5 观察', '🟡 3/5 预备入场', '🟢 4/5 只差触发', '🔥 5/5 正式入场'];
 function distLabel(d) { const a = Math.abs(d); return a <= 1 ? '🔥 很近' : a <= 2 ? '🟢 接近' : a <= 4 ? '🟡 等待' : '⚪️ 太远'; }
 
 // 主判定：r = calcENA3 输出；kl15 = 15m K线；prev = 上一轮 entry 状态
