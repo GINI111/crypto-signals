@@ -141,7 +141,7 @@
 
 <script>
 const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
-let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;
+let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
 function ema(a,p){const k=2/(p+1),r=[a[0]];for(let i=1;i<a.length;i++)r.push(a[i]*k+r[i-1]*(1-k));return r}
@@ -174,7 +174,7 @@ async function loadAll(){
   setState('tf4','加载中');setState('tf1','加载中');setState('tfc','加载中');setState('market','加载中');setState('atr','加载中');setState('volConfirm','加载中');setState('bookRatio','加载中');
   loadStoredSignals();
   const [cur,a1,a4]=await Promise.all([getTF(tf),getTF('1h'),getTF('4h')]);
-  htf['1h']=a1;htf['4h']=a4;last=cur;n=cur.c.length-1;
+  htf['1h']=a1;htf['4h']=a4;last=cur;n=cur.c.length-1;lastScopeKey=`${symbol}|${tf}`;
   updateCards(cur);updateFilters(cur);drawCharts(cur);
   // 防回放误记录：加载时只有最后一根K线刚收盘(90秒内)才允许记录信号，否则只预览（等WS收盘事件）
   // 否则每次刷新/重启都会把"最后一根已收盘的旧K线"（如1d的前天日线）当新信号记录
@@ -226,7 +226,7 @@ let n=d.c.length-1,e7=ema(d.c,7),e25=ema(d.c,25),r=rsi(d.c),m=macd(d),vr=d.v[n]/
 
 function evalSignal(d){let x=signal(d);return x}
 function gradeInfo(g,plus){return g==='S'?(plus?{txt:'🔥🔥 S+级',cls:'s'}:{txt:'🔥 S级',cls:'s'}):g==='A'?{txt:'🟢 A级 · 确认',cls:'a'}:g==='C'?{txt:'🟡 观察',cls:'c'}:{txt:'WAIT',cls:'w'}}
-function renderSignals(d,isClosed){let x=evalSignal(d),bs=+x.bs.toFixed(1),ss=+x.ss.toFixed(1);$('buyScore').textContent=bs+'/4';$('sellScore').textContent=ss+'/4';renderConds('buy',x.b);renderConds('sell',x.s);let warning=tf==='5m';let bOK=!warning&&x.gradeB==='S', sOK=!warning&&x.gradeS==='S';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
+function renderSignals(d,isClosed){let x=evalSignal(d),bs=+x.bs.toFixed(1),ss=+x.ss.toFixed(1);$('buyScore').textContent=bs+'/4';$('sellScore').textContent=ss+'/4';renderConds('buy',x.b);renderConds('sell',x.s);let warning=tf==='5m';let bOK=!warning&&x.gradeB==='S', sOK=!warning&&x.gradeS==='S';banner('buy',bs,bOK,warning,isClosed,x);banner('sell',ss,sOK,warning,isClosed,x);if(isClosed&&tf!=='5m'){/* [09-21 修复] 记账前确认 d 就是当前 scope 自己的K线 */if(lastScopeKey!==storageScope()){console.warn('跳过信号记录：数据 scope 不匹配',lastScopeKey,'≠',storageScope());return}if(bOK)maybeSignal('buy',bs,d,x.b);if(sOK)maybeSignal('sell',ss,d,x.s)}}
 function renderConds(side,rs){$(side+'Conds').innerHTML=rs.map(r=>`<div class="cond"><div class="condTop"><span>${r.name}</span><span class="badge ${r.score?'hit':r.partial?'watch':'miss'}">${r.score?'✓ 满足':r.partial?'△ 观察':'✗ 未满足'}</span></div><div class="desc">${r.desc}</div></div>`).join('')}
 function banner(side,score,ok,warning,closed,x){let p=side==='buy',b=$(p?'buyBanner':'sellBanner'),lv=$(p?'buyLevel':'sellLevel'),ti=$(p?'buyTitle':'sellTitle'),me=$(p?'buyMeta':'sellMeta');const g=gradeInfo(p?x.gradeB:x.gradeS,p?x.sPlusB:x.sPlusS);b.className='banner '+(ok?'buy':warning?'warn':p?'buy':'sell');lv.textContent=warning?(p?'BUY ALERT':'SELL ALERT'):(ok?g.txt+' · 交易':'WAIT');ti.textContent=warning?'5m 仅预警，不产生交易记录':ok?(g.txt==='🔥🔥 S+级'?(p?'🔥 高质量多头信号 + 资金确认':'🔥 高质量空头信号 + 资金确认'):(p?'🔥 高质量多头信号':'🔥 高质量空头信号')):g==='S'?(p?'多头被方向闸门拦截':'空头被方向闸门拦截'):(p?'多头条件积累中':'空头条件积累中');me.textContent=`A${p?x.A?'✓':'✗':x.As?'✓':'✗'} B${p?x.B?'✓':'✗':x.Bs?'✓':'✗'} C${p?x.C?'✓':'✗':x.Cs?'✓':'✗'} D${p?x.DliveB?'✓':'✗':x.DliveS?'✓':'✗'} · 4H=${x.raw.t4} · 1H=${x.raw.t1}${x.raw.strongBear?' · 1H强空头':''}${x.raw.strongBull?' · 1H强多头':''} · ${closed?'已收盘确认':'实时未收盘，仅预览'}${ok?' · 满足交易门槛':''}${fundTag(p?'buy':'sell')}`}
 function fundTag(side){
@@ -524,7 +524,7 @@ setInterval(restPoll,30e3);setInterval(loadServerSignals,30e3);
 
 function chooseSym(s){symbol=s;document.querySelectorAll('[data-sym]').forEach(b=>b.classList.toggle('active',b.dataset.sym===s));$('fundAuto').textContent=`🔄 自动获取(${symbol})`;resetAndLoad();renderFunding();if(!fundingData||fundingData.symbol!==symbol)autoFetchFunding()}
 function chooseTF(v){tf=v;document.querySelectorAll('[data-tf]').forEach(b=>b.classList.toggle('active',b.dataset.tf===v));resetAndLoad()}
-function resetAndLoad(){history=[];lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};loadAll().catch(e=>$('footer').textContent='加载失败：'+e.message)}
+function resetAndLoad(){history=[];lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};last=null;lastScopeKey=null;if(ws){ws.onclose=null;ws.close();ws=null}if(priceWS){priceWS.onclose=null;priceWS.close();priceWS=null}livePrice=null;loadAll().catch(e=>$('footer').textContent='加载失败：'+e.message)}
 document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>chooseSym(b.dataset.sym));document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>chooseTF(b.dataset.tf));$('refresh').onclick=()=>loadAll().catch(e=>$('footer').textContent='刷新失败：'+e.message);$('clear').onclick=()=>{storedSignals=storedSignals.filter(x=>x.scope!==storageScope());saveStoredSignals();history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance()};
 // 回测：用历史K线模拟信号 + 持仓生命周期
 const BT_MAXBARS=CFG.maxBars[tf]||48;
