@@ -433,8 +433,19 @@ function maybeSignal(side,score,d,conds){
   const prev=storedSignals.filter(x=>x.scope===storageScope()&&x.side===side).sort((a,b)=>b.createdAt-a.createdAt)[0];
   if(dup)return;
   if(prev&&now-prev.createdAt<CFG.cooldownMs[tf])return;
-  if(scopeSignals().some(x=>x.side===side&&!x.result))return;
-  const entry=d.c[d.c.length-1],atrVal=atr(d),plan=tradePlan(side,entry,atrVal,d);
+  // [09-24 哥令「同向只留最新一条」] 原先同向已有未结算信号就直接 return，导致每 scope 2 席被旧信号永久占满、
+  // 网站不再更新。改为：把同向未结算的旧信号按替换时的收盘价结掉（result=REPLACED），腾出席位给新信号。
+  const entry=d.c[d.c.length-1];
+  scopeSignals().filter(x=>x.side===side&&!x.result).forEach(old=>{
+    const rec=storedSignals.find(s=>s.key===old.key);
+    const base=rec||old;
+    if(!base.entry)return;
+    const pct=side==='buy'?((entry-base.entry)/base.entry*100):((base.entry-entry)/base.entry*100);
+    const upd={key:old.key,scope:old.scope||storageScope(),symbol:old.symbol||symbol,tf:old.tf||tf,side:side,score:old.score,entry:base.entry,stop:base.stop!=null?base.stop:old.stop,sl:(base.stop!=null?base.stop:old.stop),tp1:base.tp1,tp2:base.tp2,rr:base.rr,createdAt:old.createdAt,result:'REPLACED',exitPrice:entry,exitTime:now,returnPct:+pct.toFixed(2),replacedBy:key};
+    if(rec)Object.assign(rec,upd);else storedSignals.push(upd);
+  });
+  saveStoredSignals();
+  const atrVal=atr(d),plan=tradePlan(side,entry,atrVal,d);
   if(plan.rr<2)return;
   const fv2=fundingVerdict();
   const fundTag=fv2?((fv2.label==='偏多'||fv2.label==='强多')?'多':((fv2.label==='偏空'||fv2.label==='强空')?'空':'中')):'-';
@@ -477,14 +488,14 @@ function bjFmt(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d
 function bjFmtShort(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`}
 function fmtPrice(p,s){if(p==null||isNaN(p))return '--';return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
 function renderPerformance(){
-  const hs=scopeSignals();const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED');
+  const hs=scopeSignals();const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED'),reps=done.filter(x=>x.result==='REPLACED');
   const grossWin=done.reduce((a,x)=>a+Math.max(0,x.returnPct||0),0),grossLoss=done.reduce((a,x)=>a+Math.max(0,-(x.returnPct||0)),0);
   // 胜率 = TP2 / (TP2 + SL)，BE保本单不计入分母
   const decided=wins.length+sls.length;
   const wr=decided?wins.length/decided*100:0,avg=done.length?done.reduce((a,x)=>a+(x.returnPct||0),0)/done.length:0,pf=grossLoss?grossWin/grossLoss:0;
   let streak=0,maxStreak=0;done.slice().sort((a,b)=>a.createdAt-b.createdAt).forEach(x=>{if((x.returnPct||0)<0){streak++;maxStreak=Math.max(maxStreak,streak)}else streak=0});
   $('statsScope').textContent=`${symbol}/USDT · ${tf}`;$('winRate').textContent=decided?wr.toFixed(1)+'%':'--';$('avgReturn').textContent=done.length?(avg>=0?'+':'')+avg.toFixed(2)+'%':'--';$('avgReturn').className='big '+(avg>=0?'profit':'loss');$('profitFactor').textContent=done.length?pf.toFixed(2):'--';$('maxLossStreak').textContent=done.length?String(maxStreak):'--';
-  $('statsDetail').textContent=done.length?`完成 ${done.length} · TP2 ${wins.length} · 止损 ${sls.length} · 保本 ${bes.length} · 过期 ${exps.length}${exps.filter(x=>x.returnPct>0).length?'(盈'+exps.filter(x=>x.returnPct>0).length+')':''} · 未平仓 ${hs.length-done.length}`:'暂无已完成信号';
+  $('statsDetail').textContent=done.length?`完成 ${done.length} · TP2 ${wins.length} · 止损 ${sls.length} · 保本 ${bes.length} · 替换 ${reps.length} · 过期 ${exps.length}${exps.filter(x=>x.returnPct>0).length?'(盈'+exps.filter(x=>x.returnPct>0).length+')':''} · 未平仓 ${hs.length-done.length}`:'暂无已完成信号';
   const active=hs.filter(x=>!x.result);$('activeCount').textContent=active.length+' 个';
   $('activeTrades').innerHTML=active.length?active.map(x=>`<div class="activeTrade"><div class="tradeLine"><b class="${x.side==='buy'?'up':'down'}">${x.side==='buy'?'BUY':'SELL'} · ${x.score}/4</b><span>${fmtDT(x.createdAt)}</span></div><div class="tradeLine"><span>入场</span><b>$${fmtPrice(x.entry,x.symbol)}</b></div><div class="tradeLine"><span>止损</span><b class="loss">$${fmtPrice(x.stop,x.symbol)}</b></div><div class="tradeLine"><span>TP1 / TP2</span><b class="profit">$${fmtPrice(x.tp1,x.symbol)} / $${fmtPrice(x.tp2,x.symbol)}</b></div><div class="tradeLine"><span>RR / 持仓K</span><b>1:${(x.rr||0).toFixed(1)} / ${x.barsOpen||0}</b></div><div class="tradeLine"><span>MFE / MAE</span><b>+${(x.mfePct||0).toFixed(2)}% / -${(x.maePct||0).toFixed(2)}%</b></div></div>`).join(''):'<div class="empty" style="padding:10px">当前没有进行中的 S 级信号</div>';
 }
