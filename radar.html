@@ -1,48 +1,96 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Binance 大额流出雷达</title>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Binance Outflow Radar · 资金流雷达</title>
 <style>
-:root{--bg:#070a0f;--panel:#0e131b;--panel2:#121924;--line:#222c39;--text:#eaf1f7;--muted:#8b98a8;--good:#47e0a1;--warn:#ffd36b;--hot:#ff6b6b;--blue:#67a8ff}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 500px at 20% -10%,#13213a 0%,transparent 60%),var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text)}
-.wrap{max-width:1500px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:flex-end;gap:15px;flex-wrap:wrap}.brand{font-size:25px;font-weight:800;letter-spacing:.02em}.sub{color:var(--muted);margin-top:4px;font-size:13px}.live{display:flex;align-items:center;gap:8px;color:var(--good);font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 15px #47e0a1}.dot.stale{background:var(--warn);box-shadow:0 0 15px #ffd36b}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}.card,.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px}.card{padding:16px}.k{font-size:12px;color:var(--muted)}.v{font-size:25px;font-weight:800;margin-top:8px}.tiny{font-size:12px;color:var(--muted);margin-top:5px}
-.grid{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}.panel{overflow:hidden}.ph{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}.pt{font-weight:700}.filters{display:flex;gap:7px;flex-wrap:wrap}.filters button,.filters select{background:#0a0f16;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12px}.filters button.active{border-color:var(--blue);color:#cfe2ff}
-table{width:100%;border-collapse:collapse}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;vertical-align:middle}th{color:var(--muted);font-weight:500;position:sticky;top:0;background:#0e141c}tbody tr:hover{background:rgba(103,168,255,.05)}.token{font-weight:800}.usd{font-weight:700}.pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#18202b;color:#dbe7f3;font-size:11px}.pill.hot{background:rgba(255,107,107,.14);color:#ff9c9c}.pill.warn{background:rgba(255,211,107,.13);color:#ffe39d}.pill.blue{background:rgba(103,168,255,.13);color:#a8c9ff}
-.score{font-weight:800}.s9{color:#ff6b6b}.s7{color:#ffd36b}.s5{color:#67a8ff}.rank{display:flex;align-items:center;gap:10px;margin:9px 0}.bar{height:8px;background:#18202b;border-radius:99px;overflow:hidden;flex:1}.fill{height:100%;background:linear-gradient(90deg,#4d88ff,#72f0b8)}.rightpad{padding:16px}.empty{padding:35px;color:var(--muted);text-align:center}.foot{padding:12px 2px;color:#667383;font-size:11px;line-height:1.7}
-@media(max-width:980px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}th:nth-child(5),td:nth-child(5){display:none}}
-</style></head>
-<body><div class="wrap">
-<div class="top"><div><div class="brand">BINANCE LARGE OUTFLOW RADAR</div><div class="sub">Binance → 外部钱包的大额链上流出 · 异常评分 · 快照页（每 2 分钟同步）</div></div><div class="live"><span class="dot" id="dot"></span><span id="status">加载中…</span></div></div>
-<div class="cards"><div class="card"><div class="k">24H 流出价值</div><div class="v" id="total24">—</div><div class="tiny">仅统计已接入的 Binance 流出事件</div></div><div class="card"><div class="k">24H 事件数</div><div class="v" id="count24">—</div><div class="tiny">去重后</div></div><div class="card"><div class="k">24H 高异常</div><div class="v" id="abn24">—</div><div class="tiny">Score ≥ 8</div></div><div class="card"><div class="k">快照时间</div><div class="v" id="snap" style="font-size:18px">—</div><div class="tiny" id="age">—</div></div></div>
-<div class="grid"><div class="panel"><div class="ph"><div class="pt">大额流出事件</div><div class="filters"><select id="token"><option value="">全部币种</option></select><select id="chain"><option value="">全部网络</option></select><button class="active" data-min="1000000">≥ $1M</button><button data-min="5000000">≥ $5M</button><button data-min="10000000">≥ $10M</button></div></div><div style="max-height:620px;overflow:auto"><table><thead><tr><th>时间</th><th>币种</th><th>数量</th><th>价值</th><th>网络</th><th>去向</th><th>类型</th><th>异常</th></tr></thead><tbody id="rows"><tr><td colspan="8" class="empty">加载中…</td></tr></tbody></table></div></div>
-<div class="panel"><div class="ph"><div class="pt">24H 币种流出排行</div></div><div class="rightpad" id="ranks"><div class="empty">暂无数据</div></div><div class="ph"><div class="pt">最新事件</div></div><div class="rightpad" id="latest"><div class="empty">等待数据</div></div></div></div>
-<div class="foot">快照页：数据由服务器每 2 分钟导出为 <code>data/radar_events.json</code>（延迟 ≤ 2 分钟，刷新间隔 45 秒）。<br>重要：交易所钱包内部调仓、跨交易所转账不应直接视为看涨/看跌信号。本页优先用于发现「异常流出」，最终仍需结合价格、OI、Funding、成交量与接收地址判断。</div>
+:root{--bg:#060a10;--panel:#0b121b;--panel2:#0e1722;--line:#1b2734;--text:#edf4fa;--muted:#8190a1;--dim:#526173;--cyan:#59b8ff;--green:#54e4a3;--yellow:#f5cc72;--red:#ff7078;--shadow:0 10px 34px rgba(0,0,0,.24)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(1100px 520px at 17% -10%,#14263f 0%,transparent 59%),radial-gradient(900px 460px at 96% 0%,#141c35 0%,transparent 58%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}.app{max-width:1680px;margin:auto;padding:16px 18px 26px}.top{display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--line);padding:2px 2px 14px}.brand{display:flex;align-items:center;gap:11px;min-width:285px}.logo{width:33px;height:33px;border-radius:9px;border:1px solid #31506a;background:linear-gradient(145deg,#12283d,#0a1118);display:grid;place-items:center;color:#b9ddf7}.bn{font-size:15px;font-weight:800;letter-spacing:.055em}.bs{font-size:10px;color:var(--muted);margin-top:2px}.nav{display:flex;gap:3px;flex:1;min-width:0;overflow:auto}.nav button{border:0;background:transparent;color:var(--muted);padding:8px 10px;border-radius:7px;white-space:nowrap;font-size:11px;cursor:pointer}.nav button.active,.nav button:hover{color:var(--text);background:#101923}.right{display:flex;align-items:center;gap:12px}.search{display:flex;gap:6px;align-items:center;width:152px;padding:7px 9px;background:#091118;border:1px solid var(--line);border-radius:7px}.search input{width:100%;border:0;outline:0;color:var(--text);background:transparent;font-size:11px}.live{display:flex;gap:7px;align-items:center;color:var(--green);font-size:11px}.dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}.clock{font-size:10px;color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}.kpi{padding:12px 13px;border-radius:9px;border:1px solid var(--line);background:linear-gradient(180deg,#0f1924,#0a1118);box-shadow:var(--shadow)}.label{font-size:10px;color:var(--muted)}.value{margin-top:8px;font-size:21px;font-weight:800;letter-spacing:.01em}.meta{margin-top:4px;color:var(--dim);font-size:9px}.accent{color:var(--cyan)}.green{color:var(--green)}.yellow{color:var(--yellow)}.red{color:var(--red)}.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.8fr);gap:11px}.panel{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0d151e,#080e14)}.head{min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border-bottom:1px solid var(--line)}.title{font-size:12px;font-weight:760}.note{color:var(--dim);font-size:9px}.tools{display:flex;gap:5px}.tool,.select{background:#091117;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 7px;font-size:10px;cursor:pointer}.tool.active,.tool:hover{border-color:#2d536f;color:#cfe7fa;background:#0e1923}.chartbox{padding:12px 13px 13px}.charthead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px}.ctotal{font-size:19px;font-weight:800}.chart{height:175px;display:flex;align-items:flex-end;gap:4px;padding:6px 0 3px;border-bottom:1px solid #15202a;background:linear-gradient(180deg,rgba(36,63,88,.12),transparent)}.bar{flex:1;min-width:3px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#58aef0,#244f74);position:relative}.bar.hot{background:linear-gradient(180deg,#ff7f86,#74363e)}.tip{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);opacity:0;pointer-events:none;white-space:nowrap;padding:4px 5px;border:1px solid #2b3947;border-radius:5px;background:#05090d;color:#dbe7f0;font-size:8px}.bar:hover .tip{opacity:1}.axis{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:#516074}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:11px}.list{padding:8px 13px 12px}.rowrank{display:grid;grid-template-columns:28px 45px 1fr 68px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.035);font-size:10px}.rowrank:last-child{border-bottom:0}.rn{color:#5d6c7e}.coin{font-weight:800}.rail{height:5px;background:#131c25;border-radius:20px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#4c93cf,#54e4a3);border-radius:20px}.amt{text-align:right;font-weight:700}.timeline{padding:5px 13px 12px;max-height:292px;overflow:auto}.evt{display:grid;grid-template-columns:8px 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}.evt:last-child{border-bottom:0}.edot{width:6px;height:6px;border-radius:50%;margin-top:5px;background:var(--cyan)}.evt.hot .edot{background:var(--red);box-shadow:0 0 9px rgba(255,112,120,.45)}.e1{font-size:10px}.e2{font-size:9px;color:var(--muted);margin-top:3px}.ea{text-align:right;font-size:10px;font-weight:750}.et{text-align:right;font-size:8px;color:var(--dim);margin-top:3px}.filters{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line)}.tbl{max-height:510px;overflow:auto}.tbl table{width:100%;border-collapse:collapse}.tbl th,.tbl td{font-size:9px;padding:9px 9px;border-bottom:1px solid rgba(255,255,255,.045);text-align:left;white-space:nowrap}.tbl th{position:sticky;top:0;z-index:2;background:#0c141d;color:#647588;font-weight:600}.tbl tr:hover{background:#0c1721}.tag{display:inline-flex;padding:3px 6px;border-radius:99px;border:1px solid #273542;background:#0c151d;color:#aebbc7;font-size:8px}.tag.r{background:#1a0f12;border-color:#592d35;color:#ff9ea4}.tag.y{background:#19150b;border-color:#5a4a27;color:#f4da95}.tag.b{background:#0d1721;border-color:#284a63;color:#a3c8e5}.score{font-weight:800}.empty{text-align:center;color:#526174;padding:34px!important}.statusbox{padding:11px 13px}.srow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px}.srow:last-child{border-bottom:0}.sdot{width:6px;height:6px;border-radius:50%;background:#546476}.sdot.on{background:var(--green);box-shadow:0 0 9px rgba(84,228,163,.4)}.footer{padding:11px 2px 0;color:#4f5e70;font-size:8px;line-height:1.65}.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,1fr)}.main{grid-template-columns:1fr}.twocol{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.top{flex-wrap:wrap}.brand{min-width:auto}.nav{order:3;width:100%}.right{margin-left:auto}.kpis{grid-template-columns:repeat(2,1fr)}.twocol{grid-template-columns:1fr}.tbl th:nth-child(5),.tbl td:nth-child(5),.tbl th:nth-child(6),.tbl td:nth-child(6){display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand"><div class="logo">↗</div><div><div class="bn">BINANCE OUTFLOW RADAR</div><div class="bs">链上 · 资金流 · 异常实时监控</div></div></div>
+  <nav class="nav"><button class="active" data-jump="kp">总览</button><button data-jump="pnl-flow">Binance 流出</button><button data-jump="pnl-rank">异常币种</button><button data-jump="pnl-events">资金事件</button><button data-jump="pnl-detail">异常明细</button></nav>
+  <div class="right"><div class="search">⌕ <input id="quick" placeholder="币种检索，如 ZEC"></div><div class="live" id="livbox"><span class="dot" id="dot"></span><span id="live">快照</span></div><div class="clock" id="clock">--:--:-- UTC</div></div>
+</header>
+<section class="kpis" id="kp">
+  <div class="kpi"><div class="label">24H BINANCE OUTFLOW</div><div class="value accent" id="k24">—</div><div class="meta">已接收链上流出</div></div>
+  <div class="kpi"><div class="label">24H EVENTS</div><div class="value" id="kc">—</div><div class="meta">去重后事件</div></div>
+  <div class="kpi"><div class="label">HIGH ALERT</div><div class="value red" id="kh">—</div><div class="meta">Score ≥ 8</div></div>
+  <div class="kpi"><div class="label">TOP OUTFLOW</div><div class="value yellow" id="kt">—</div><div class="meta" id="ktm">等待数据</div></div>
+  <div class="kpi"><div class="label">SNAPSHOT</div><div class="value" id="snapv">—</div><div class="meta" id="snapm">静态快照</div></div>
+</section>
+<div class="main">
+<main>
+<section class="panel"><div class="head"><div><div class="title">Binance 24H 流出</div><div class="note">小时级聚合 · 事件到达即更新</div></div><div class="tools"><button class="tool active" data-h="24">24H</button><button class="tool" data-h="12">12H</button><button class="tool" data-h="6">6H</button></div></div>
+<div class="chartbox" id="pnl-flow"><div class="charthead"><div class="ctotal" id="ct">—</div><div class="note" id="cm">UTC</div></div><div class="chart" id="chart"><div class="empty" style="width:100%">等待实时事件…</div></div><div class="axis"><span id="a0">—</span><span id="a1">—</span><span id="a2">—</span><span id="a3">—</span></div></div></section>
+<div class="twocol" id="pnl-rank">
+<section class="panel"><div class="head"><div class="title">24H 异常币种</div><div class="note">流出额</div></div><div class="list" id="ranks"><div class="empty">暂无数据</div></div></section>
+<section class="panel"><div class="head"><div class="title">告警时间线</div><div class="note">最新优先</div></div><div class="timeline" id="timeline"><div class="empty">等待事件…</div></div></section>
+</div>
+</main>
+<aside>
+<section class="panel"><div class="head"><div class="title">实时资金事件</div><div class="note" id="es">SSE</div></div>
+<div class="filters"><select class="select" id="token"><option value="">全部币种</option></select><select class="select" id="chain"><option value="">全部网络</option></select><select class="select" id="dest"><option value="">全部去向</option><option>UNKNOWN</option><option>OTHER CEX</option><option>DEFI / BRIDGE</option><option>BINANCE/INTERNAL</option><option>LABELED WALLET</option></select><select class="select" id="min"><option value="1000000">≥ $1M</option><option value="5000000">≥ $5M</option><option value="10000000">≥ $10M</option></select></div>
+<div class="tbl" id="pnl-events"><table><thead><tr><th>时间</th><th>币种</th><th>USD</th><th>去向</th><th>类型</th><th>分数</th><th>链</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="empty">等待事件…</td></tr></tbody></table></div></section>
+<section class="panel" style="margin-top:11px"><div class="head"><div class="title">快照状态</div><div class="note">STATIC</div></div><div class="statusbox"><div class="srow"><span>数据源</span><span><span class="sdot on"></span> <span>radar_events.json</span></span></div><div class="srow"><span>快照时间</span><span class="mono" id="snap">—</span></div><div class="srow"><span>数据龄</span><span class="mono" id="age">—</span></div><div class="srow"><span>同步频率</span><span class="mono">每 2 分钟</span></div><div class="srow"><span>事件窗口</span><span class="mono" id="win">—</span></div></div></section>
+</aside>
+</div>
+<section class="panel" style="margin-top:11px"><div class="head"><div><div class="title">异常事件明细</div><div class="note">用于区分真实外流、CEX转移与内部调仓</div></div><div class="note">大额流出 ≠ 直接看涨</div></div><div class="tbl" id="pnl-detail" style="max-height:400px"><table><thead><tr><th>时间</th><th>币种</th><th>数量</th><th>USD</th><th>网络</th><th>来源</th><th>接收方</th><th>类型</th><th>Score</th><th>链上</th></tr></thead><tbody id="detail"><tr><td colspan="10" class="empty">等待事件…</td></tr></tbody></table></div></section>
+<div class="footer">静态快照链路：Binance Entity / Wallet → 链上 Outflow → Webhook → SQLite → 导出 radar_events.json → GitHub Pages → 网页；服务端按金额、历史异常、去向和连续流出计算 Score，并按阈值发送 Telegram。Unknown 只代表未知标签，不代表看涨。</div>
 </div>
 <script>
-let all=[],minUsd=1_000_000,snapTs=0;
+let all=[],hours=24,snapTs=0,stats={};
 const $=id=>document.getElementById(id);
-function money(v){v=Number(v||0);if(v>=1e9)return '$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return '$'+(v/1e6).toFixed(2)+'M';if(v>=1e3)return '$'+(v/1e3).toFixed(1)+'K';return '$'+v.toFixed(0)}
-function qty(v){v=Number(v||0);return new Intl.NumberFormat('en-US',{maximumSignificantDigits:6}).format(v)}
-function time(s){try{return new Date(s).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}catch(e){return s}}
-function score(v){v=Number(v||0);return '<span class="score '+(v>=8.5?'s9':v>=7?'s7':'s5')+'">'+v.toFixed(1)+'</span>'}
-function render(){const token=$('token').value.toUpperCase(),chain=$('chain').value.toLowerCase();
- const data=all.filter(e=>Number(e.usd||0)>=minUsd&&(!token||e.token===token)&&(!chain||String(e.chain).toLowerCase()===chain)).slice(0,300);
- $('rows').innerHTML=data.length?data.map(e=>'<tr><td>'+time(e.time)+'</td><td><span class="token">'+e.token+'</span></td><td>'+qty(e.amount)+'</td><td class="usd">'+money(e.usd)+'</td><td>'+e.chain+'</td><td title="'+(e.to_addr||'')+'">'+(e.to_label||'Unknown')+'</td><td><span class="pill '+(e.destination_type==='UNKNOWN'?'hot':e.destination_type==='OTHER CEX'?'warn':e.destination_type==='DEFI / BRIDGE'?'blue':'')+'">'+e.destination_type+'</span></td><td>'+score(e.score)+(e.explorer_url?' <a href="'+e.explorer_url+'" target="_blank">↗</a>':'')+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">没有符合条件的事件</td></tr>'}
-function buildSelects(){const ts=[...new Set(all.map(x=>x.token).filter(Boolean))].sort();const cs=[...new Set(all.map(x=>x.chain).filter(Boolean))].sort();
- $('token').innerHTML='<option value="">全部币种</option>'+ts.map(x=>'<option>'+x+'</option>').join('');
- $('chain').innerHTML='<option value="">全部网络</option>'+cs.map(x=>'<option value="'+x.toLowerCase()+'">'+x+'</option>').join('')}
-function renderStats(s){if(!s)return;$('total24').textContent=money(s.total24h);$('count24').textContent=s.count24h;$('abn24').textContent=s.abnormal24h;
- const total=Math.max(1,(s.top_tokens||[]).reduce((a,b)=>a+Number(b.total),0));
- $('ranks').innerHTML=(s.top_tokens||[]).length?s.top_tokens.map((x,i)=>'<div class="rank"><div style="width:38px;color:var(--muted)">'+(i+1)+'</div><div style="width:55px;font-weight:800">'+x.token+'</div><div class="bar"><div class="fill" style="width:'+Math.min(100,Number(x.total)/total*100*1.8)+'%"></div></div><div style="width:78px;text-align:right;font-weight:700">'+money(x.total)+'</div></div>').join(''):'<div class="empty">暂无数据</div>';
- if(s.latest){$('latest').innerHTML='<div style="font-size:26px;font-weight:800">'+s.latest.token+'</div><div style="margin-top:8px">'+money(s.latest.usd)+' · '+s.latest.destination_type+'</div><div class="tiny">'+time(s.latest.time)+' · Score '+Number(s.latest.score).toFixed(1)+'</div>'}}
-function ageText(){if(!snapTs)return '—';const m=Math.round((Date.now()/1000-snapTs)/60);return m<1?'刚刚更新':(m+' 分钟前（每 2 分钟同步）')}
-async function load(){try{
- const r=await fetch('data/radar_events.json?z='+Date.now(),{cache:'no-store'});const j=await r.json();
- snapTs=Number(j._ts||0);all=j.events||[];buildSelects();render();renderStats(j.stats);
- $('snap').textContent=snapTs?time(new Date(snapTs*1000).toISOString()):'—';
+const money=v=>{v=Number(v||0);return v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(1)+'K':'$'+v.toFixed(0)};
+const qty=v=>v==null||v===''?'—':new Intl.NumberFormat('en-US',{maximumSignificantDigits:7}).format(Number(v));
+const dt=s=>{const d=new Date(s);return isNaN(d)?'—':d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})};
+const ago=s=>{const x=(Date.now()-new Date(s).getTime())/1000;return !isFinite(x)?'—':x<60?Math.max(1,Math.floor(x))+'s':x<3600?Math.floor(x/60)+'m':Math.floor(x/3600)+'h'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const flt=(v,k)=>{const x=Number(v||0);return v==null||v===''?'—':x<0?(k==='usd'?'-'+money(-x):'-'+qty(-x)):(k==='usd'?money(x):qty(x))};
+function tag(t){const c=t==='UNKNOWN'?'r':t==='OTHER CEX'?'y':t==='DEFI / BRIDGE'?'b':'';return `<span class="tag ${c}">${esc(t||'UNKNOWN')}</span>`}
+function score(v){v=Number(v||0);return `<span class="score ${v>=8.5?'red':v>=7?'yellow':'accent'}">${v.toFixed(1)}</span>`}
+function filterData(){const t=$('token').value.toUpperCase(),c=$('chain').value.toLowerCase(),d=$('dest').value,m=Number($('min').value||0),q=$('quick').value.trim().toUpperCase();
+ return all.filter(e=>Number(e.usd||0)>=m&&(!t||e.token===t)&&(!c||String(e.chain).toLowerCase()===c)&&(!d||e.destination_type===d)&&(!q||String(e.token).toUpperCase().includes(q))).slice(0,300)}
+function build(){const ts=[...new Set(all.map(x=>x.token).filter(Boolean))].sort(),cs=[...new Set(all.map(x=>x.chain).filter(Boolean))].sort(),
+ tv=$('token').value,cv=$('chain').value;
+ $('token').innerHTML='<option value="">全部币种</option>'+ts.map(x=>`<option>${esc(x)}</option>`).join('');
+ $('chain').innerHTML='<option value="">全部网络</option>'+cs.map(x=>`<option value="${esc(String(x).toLowerCase())}">${esc(x)}</option>`).join('');
+ $('token').value=tv;$('chain').value=cv}
+function renderTables(){const data=filterData();
+ $('rows').innerHTML=data.length?data.map(e=>`<tr><td class="mono">${dt(e.time)}</td><td><b>${esc(e.token)}</b></td><td class="mono"><b>${money(e.usd)}</b></td><td>${esc(e.to_label||'Unknown')}</td><td>${tag(e.destination_type)}</td><td>${score(e.score)}</td><td>${esc(e.chain||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">没有符合条件的事件</td></tr>';
+ $('detail').innerHTML=data.length?data.map(e=>`<tr><td class="mono">${dt(e.time)}</td><td><b>${esc(e.token)}</b></td><td class="mono">${qty(e.amount)}</td><td class="mono"><b>${money(e.usd)}</b></td><td>${esc(e.chain||'—')}</td><td title="${esc(e.from_addr||'')}">${esc(e.from_label||'Binance')}</td><td title="${esc(e.to_addr||'')}">${esc(e.to_label||'Unknown')}</td><td>${tag(e.destination_type)}</td><td>${score(e.score)}</td><td>${e.explorer_url?`<a href="${esc(e.explorer_url)}" target="_blank" rel="noopener" style="color:var(--cyan)">↗</a>`:'—'}</td></tr>`).join(''):'<tr><td colspan="10" class="empty">没有符合条件的事件</td></tr>'}
+function renderTimeline(){const a=all.slice(0,12);
+ $('timeline').innerHTML=a.length?a.map(e=>`<div class="evt ${Number(e.score||0)>=8?'hot':''}"><div class="edot"></div><div><div class="e1"><b>${esc(e.token)}</b> · ${tag(e.destination_type)}</div><div class="e2">${esc(e.to_label||'Unknown')} · ${esc(e.chain||'—')}</div></div><div><div class="ea">${money(e.usd)}</div><div class="et">${ago(e.time)}</div></div></div>`).join(''):'<div class="empty">等待事件…</div>'}
+function renderRanks(top){const mx=top.length?Math.max(...top.map(x=>Number(x.total))):1;
+ $('ranks').innerHTML=top.length?top.slice(0,8).map((x,i)=>`<div class="rowrank"><div class="rn">${String(i+1).padStart(2,'0')}</div><div class="coin">${esc(x.token)}</div><div class="rail"><div class="fill" style="width:${Math.max(4,Math.min(100,Number(x.total)/mx*100))}%"></div></div><div class="amt">${money(x.total)}</div></div>`).join(''):'<div class="empty">暂无数据</div>'}
+function renderChart(){const h=(stats.hourly||[]).slice(-hours),a=h.map(x=>Number(x.total||0)),mx=Math.max(1,...a),tot=a.reduce((p,c)=>p+c,0);
+ $('ct').textContent=money(tot);$('cm').textContent=hours+'H · UTC';
+ $('chart').innerHTML=h.length?h.map(x=>`<div class="bar ${Number(x.total||0)>mx*.75?'hot':''}" style="height:${Math.max(4,Math.round(Number(x.total||0)/mx*100))}%"><div class="tip">${esc(x.label)} · ${money(x.total)}</div></div>`).join(''):'<div class="empty" style="width:100%">等待实时事件…</div>';
+ if(h.length){const p=i=>h[Math.min(h.length-1,Math.floor(h.length*i))]?.label||'—';$('a0').textContent=p(0);$('a1').textContent=p(.33);$('a2').textContent=p(.66);$('a3').textContent=p(.98)}}
+function renderKPIs(){const s=stats,top=(s.top_tokens||[])[0];
+ $('k24').textContent=money(s.total24h);$('kc').textContent=s.count24h||0;$('kh').textContent=s.abnormal24h||0;
+ $('kt').textContent=top?top.token:'—';$('ktm').textContent=top?money(top.total)+' / 24H':'等待数据';
+ $('snapv').textContent=snapTs?new Date(snapTs*1000).toISOString().slice(11,16)+' UTC':'—';
+ $('snapm').textContent=snapTs?ago(new Date(snapTs*1000).toISOString())+' ago':'静态快照'}
+function renderStatus(){$('snap').textContent=snapTs?dt(new Date(snapTs*1000).toISOString()):'—';
  const m=snapTs?(Date.now()/1000-snapTs)/60:1e9;
- $('dot').className='dot'+(m>15?' stale':'');$('status').textContent=m>15?'快照偏旧':'快照正常';
-}catch(e){$('status').textContent='加载失败';$('dot').className='dot stale'}}
-$('token').onchange=render;$('chain').onchange=render;
-document.querySelectorAll('button[data-min]').forEach(b=>b.onclick=()=>{document.querySelectorAll('button[data-min]').forEach(x=>x.classList.remove('active'));b.classList.add('active');minUsd=Number(b.dataset.min);render()});
-load();setInterval(load,45000);setInterval(()=>{$('age').textContent=ageText()},5000);
-</script></body></html>
+ $('age').textContent=snapTs?(m<1?'刚刚更新':Math.round(m)+' 分钟前'):'—';
+ $('win').textContent=(stats.count24h||0)+' 条 / 24H';
+ $('dot').className='dot';$('live').textContent=m>15?'快照偏旧':'快照正常';
+ $('dot').className=(m>15?'dot stale':'dot')}
+async function load(){try{const r=await fetch('data/radar_events.json?z='+Date.now(),{cache:'no-store'});const j=await r.json();
+ snapTs=Number(j._ts||0);all=j.events||[];stats=j.stats||{};
+ build();renderKPIs();renderChart();renderRanks(stats.top_tokens||[]);renderTimeline();renderTables();renderStatus();
+}catch(e){$('live').textContent='加载失败';$('dot').className='dot stale'}}
+['token','chain','dest','min','quick'].forEach(id=>$(id).addEventListener(id==='quick'?'input':'change',renderTables));
+document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-h]').forEach(x=>x.classList.remove('active'));b.classList.add('active');hours=Number(b.dataset.h);renderChart()});
+document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{const t=$(b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})});
+setInterval(()=>{$('clock').textContent=new Date().toISOString().slice(11,19)+' UTC';renderStatus()},1000);
+load();setInterval(load,60000);
+</script>
+</body></html>
