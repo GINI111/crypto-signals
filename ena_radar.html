@@ -69,6 +69,42 @@ tr:hover td{background:rgba(0,200,150,.04)}
 <body>
 <h1>🔥 ENA 趋势雷达 <span style="font-size:13px;color:var(--dim)">v3 · 机械入场（1H 选币 → 15m 触发）</span></h1>
 <div class="sub">质量 0~10 趋势质量 · 阶段 趋势阶段 · 入场 0~5 入场质量 · 健康度 0~100 健康度 · 1小时 周期</div>
+<div id="eqPanel" style="border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0;background:var(--panel2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+    <span style="font-weight:700">📈 合约收益曲线 <span style="font-weight:400;color:var(--dim);font-size:11px">ENA 合约模拟盘 · 本金 500U · 5x · 北京时间</span></span>
+    <span id="eqStats" style="font-weight:400;font-size:12px;color:var(--dim)">加载中...</span>
+  </div>
+  <div style="height:200px"><canvas id="eqChart"></canvas></div>
+  <div id="eqFoot" style="font-size:11px;color:var(--dim);margin-top:6px"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(async()=>{
+  const stats=document.getElementById('eqStats'), foot=document.getElementById('eqFoot');
+  try{
+    const d=await (await fetch('data/ena_equity.json?t='+Date.now())).json();
+    const s=d.stats||{}, up=d.equity>=d.init, col=up?'#00c896':'#ff4466';
+    stats.innerHTML='权益 <b style="color:'+col+'">'+d.equity.toFixed(1)+'U '+(s.returnPct>0?'+':'')+s.returnPct+'%</b>'
+      +' · 胜率 '+s.winRate+'% <span style="color:var(--dim)">('+s.wins+'/'+s.positions+')</span>'
+      +' · 最大回撤 '+s.maxDDPct+'%';
+    foot.textContent='已实现 '+(s.realized>0?'+':'')+s.realized+'U · 现金 '+d.cash+'U + 保证金 '+d.margin+'U + 浮盈 '+d.unrealized
+      +'U · 盈/亏比 '+(s.profitFactor==null?'-':s.profitFactor)+' · 均赢 +'+s.avgWin+' / 均亏 '+s.avgLoss
+      +(s.unpriced&&s.unpriced.length?' · 未取价: '+s.unpriced.join(','):'');
+    const pts=d.points||[];
+    const bj=ts=>{const t=new Date(ts+8*3600e3);return ('0'+(t.getUTCMonth()+1)).slice(-2)+'-'+('0'+t.getUTCDate()).slice(-2)};
+    const bjT=ts=>{const t=new Date(ts+8*3600e3);return bj(ts)+' '+('0'+t.getUTCHours()).slice(-2)+':'+('0'+t.getUTCMinutes()).slice(-2)};
+    new Chart(document.getElementById('eqChart'),{
+      type:'line',
+      data:{labels:pts.map(p=>bj(p.ts)),
+        datasets:[{label:'权益 U',data:pts.map(p=>p.eq),borderColor:col,
+          backgroundColor:up?'rgba(0,200,150,.12)':'rgba(255,68,102,.12)',fill:true,pointRadius:0,tension:.25,borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>bjT(pts[c[0].dataIndex].ts),label:c=>c.raw+' U'}}},
+        scales:{x:{ticks:{color:'#5c7a86',maxTicksLimit:10},grid:{color:'#14303a'}},
+                y:{ticks:{color:'#5c7a86',callback:v=>v+'U'},grid:{color:'#14303a'}}}}});
+  }catch(e){stats.textContent='';foot.textContent='暂无收益数据（等待导出）'}
+})();
+</script>
 <div class="bar">
   <button id="btnScan" onclick="scanAll()">🔄 扫描全市场</button>
   <button id="f_all" class="on" onclick="setFilter('all')">全部</button>
