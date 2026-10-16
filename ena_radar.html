@@ -144,6 +144,38 @@ const $=id=>document.getElementById(id);
 let RADAR_DATA=[], CUR_FILTER='all';
 const LS_KEY='ena_radar_v3_scores';
 const LS_KEY_ENT='ena_radar_v3_entry';
+
+// ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
+const BINANCE_HOSTS=['api.binance.com','api1.binance.com','api2.binance.com','api4.binance.com','data-api.binance.vision'];
+const BINANCE_WS_HOSTS=['stream.binance.com:9443','data-stream.binance.vision'];
+let BINANCE_HOST=0, WS_HOST=0;
+// path 形如 '/api/v3/klines'；qs 为查询串（可带前导 ?，可省略）
+async function bfetch(path, qs, opt){
+  opt=opt||{};
+  const timeout=opt.timeout||10000;
+  const tries=BINANCE_HOSTS.length;
+  let lastErr=null;
+  for(let k=0;k<tries;k++){
+    const idx=(BINANCE_HOST+k)%tries;
+    const h=BINANCE_HOSTS[idx];
+    const q=qs?(qs.charAt(0)==='?'?qs:'?'+qs):'';
+    const ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    const to=ctl?setTimeout(()=>ctl.abort(),timeout):null;
+    try{
+      const r=await fetch('https://'+h+path+q,{cache:'no-store',signal:ctl?ctl.signal:undefined});
+      if(to)clearTimeout(to);
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      BINANCE_HOST=idx;   // 记住可用域，后续优先用它
+      return j;
+    }catch(e){
+      if(to)clearTimeout(to);
+      lastErr=e;
+    }
+  }
+  throw new Error('Binance 全部域名不可达（已尝试 '+tries+' 个域）：'+(lastErr&&lastErr.message?lastErr.message:lastErr));
+}
+
 function fmtPx(v){if(v==null)return'-';if(v>=1000)return'$'+v.toFixed(2);if(v>=1)return'$'+v.toFixed(4);if(v>=0.01)return'$'+v.toFixed(6);if(v>=0.0001)return'$'+v.toFixed(8);return'$'+v.toFixed(10)}
 
 // ═══════════ 展示辅助 ═══════════
@@ -241,8 +273,7 @@ function noteDD(d){
 
 // ═══════════ 数据获取 ═══════════
 async function getKlines(sym,interval,limit){
-  const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}USDT&interval=${interval}&limit=${limit}`);
-  const j=await r.json();
+  const j=await bfetch('/api/v3/klines',`symbol=${sym}USDT&interval=${interval}&limit=${limit}`,{timeout:15000});
   return j.map(k=>({t:Math.floor(k[0]/1000),o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
 }
 
@@ -251,7 +282,7 @@ async function scanAll(){
   $('btnScan').disabled=true;
   $('status').textContent='获取市场列表...';
   try{
-    const tickers=await fetch('https://api.binance.com/api/v3/ticker/24hr').then(r=>r.json());
+    const tickers=await bfetch('/api/v3/ticker/24hr',null,{timeout:15000});
     const skip=s=>/UP|DOWN|BULL|BEAR|USD1|FDUSD|USDC|TUSD|EUR|BUSD|DAI|PAXG|AEUR|BRL|TRY|ZAR|UAH|IDRT|NGN|RUB|USDP|XUSD|USTC|USDD|SUSHI.*USD/.test(s);
     let coins=tickers.filter(x=>x.symbol.endsWith('USDT')&&!skip(x.symbol))
       .sort((a,b)=>+b.quoteVolume-+a.quoteVolume)
@@ -260,7 +291,7 @@ async function scanAll(){
     // 读取上次分数（Δ）
     let prev={};try{prev=JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch(e){}
     let prevEnt={};try{prevEnt=JSON.parse(localStorage.getItem(LS_KEY_ENT)||'{}')}catch(e){}
-    const results=[];
+    const results=[];let failCount=0;
     for(let i=0;i<coins.length;i+=6){
       const batch=coins.slice(i,i+6);
       await Promise.all(batch.map(async c=>{
@@ -274,7 +305,7 @@ async function scanAll(){
           const delta=qPrev===undefined?null:Math.round((r.quality-qPrev)*10)/10;
           const ev=(window.ENAEntry&&kl15)?window.ENAEntry.evalEntry(r,kl15,prevEnt[c]||null):null;
           results.push({sym:c,r,ev,px:(kl15&&kl15.length)?kl15[kl15.length-1].c:null,chg:t?+t.priceChangePercent:0,delta,kl:kl,kl15:kl15});
-        }catch(e){}
+        }catch(e){failCount++}
       }));
       $('status').textContent=`扫描中... ${Math.min(i+6,coins.length)}/${coins.length}`;
     }
@@ -286,7 +317,7 @@ async function scanAll(){
     results.sort((a,b)=>b.r.quality-a.r.quality);
     RADAR_DATA=results;
     renderTable(results);
-    $('status').textContent=`✅ ${results.length} 个币种 · ${new Date().toLocaleTimeString()} · 点击行看详情`;
+    $('status').textContent=results.length?`✅ ${results.length} 个币种 · ${new Date().toLocaleTimeString()} · 点击行看详情`:`❌ 扫描失败：${failCount}/${coins.length} 个币取数失败（已轮询 ${BINANCE_HOSTS.length} 个 Binance 域，请检查网络/代理）`;
   }catch(e){$('status').textContent='❌ 扫描失败: '+e.message}
   $('btnScan').disabled=false;
 }

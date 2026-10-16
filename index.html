@@ -143,7 +143,38 @@
 const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
-const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
+
+// ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
+const BINANCE_HOSTS=['api.binance.com','api1.binance.com','api2.binance.com','api4.binance.com','data-api.binance.vision'];
+const BINANCE_WS_HOSTS=['stream.binance.com:9443','data-stream.binance.vision'];
+let BINANCE_HOST=0, WS_HOST=0;
+// path 形如 '/api/v3/klines'；qs 为查询串（可带前导 ?，可省略）
+async function bfetch(path, qs, opt){
+  opt=opt||{};
+  const timeout=opt.timeout||10000;
+  const tries=BINANCE_HOSTS.length;
+  let lastErr=null;
+  for(let k=0;k<tries;k++){
+    const idx=(BINANCE_HOST+k)%tries;
+    const h=BINANCE_HOSTS[idx];
+    const q=qs?(qs.charAt(0)==='?'?qs:'?'+qs):'';
+    const ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    const to=ctl?setTimeout(()=>ctl.abort(),timeout):null;
+    try{
+      const r=await fetch('https://'+h+path+q,{cache:'no-store',signal:ctl?ctl.signal:undefined});
+      if(to)clearTimeout(to);
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      BINANCE_HOST=idx;   // 记住可用域，后续优先用它
+      return j;
+    }catch(e){
+      if(to)clearTimeout(to);
+      lastErr=e;
+    }
+  }
+  throw new Error('Binance 全部域名不可达（已尝试 '+tries+' 个域）：'+(lastErr&&lastErr.message?lastErr.message:lastErr));
+}
+const $=id=>document.getElementById(id), api=(interval,limit=120)=>`https://${BINANCE_HOSTS[0]}/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`;
 function ema(a,p){const k=2/(p+1),r=[a[0]];for(let i=1;i<a.length;i++)r.push(a[i]*k+r[i-1]*(1-k));return r}
 function rsi(a,p=14){let g=[],l=[];for(let i=1;i<a.length;i++){let d=a[i]-a[i-1];g.push(Math.max(d,0));l.push(Math.max(-d,0))}let r=new Array(p).fill(null);let ag=g.slice(0,p).reduce((x,y)=>x+y,0)/p,al=l.slice(0,p).reduce((x,y)=>x+y,0)/p;r.push(al===0?100:100-100/(1+ag/al));for(let i=p;i<g.length;i++){ag=(ag*(p-1)+g[i])/p;al=(al*(p-1)+l[i])/p;r.push(al===0?100:100-100/(1+ag/al))}return r}
 function macd(c){let e12=ema(c,12),e26=ema(c,26),m=e12.map((x,i)=>x-e26[i]),s=ema(m,9);return {m,s,h:m.map((x,i)=>x-s[i])}}
@@ -158,10 +189,7 @@ async function getTF(interval,limit=120){
   const out=[];let endTime=null;
   while(out.length<limit){
     const need=Math.min(1000,limit-out.length);
-    const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${need}`+(endTime?`&endTime=${endTime}`:'');
-    const r=await fetch(url,{cache:'no-store'});
-    if(!r.ok)throw Error(r.status);
-    const j=await r.json();
+    const j=await bfetch('/api/v3/klines',`symbol=${symbol}USDT&interval=${interval}&limit=${need}`+(endTime?`&endTime=${endTime}`:''),{timeout:15000});
     if(!j.length)break;
     out.unshift(...j);
     endTime=j[0][0]-1;
@@ -499,20 +527,20 @@ function renderPerformance(){
   const active=hs.filter(x=>!x.result);$('activeCount').textContent=active.length+' 个';
   $('activeTrades').innerHTML=active.length?active.map(x=>`<div class="activeTrade"><div class="tradeLine"><b class="${x.side==='buy'?'up':'down'}">${x.side==='buy'?'BUY':'SELL'} · ${x.score}/4</b><span>${fmtDT(x.createdAt)}</span></div><div class="tradeLine"><span>入场</span><b>$${fmtPrice(x.entry,x.symbol)}</b></div><div class="tradeLine"><span>止损</span><b class="loss">$${fmtPrice(x.stop,x.symbol)}</b></div><div class="tradeLine"><span>TP1 / TP2</span><b class="profit">$${fmtPrice(x.tp1,x.symbol)} / $${fmtPrice(x.tp2,x.symbol)}</b></div><div class="tradeLine"><span>RR / 持仓K</span><b>1:${(x.rr||0).toFixed(1)} / ${x.barsOpen||0}</b></div><div class="tradeLine"><span>MFE / MAE</span><b>+${(x.mfePct||0).toFixed(2)}% / -${(x.maePct||0).toFixed(2)}%</b></div></div>`).join(''):'<div class="empty" style="padding:10px">当前没有进行中的 S 级信号</div>';
 }
-async function orderbook(){try{let r=await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbol}USDT&limit=100`,{cache:'no-store'}),j=await r.json(),bid=j.bids.slice(0,10).reduce((a,x)=>a+(+x[0])*(+x[1]),0),ask=j.asks.slice(0,10).reduce((a,x)=>a+(+x[0])*(+x[1]),0),ratio=bid/ask;const el=$('bookRatio');el.textContent=ratio.toFixed(2)+'x';if(ratio>=1.15){el.textContent+=' · 买压';el.className='tfstate ok'}else if(ratio<=0.85){el.textContent+=' · 卖压';el.className='tfstate bad'}else{el.textContent+=' · 均衡';el.className='tfstate neutral'}}catch(e){$('bookRatio').textContent='--'}}
+async function orderbook(){try{let j=await bfetch('/api/v3/depth',`symbol=${symbol}USDT&limit=100`,{timeout:10000}),bid=j.bids.slice(0,10).reduce((a,x)=>a+(+x[0])*(+x[1]),0),ask=j.asks.slice(0,10).reduce((a,x)=>a+(+x[0])*(+x[1]),0),ratio=bid/ask;const el=$('bookRatio');el.textContent=ratio.toFixed(2)+'x';if(ratio>=1.15){el.textContent+=' · 买压';el.className='tfstate ok'}else if(ratio<=0.85){el.textContent+=' · 卖压';el.className='tfstate bad'}else{el.textContent+=' · 均衡';el.className='tfstate neutral'}}catch(e){$('bookRatio').textContent='--'}}
 function drawCharts(d){$('chartTitle').textContent=`${symbol}/USDT · ${tf}`;let box=$('kline');box.innerHTML='';if(chart)try{chart.remove()}catch(e){}chart=LightweightCharts.createChart(box,{width:box.clientWidth,height:280,layout:{background:{type:'Solid',color:'#08111a'},textColor:'rgba(200,230,220,.45)'},grid:{vertLines:{color:'rgba(0,200,150,.05)'},horzLines:{color:'rgba(0,200,150,.05)'}},timeScale:{timeVisible:true,secondsVisible:false},localization:{timeFormatter:t=>bjFmtShort(t*1000),dateFormatter:t=>bjFmt(t*1000).slice(0,10)}});candle=chart.addCandlestickSeries({upColor:'#00c896',downColor:'#ff4466',borderUpColor:'#00ff9d',borderDownColor:'#ff4466',wickUpColor:'#00c896',wickDownColor:'#ff4466'});candle.setData(d.t.map((t,i)=>({time:t,open:d.o[i],high:d.h[i],low:d.l[i],close:d.c[i]})));let e7=ema(d.c,7),e25=ema(d.c,25);chart.addLineSeries({color:'#f5c518',lineWidth:1,priceLineVisible:false}).setData(d.t.map((t,i)=>({time:t,value:e7[i]})));chart.addLineSeries({color:'#00aaff',lineWidth:1,priceLineVisible:false}).setData(d.t.map((t,i)=>({time:t,value:e25[i]})));chart.timeScale().fitContent();drawMACD(d);drawRSI(d)}
 function canvas(id,fn){let c=$(id),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight,dpr=devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);fn(ctx,w,h)}
 function drawMACD(d){let m=macd(d.c),a=m.h.slice(-70);canvas('macdCanvas',(ctx,w,h)=>{let mx=Math.max(...a.map(Math.abs))||1,mid=h*.72,bar=w/a.length;ctx.strokeStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(w,mid);ctx.stroke();a.forEach((v,i)=>{ctx.fillStyle=v>=0?'#00c896':'#ff4466';let hh=Math.abs(v)/mx*h*.55;ctx.fillRect(i*bar, v>=0?mid-hh:mid, Math.max(1,bar-1),hh)})})}
 function drawRSI(d){let a=rsi(d.c).slice(-70);canvas('rsiCanvas',(ctx,w,h)=>{ctx.strokeStyle='rgba(255,255,255,.08)';[30,50,70].forEach(v=>{let y=h-(v/100)*h;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()});ctx.strokeStyle='#00aaff';ctx.lineWidth=1.5;ctx.beginPath();a.forEach((v,i)=>{let x=i/(a.length-1)*w,y=h-(v||50)/100*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()})}
-function connectPriceWS(){if(priceWS){priceWS.onclose=null;priceWS.close()}priceWS=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@ticker`);priceWS.onmessage=e=>{try{const d=JSON.parse(e.data);livePrice=+d.c;liveChange=+d.P;updateCards(last)}catch(err){console.error('price WS error',err)}};priceWS.onclose=()=>setTimeout(()=>{if(priceWS)connectPriceWS()},1000)}
-function connectWS(){if(ws){ws.onclose=null;ws.close()}livePrice=null;liveChange=null;connectPriceWS();ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@kline_${tf}`);ws.onmessage=e=>{try{let k=JSON.parse(e.data).k;if(!last)return;wsLastMsg=Date.now();let kt=Math.floor(k.t/1000),i=last.t.indexOf(kt),closed=!!k.x;if(i===-1){last.t.push(kt);last.o.push(+k.o);last.h.push(+k.h);last.l.push(+k.l);last.c.push(+k.c);last.v.push(+k.v);i=last.c.length-1}else{last.o[i]=+k.o;last.h[i]=+k.h;last.l[i]=+k.l;last.c[i]=+k.c;last.v[i]=+k.v}/* 防错位：只有 WS 推送的K线与 last 最后一根是同一根时，closed 才有效（否则可能用旧K线收盘标志+新K线数据误触发信号）*/const closedOk=closed&&kt===last.t[last.t.length-1];updateCards(last);updateFilters(last);renderSignals(last,closedOk);if(closedOk){updateSignalLifecycle(last)}if(candle)candle.update({time:kt,open:+k.o,high:+k.h,low:+k.l,close:+k.c});$('footer').textContent=`Binance WebSocket · ${symbol}/USDT ${tf} · ${closedOk?'刚刚收盘':'实时未收盘'} · S级自动跟踪中`}catch(e){console.error('WS render error',e)}};ws.onclose=()=>setTimeout(()=>{if(ws)connectWS()},1000)}
+function connectPriceWS(){if(priceWS){priceWS.onclose=null;priceWS.close()}priceWS=new WebSocket(`wss://${BINANCE_WS_HOSTS[WS_HOST]}/ws/${symbol.toLowerCase()}usdt@ticker`);priceWS.onerror=()=>{WS_HOST=(WS_HOST+1)%BINANCE_WS_HOSTS.length};priceWS.onmessage=e=>{try{const d=JSON.parse(e.data);livePrice=+d.c;liveChange=+d.P;updateCards(last)}catch(err){console.error('price WS error',err)}};priceWS.onclose=()=>setTimeout(()=>{if(priceWS)connectPriceWS()},1000)}
+function connectWS(){if(ws){ws.onclose=null;ws.close()}livePrice=null;liveChange=null;connectPriceWS();ws=new WebSocket(`wss://${BINANCE_WS_HOSTS[WS_HOST]}/ws/${symbol.toLowerCase()}usdt@kline_${tf}`);ws.onerror=()=>{WS_HOST=(WS_HOST+1)%BINANCE_WS_HOSTS.length};ws.onmessage=e=>{try{let k=JSON.parse(e.data).k;if(!last)return;wsLastMsg=Date.now();let kt=Math.floor(k.t/1000),i=last.t.indexOf(kt),closed=!!k.x;if(i===-1){last.t.push(kt);last.o.push(+k.o);last.h.push(+k.h);last.l.push(+k.l);last.c.push(+k.c);last.v.push(+k.v);i=last.c.length-1}else{last.o[i]=+k.o;last.h[i]=+k.h;last.l[i]=+k.l;last.c[i]=+k.c;last.v[i]=+k.v}/* 防错位：只有 WS 推送的K线与 last 最后一根是同一根时，closed 才有效（否则可能用旧K线收盘标志+新K线数据误触发信号）*/const closedOk=closed&&kt===last.t[last.t.length-1];updateCards(last);updateFilters(last);renderSignals(last,closedOk);if(closedOk){updateSignalLifecycle(last)}if(candle)candle.update({time:kt,open:+k.o,high:+k.h,low:+k.l,close:+k.c});$('footer').textContent=`Binance WebSocket · ${symbol}/USDT ${tf} · ${closedOk?'刚刚收盘':'实时未收盘'} · S级自动跟踪中`}catch(e){console.error('WS render error',e)}};ws.onclose=()=>setTimeout(()=>{if(ws)connectWS()},1000)}
 // ── REST 兜底轮询：WS 断线/卡顿时保证价格和K线持续更新（双通道）──
 let wsLastMsg=0,restPollN=0;
 async function restPoll(){
   try{
     const [k,t]=await Promise.all([
-      fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${tf}&limit=3`,{cache:'no-store'}).then(r=>r.json()),
-      fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`,{cache:'no-store'}).then(r=>r.json())
+      bfetch('/api/v3/klines',`symbol=${symbol}USDT&interval=${tf}&limit=3`,{timeout:15000}),
+      bfetch('/api/v3/ticker/24hr',`symbol=${symbol}USDT`,{timeout:15000})
     ]);
     if(!last||!Array.isArray(k)||!k.length)return;
     livePrice=+t.lastPrice;liveChange=+t.priceChangePercent;
@@ -655,9 +683,9 @@ loadFunding();
 let revTimer=null;
 async function refreshReversal(){
   try{
-    const t=await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT`).then(r=>r.json());
+    const t=await bfetch('/api/v3/ticker/24hr','symbol=BTCUSDT',{timeout:15000});
     const chg=parseFloat(t.priceChangePercent), price=parseFloat(t.lastPrice);
-    const k=await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=25`).then(r=>r.json());
+    const k=await bfetch('/api/v3/klines','symbol=BTCUSDT&interval=1h&limit=25',{timeout:15000});
     const bars=k.map(x=>({o:+x[1],h:+x[2],l:+x[3],c:+x[4]}));
     const ema20=bars.slice(0,20).reduce((a,b)=>a+b.c,0)/20;
     let atrV=null;
