@@ -140,9 +140,9 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,entryMode:'limit',entryRetraceATR:0.75,fillWindow:{'5m':8,'15m':8,'1h':6,'4h':4,'1d':3},minRiskPct:0.2,maxRiskPct:8,sideDedupMs:3600e3,sideDedupMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,entryMode:'limit',entryRetraceATR:0.75,fillWindow:{'5m':8,'15m':8,'1h':6,'4h':4,'1d':3},minRiskPct:0.2,maxRiskPct:8,scopeDailyMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
-const RULE_VER='v3-20261019-limit',RULE_NOTE='atr-capped+side-dedup+limit-retrace-0.75atr';
+const RULE_VER='v4-20261019-daily1',RULE_NOTE='atr-capped+limit-retrace-0.75atr+scope-daily-1';
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 
 // ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
@@ -462,12 +462,18 @@ function maybeSignal(side,score,d,conds){
   const prev=storedSignals.filter(x=>x.scope===storageScope()&&x.side===side).sort((a,b)=>b.createdAt-a.createdAt)[0];
   if(dup)return;
   if(prev&&now-prev.createdAt<CFG.cooldownMs[tf])return;
-  // [10-19 同向并发=同一风险单位] 窗口内同向已有开仓 → 不再叠加；同向总开仓数也设上限。
-  // 实测 171 条里 69 条是同小时同向共现，独立样本只有 103，t 值因此偏弱。
-  const _openSide=storedSignals.filter(x=>x.side===side&&!x.result&&now-(x.createdAt||0)<7*864e5);
-  const _recentSide=_openSide.filter(x=>now-(x.createdAt||0)<CFG.sideDedupMs);
-  if(_recentSide.length>=CFG.sideDedupMax||_openSide.length>=CFG.maxOpenSide){
-    console.log(`[signal] 跳过 ${symbol}|${tf}|${side}：同向风险单位已满（${Math.round(CFG.sideDedupMs/6e4)}min 内 ${_recentSide.length}/${CFG.sideDedupMax}，同向开仓 ${_openSide.length}/${CFG.maxOpenSide}）`);
+  // [10-19 哥令] 每个 币种|周期 每自然日（北京）只算 1 条信号；该条一旦有结果（含止损）当天即失效。
+  // CANCELLED（挂单未成交）不占名额，允许当天重新挂单。
+  const _dayKey=bjDayKey(now);
+  const _todayUsed=scopeSignals().filter(x=>x.result!=='CANCELLED'&&bjDayKey(x.createdAt)===_dayKey);
+  if(_todayUsed.length>=CFG.scopeDailyMax){
+    console.log(`[signal] 跳过 ${symbol}|${tf}|${side}：今日已有 ${_todayUsed.length} 条（上限 ${CFG.scopeDailyMax}），${_todayUsed[0].result||_todayUsed[0].status||'进行中'}`);
+    return;
+  }
+  // 全局敞口兜底：同向未结算总数上限（跨 scope）
+  const _openSide=storedSignals.filter(x=>x.side===side&&!x.result);
+  if(_openSide.length>=CFG.maxOpenSide){
+    console.log(`[signal] 跳过 ${symbol}|${tf}|${side}：同向未结算已达 ${_openSide.length}/${CFG.maxOpenSide}`);
     return;
   }
   // [09-24 哥令「同向只留最新一条」] 原先同向已有未结算信号就直接 return，导致每 scope 2 席被旧信号永久占满、
@@ -534,6 +540,8 @@ function renderHistory(){let el=$('history');const hs=scopeSignals().sort((a,b)=
 function fmtDT(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`}
 // 北京时间（UTC+8）工具：强制显示北京时间，不受浏览器时区影响
 function bjDate(ts){return new Date(ts+8*3600*1000)}
+// [10-19] 北京自然日 key，用于「每 scope 每日一条」名额判定
+function bjDayKey(ts){const d=bjDate(ts||0);return `${d.getUTCFullYear()}-${d.getUTCMonth()+1}-${d.getUTCDate()}`}
 function bjFmt(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`}
 function bjFmtShort(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`}
 function fmtPrice(p,s){if(p==null||isNaN(p))return '--';return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
