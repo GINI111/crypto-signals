@@ -142,6 +142,7 @@
 <script>
 const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,minRiskPct:0.2,maxRiskPct:8,sideDedupMs:3600e3,sideDedupMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
+const RULE_VER='v2-20261019',RULE_NOTE='slt-atr-capped+side-dedup';
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 
 // ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
@@ -485,7 +486,7 @@ function maybeSignal(side,score,d,conds){
   if(plan.rr<2)return;
   const fv2=fundingVerdict();
   const fundTag=fv2?((fv2.label==='偏多'||fv2.label==='强多')?'多':((fv2.label==='偏空'||fv2.label==='强空')?'空':'中')):'-';
-  const item={key,scope:storageScope(),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
+  const item={key,scope:storageScope(),ruleVer:RULE_VER,ruleNote:RULE_NOTE,riskPct:+(plan.risk/entry*100).toFixed(3),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
   storedSignals.push(item);saveStoredSignals();history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 function updateSignalLifecycle(d){
