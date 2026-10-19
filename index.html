@@ -140,9 +140,9 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,minRiskPct:0.2,maxRiskPct:8,sideDedupMs:3600e3,sideDedupMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,entryMode:'limit',entryRetraceATR:0.75,fillWindow:{'5m':8,'15m':8,'1h':6,'4h':4,'1d':3},minRiskPct:0.2,maxRiskPct:8,sideDedupMs:3600e3,sideDedupMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
-const RULE_VER='v2-20261019',RULE_NOTE='slt-atr-capped+side-dedup';
+const RULE_VER='v3-20261019-limit',RULE_NOTE='atr-capped+side-dedup+limit-retrace-0.75atr';
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 
 // ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
@@ -482,11 +482,14 @@ function maybeSignal(side,score,d,conds){
     if(rec)Object.assign(rec,upd);else storedSignals.push(upd);
   });
   saveStoredSignals();
-  const atrVal=atr(d),plan=tradePlan(side,entry,atrVal,d);
+  const atrVal=atr(d);
+  // [10-19 第3条] 限价回撤入场：不追收盘价，挂在 close ∓ k×ATR，等回撤成交
+  const limitPx=side==='buy'?entry-CFG.entryRetraceATR*atrVal:entry+CFG.entryRetraceATR*atrVal;
+  const plan=tradePlan(side,limitPx,atrVal,d);
   if(plan.rr<2)return;
   const fv2=fundingVerdict();
   const fundTag=fv2?((fv2.label==='偏多'||fv2.label==='强多')?'多':((fv2.label==='偏空'||fv2.label==='强空')?'空':'中')):'-';
-  const item={key,scope:storageScope(),ruleVer:RULE_VER,ruleNote:RULE_NOTE,riskPct:+(plan.risk/entry*100).toFixed(3),symbol,tf,side,score,entry,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
+  const item={key,scope:storageScope(),ruleVer:RULE_VER,ruleNote:RULE_NOTE,riskPct:+(plan.risk/entry*100).toFixed(3),symbol,tf,side,score,entry:limitPx,sigClose:entry,status:'PENDING',pendingBars:0,stop:plan.stop,tp1:plan.tp1,tp2:plan.tp2,risk:plan.risk,rr:plan.rr,atr:atrVal,createdAt:now,signalTime:d.t[d.t.length-1]*1000,result:null,exitPrice:null,exitTime:null,returnPct:null,barsOpen:0,tp1Hit:false,mfePct:0,maePct:0,fundTag};
   storedSignals.push(item);saveStoredSignals();history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 function updateSignalLifecycle(d){
@@ -498,6 +501,16 @@ function updateSignalLifecycle(d){
     for(let i=startIdx;i<d.t.length;i++){
       const candleTime=d.t[i]*1000;
       const hi=d.h[i],lo=d.l[i],cl=d.c[i];tr.barsOpen=(tr.barsOpen||0)+1;
+      // [10-19 第3条] 挂单阶段：等回撤到挂单价才成交；超窗口未成交 → CANCELLED（不计 R）
+      if(tr.status==='PENDING'){
+        const filled=tr.side==='buy'?lo<=tr.entry:hi>=tr.entry;
+        if(filled){tr.status='OPEN';tr.filledTime=candleTime;continue}
+        tr.pendingBars=(tr.pendingBars||0)+1;
+        if(tr.pendingBars>=(CFG.fillWindow[tf]||6)){
+          tr.result='CANCELLED';tr.exitPrice=null;tr.exitTime=candleTime;tr.returnPct=0;changed=true;break;
+        }
+        continue;
+      }
       const favourable=tr.side==='buy'?Math.max(0,(hi-tr.entry)/tr.entry*100):Math.max(0,(tr.entry-lo)/tr.entry*100);
       const adverse=tr.side==='buy'?Math.max(0,(tr.entry-lo)/tr.entry*100):Math.max(0,(hi-tr.entry)/tr.entry*100);
       tr.mfePct=Math.max(tr.mfePct||0,favourable);tr.maePct=Math.max(tr.maePct||0,adverse);tr.lastProcessedTime=candleTime;
@@ -517,7 +530,7 @@ function updateSignalLifecycle(d){
   history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();renderPerformance();
 }
 
-function renderHistory(){let el=$('history');const hs=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?`${h.result} ${(h.returnPct||0)>=0?'+':''}${(h.returnPct||0).toFixed(2)}%`:'进行中';const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';const ft=h.fundTag?`<span class="${h.fundTag==='多'?'up':h.fundTag==='空'?'down':'neutral'}"> · 💵${h.fundTag}</span>`:'';return `<div class="hrow" data-ver="${h.ruleVer||''}" data-risk="${h.riskPct==null?'':h.riskPct}"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/4 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${(h.rr||0).toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%${ft}</div></div><div class="small ${cls}">${status}<br>${fmtDT(h.createdAt)}</div></div>`}).join('')}
+function renderHistory(){let el=$('history');const hs=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,18);if(!hs.length){el.innerHTML='<div class="empty">暂无已确认交易信号</div>';return}el.innerHTML=hs.map(h=>{const status=h.result?(h.result==='CANCELLED'?'已取消（未成交）':`${h.result} ${(h.returnPct||0)>=0?'+':''}${(h.returnPct||0).toFixed(2)}%`):(h.status==='PENDING'?`挂单中 $${fmtPrice(h.entry,h.symbol)}`:'进行中');const cls=h.result?(h.returnPct>=0?'profit':'loss'):'yellow';const ft=h.fundTag?`<span class="${h.fundTag==='多'?'up':h.fundTag==='空'?'down':'neutral'}"> · 💵${h.fundTag}</span>`:'';return `<div class="hrow" data-ver="${h.ruleVer||''}" data-risk="${h.riskPct==null?'':h.riskPct}"><div class="htag ${h.side==='buy'?'up':'down'}">${h.side==='buy'?'BUY':'SELL'}</div><div class="hmain"><b>${h.symbol}/USDT · ${h.tf}</b><div class="small">${h.score}/4 · 入场 $${fmtPrice(h.entry,h.symbol)} · SL $${fmtPrice(h.stop,h.symbol)} · TP2 $${fmtPrice(h.tp2,h.symbol)}</div><div class="small">RR 1:${(h.rr||0).toFixed(1)} · ${h.tp1Hit?'TP1 ✓ · ':''}MFE +${(h.mfePct||0).toFixed(2)}% · MAE -${(h.maePct||0).toFixed(2)}%${ft}</div></div><div class="small ${cls}">${status}<br>${fmtDT(h.createdAt)}</div></div>`}).join('')}
 function fmtDT(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`}
 // 北京时间（UTC+8）工具：强制显示北京时间，不受浏览器时区影响
 function bjDate(ts){return new Date(ts+8*3600*1000)}
@@ -525,7 +538,7 @@ function bjFmt(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${d
 function bjFmtShort(ts){const d=bjDate(ts),p=n=>String(n).padStart(2,'0');return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`}
 function fmtPrice(p,s){if(p==null||isNaN(p))return '--';return p.toLocaleString('en',{maximumFractionDigits:s==='BTC'?0:2})}
 function renderPerformance(){
-  const hs=scopeSignals();const done=hs.filter(x=>x.result),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED'),reps=done.filter(x=>x.result==='REPLACED');
+  const hs=scopeSignals();const done=hs.filter(x=>x.result&&x.result!=='CANCELLED'),wins=done.filter(x=>x.result==='TP2'),sls=done.filter(x=>x.result==='SL'),bes=done.filter(x=>x.result==='BE'),exps=done.filter(x=>x.result==='EXPIRED'),reps=done.filter(x=>x.result==='REPLACED');
   const grossWin=done.reduce((a,x)=>a+Math.max(0,x.returnPct||0),0),grossLoss=done.reduce((a,x)=>a+Math.max(0,-(x.returnPct||0)),0);
   // 胜率 = TP2 / (TP2 + SL)，BE保本单不计入分母
   const decided=wins.length+sls.length;
