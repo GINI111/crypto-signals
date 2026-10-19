@@ -140,7 +140,7 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,tp1ATR:1.5,tp2ATR:2.0,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,minRiskPct:0.2,maxRiskPct:8,sideDedupMs:3600e3,sideDedupMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 
@@ -296,7 +296,7 @@ async function loadServerSignals(){
 }
 function loadStoredSignals(){try{storedSignals=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){storedSignals=[]}history=scopeSignals().sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);renderHistory();loadServerSignals()}
 function saveStoredSignals(){localStorage.setItem(STORAGE_KEY,JSON.stringify(storedSignals.slice(-500)))}
-function tradePlan(side,entry,atrVal,d){let struct=0;if(d&&d.h&&d.h.length>=6){const lo=Math.min(...d.l.slice(-6,-1)),hi=Math.max(...d.h.slice(-6,-1));struct=side==='buy'?(entry-lo):(hi-entry)}const risk=Math.max(atrVal*CFG.stopATR,struct,entry*0.002);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+risk*CFG.tp1ATR:entry-risk*CFG.tp1ATR;const tp2=side==='buy'?entry+risk*CFG.tp2ATR:entry-risk*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
+function tradePlan(side,entry,atrVal,d){/* [10-19 波动归一] 止损主口径 = ATR×stopATR；结构性止损只在 stopATR~stopATRMax 倍 ATR 内生效，再套百分比上下限。原实现让结构性止损无限放宽（实测 1h 止损 0.38%~6.16%） */const aV=Math.max(atrVal||0,entry*0.001);let struct=0;if(d&&d.h&&d.h.length>=6){const lo=Math.min(...d.l.slice(-6,-1)),hi=Math.max(...d.h.slice(-6,-1));struct=side==='buy'?(entry-lo):(hi-entry)}let risk=Math.max(aV*CFG.stopATR,Math.min(struct,aV*CFG.stopATRMax));risk=Math.min(Math.max(risk,entry*CFG.minRiskPct/100),entry*CFG.maxRiskPct/100);const stop=side==='buy'?entry-risk:entry+risk;const tp1=side==='buy'?entry+risk*CFG.tp1ATR:entry-risk*CFG.tp1ATR;const tp2=side==='buy'?entry+risk*CFG.tp2ATR:entry-risk*CFG.tp2ATR;return {risk,stop,tp1,tp2,rr:(Math.abs(tp2-entry)/risk)}}
 const FUND_KEY='crypto_signal_pro_v21_funding';
 let fundingData=null;
 let fundingFilterOff=false; // 用户手动暂停资金面过滤
@@ -461,6 +461,14 @@ function maybeSignal(side,score,d,conds){
   const prev=storedSignals.filter(x=>x.scope===storageScope()&&x.side===side).sort((a,b)=>b.createdAt-a.createdAt)[0];
   if(dup)return;
   if(prev&&now-prev.createdAt<CFG.cooldownMs[tf])return;
+  // [10-19 同向并发=同一风险单位] 窗口内同向已有开仓 → 不再叠加；同向总开仓数也设上限。
+  // 实测 171 条里 69 条是同小时同向共现，独立样本只有 103，t 值因此偏弱。
+  const _openSide=storedSignals.filter(x=>x.side===side&&!x.result&&now-(x.createdAt||0)<7*864e5);
+  const _recentSide=_openSide.filter(x=>now-(x.createdAt||0)<CFG.sideDedupMs);
+  if(_recentSide.length>=CFG.sideDedupMax||_openSide.length>=CFG.maxOpenSide){
+    console.log(`[signal] 跳过 ${symbol}|${tf}|${side}：同向风险单位已满（${Math.round(CFG.sideDedupMs/6e4)}min 内 ${_recentSide.length}/${CFG.sideDedupMax}，同向开仓 ${_openSide.length}/${CFG.maxOpenSide}）`);
+    return;
+  }
   // [09-24 哥令「同向只留最新一条」] 原先同向已有未结算信号就直接 return，导致每 scope 2 席被旧信号永久占满、
   // 网站不再更新。改为：把同向未结算的旧信号按替换时的收盘价结掉（result=REPLACED），腾出席位给新信号。
   const entry=d.c[d.c.length-1];
