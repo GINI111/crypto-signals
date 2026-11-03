@@ -586,7 +586,7 @@ async function loadWinrate(){
   try{
     const r=await fetch('data/ena_winrate.json?t='+Date.now());
     const d=await r.json();
-    const TY={strong:['🔥强启动','var(--grn)'],retest:['🟢回踩','var(--cyn)'],near:['🎯接近突破','var(--org)'],wait:['🟡等回踩','var(--yel)']};
+    const TY={BREAKOUT:['🔥突破','var(--grn)'],RETEST:['🟢回踩','var(--cyn)'],PRE_ENTRY:['🟡预备','var(--org)'],EARLY:['🌱早期','var(--yel)']};
     const rows=Object.entries(TY).map(([k,[name,col]])=>{
       const s=d.types[k]||{n:0,rate1h:null,rate4h:null,rate24h:null,avg24h:null};
       const f=v=>v==null?'—':v+'%';
@@ -610,7 +610,7 @@ async function loadWinrate(){
     // 📼 V3.1 交易回放面板
     const rp=$('rpBody');
     const st=d.replay&&d.replay.stats?d.replay.stats:{};
-    const RC={strong:['🔥突破买','var(--grn)'],retest:['🟢回踩买','var(--cyn)']};
+    const RC={BREAKOUT:['🔥突破买','var(--grn)'],RETEST:['🟢回踩买','var(--cyn)'],PRE_ENTRY:['🟡预备买','var(--org)'],EARLY:['🌱早期买','var(--yel)']};
     const rpRows=Object.entries(RC).map(([k,[name,col]])=>{
       const s=st[k]||{n:0};
       if(!s.n)return `<div style="display:flex;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)"><span style="width:70px;color:${col};font-weight:600">${name}</span><span style="color:var(--dim)">n=0 样本积累中</span></div>`;
