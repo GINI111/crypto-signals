@@ -1,6 +1,6 @@
 {
- "generated_at": 1793830503,
- "generated_str": "11-05 06:15",
+ "generated_at": 1793834102,
+ "generated_str": "11-05 07:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -49,7 +49,7 @@
    "q": 9,
    "r1h": -0.004724,
    "r4h": -0.020472,
-   "r24h": null
+   "r24h": 0.012598
   },
   {
    "sym": "RUNE",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1793829901890,
+  "updated": 1793833502491,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
