@@ -1,6 +1,6 @@
 {
- "generated_at": 1794053703,
- "generated_str": "11-07 20:15",
+ "generated_at": 1794057303,
+ "generated_str": "11-07 21:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 632,
+   "n": 633,
    "rate1h": 44,
    "avg1h": -0.23,
    "rate4h": 43,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "ONE",
+   "type": "PRE_ENTRY",
+   "ts": 1794053023,
+   "px": 0.001978,
+   "q": 9,
+   "r1h": 0.016178,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "ONE",
    "type": "PRE_ENTRY",
@@ -330,20 +340,10 @@
    "r1h": -0.012088,
    "r4h": -0.04823,
    "r24h": -0.082275
-  },
-  {
-   "sym": "OP",
-   "type": "PRE_ENTRY",
-   "ts": 1793413381,
-   "px": 0.1193,
-   "q": 9.5,
-   "r1h": -0.013412,
-   "r4h": -0.030176,
-   "r24h": -0.054484
   }
  ],
  "replay": {
-  "updated": 1794053104062,
+  "updated": 1794056703739,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "ONE",
+    "type": "PRE_ENTRY",
+    "ts": 1794049331,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "INJ",
     "type": "PRE_ENTRY",
@@ -480,12 +486,6 @@
     "sym": "RUNE",
     "type": "PRE_ENTRY",
     "ts": 1793732551,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "RUNE",
-    "type": "PRE_ENTRY",
-    "ts": 1793728860,
     "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
