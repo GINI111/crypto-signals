@@ -1,6 +1,6 @@
 {
- "generated_at": 1794057303,
- "generated_str": "11-07 21:15",
+ "generated_at": 1794060902,
+ "generated_str": "11-07 22:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1794056703739,
+  "updated": 1794060300872,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "ONE",
+    "type": "PRE_ENTRY",
+    "ts": 1794053023,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "ONE",
     "type": "PRE_ENTRY",
@@ -480,12 +486,6 @@
     "sym": "RUNE",
     "type": "PRE_ENTRY",
     "ts": 1793736452,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "RUNE",
-    "type": "PRE_ENTRY",
-    "ts": 1793732551,
     "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
