@@ -1,6 +1,6 @@
 {
- "generated_at": 1794240903,
- "generated_str": "11-10 00:15",
+ "generated_at": 1794244503,
+ "generated_str": "11-10 01:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -69,7 +69,7 @@
    "q": 8.5,
    "r1h": -0.014815,
    "r4h": -0.015954,
-   "r24h": null
+   "r24h": -0.009117
   },
   {
    "sym": "MITO",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1794240302095,
+  "updated": 1794243902698,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
