@@ -1,6 +1,6 @@
 {
- "generated_at": 1794352503,
- "generated_str": "11-11 07:15",
+ "generated_at": 1794356103,
+ "generated_str": "11-11 08:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1794351903816,
+  "updated": 1794355504793,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 486,
+    "n": 487,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "GRAM",
+    "type": "PRE_ENTRY",
+    "ts": 1794348006,
+    "q": 8.5,
+    "entry": 1.154,
+    "sl": 1.072821,
+    "riskPct": 7,
+    "tp1": 1.235179,
+    "tp2": 1.316357,
+    "exit": 1.141,
+    "exitReason": "到期平仓 -0.16R",
+    "holdBars": 6,
+    "mfeR": 0.1,
+    "maeR": -0.25,
+    "maxR": 0.1,
+    "finalR": -0.16
+   },
    {
     "sym": "RSR",
     "type": "PRE_ENTRY",
@@ -444,12 +462,6 @@
     "sym": "ONE",
     "type": "PRE_ENTRY",
     "ts": 1794053023,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "ONE",
-    "type": "PRE_ENTRY",
-    "ts": 1794049331,
     "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
