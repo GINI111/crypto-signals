@@ -1,6 +1,6 @@
 {
- "generated_at": 1794482103,
- "generated_str": "11-12 19:15",
+ "generated_at": 1794485702,
+ "generated_str": "11-12 20:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -28,7 +28,7 @@
    "rate4h": 43,
    "avg4h": -0.45,
    "rate24h": 43,
-   "avg24h": -0.9
+   "avg24h": -0.88
   },
   "EARLY": {
    "n": 46,
@@ -79,7 +79,7 @@
    "q": 8.5,
    "r1h": 0.048945,
    "r4h": 0.005063,
-   "r24h": null
+   "r24h": 0.046414
   },
   {
    "sym": "ERA",
@@ -89,7 +89,7 @@
    "q": 8.5,
    "r1h": -0.06982,
    "r4h": -0.068694,
-   "r24h": null
+   "r24h": 0.04955
   },
   {
    "sym": "GRAM",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1794481503999,
+  "updated": 1794485102056,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "ERA",
+    "type": "PRE_ENTRY",
+    "ts": 1794477919,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "GRAM",
     "type": "PRE_ENTRY",
@@ -445,24 +451,6 @@
     "type": "PRE_ENTRY",
     "ts": 1794378470,
     "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "ERA",
-    "type": "PRE_ENTRY",
-    "ts": 1794371281,
-    "q": 9,
-    "entry": 0.0844,
-    "sl": 0.076718,
-    "riskPct": 9.1,
-    "tp1": 0.092082,
-    "tp2": 0.099764,
-    "exit": 0.0864,
-    "exitReason": "到期平仓 +0.26R",
-    "holdBars": 5,
-    "mfeR": 0.42,
-    "maeR": -0.26,
-    "maxR": 0.42,
-    "finalR": 0.26
    }
   ]
  }
