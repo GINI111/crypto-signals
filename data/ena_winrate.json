@@ -1,6 +1,6 @@
 {
- "generated_at": 1794489303,
- "generated_str": "11-12 21:15",
+ "generated_at": 1794492903,
+ "generated_str": "11-12 22:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,9 +22,9 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 650,
+   "n": 651,
    "rate1h": 43,
-   "avg1h": -0.27,
+   "avg1h": -0.28,
    "rate4h": 43,
    "avg4h": -0.45,
    "rate24h": 43,
@@ -44,11 +44,21 @@
   {
    "sym": "ERA",
    "type": "PRE_ENTRY",
+   "ts": 1794489041,
+   "px": 0.0992,
+   "q": 8.5,
+   "r1h": -0.051411,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ERA",
+   "type": "PRE_ENTRY",
    "ts": 1794477919,
    "px": 0.0984,
    "q": 8,
    "r1h": -0.04878,
-   "r4h": null,
+   "r4h": -0.043699,
    "r24h": null
   },
   {
@@ -59,7 +69,7 @@
    "q": 9,
    "r1h": -0.040833,
    "r4h": -0.030424,
-   "r24h": null
+   "r24h": -0.011209
   },
   {
    "sym": "GRAM",
@@ -330,20 +340,10 @@
    "r1h": 0.010297,
    "r4h": -0.056064,
    "r24h": -0.144165
-  },
-  {
-   "sym": "SOPH",
-   "type": "PRE_ENTRY",
-   "ts": 1793607353,
-   "px": 0.00173,
-   "q": 8,
-   "r1h": -0.086705,
-   "r4h": -0.104046,
-   "r24h": -0.17341
   }
  ],
  "replay": {
-  "updated": 1794488701968,
+  "updated": 1794492304185,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
