@@ -1,6 +1,6 @@
 {
- "generated_at": 1794942903,
- "generated_str": "11-18 03:15",
+ "generated_at": 1794946503,
+ "generated_str": "11-18 04:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 665,
+   "n": 666,
    "rate1h": 43,
    "avg1h": -0.26,
    "rate4h": 43,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "LUNC",
+   "type": "PRE_ENTRY",
+   "ts": 1794940361,
+   "px": 4.092e-05,
+   "q": 8,
+   "r1h": 0.009531,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "LUNC",
    "type": "PRE_ENTRY",
@@ -330,20 +340,10 @@
    "r1h": -0.014815,
    "r4h": -0.015954,
    "r24h": -0.009117
-  },
-  {
-   "sym": "MITO",
-   "type": "PRE_ENTRY",
-   "ts": 1794079372,
-   "px": 0.00818,
-   "q": 9,
-   "r1h": -0.022005,
-   "r4h": -0.006112,
-   "r24h": -0.116137
   }
  ],
  "replay": {
-  "updated": 1794942303843,
+  "updated": 1794945903969,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 504,
+    "n": 505,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "LUNC",
+    "type": "PRE_ENTRY",
+    "ts": 1794940361,
+    "q": 8,
+    "entry": 4.1e-05,
+    "sl": 3.8e-05,
+    "riskPct": 7.5,
+    "tp1": 4.4e-05,
+    "tp2": 4.7e-05,
+    "exit": 4.1e-05,
+    "exitReason": "到期平仓 -0.01R",
+    "holdBars": 6,
+    "mfeR": 0.18,
+    "maeR": -0.37,
+    "maxR": 0.18,
+    "finalR": -0.01
+   },
    {
     "sym": "LUNC",
     "type": "PRE_ENTRY",
@@ -505,24 +523,6 @@
     "maeR": -0.17,
     "maxR": 1,
     "finalR": 0.7
-   },
-   {
-    "sym": "LUNC",
-    "type": "PRE_ENTRY",
-    "ts": 1794907786,
-    "q": 9,
-    "entry": 3.9e-05,
-    "sl": 3.6e-05,
-    "riskPct": 7.1,
-    "tp1": 4.1e-05,
-    "tp2": 4.4e-05,
-    "exit": 3.8e-05,
-    "exitReason": "到期平仓 -0.29R",
-    "holdBars": 5,
-    "mfeR": 0,
-    "maeR": -0.63,
-    "maxR": 0,
-    "finalR": -0.29
    }
   ]
  }
