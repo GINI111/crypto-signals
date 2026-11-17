@@ -1,6 +1,6 @@
 {
- "generated_at": 1794950103,
- "generated_str": "11-18 05:15",
+ "generated_at": 1794953703,
+ "generated_str": "11-18 06:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 667,
+   "n": 668,
    "rate1h": 43,
    "avg1h": -0.26,
    "rate4h": 43,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "LUNC",
+   "type": "PRE_ENTRY",
+   "ts": 1794948417,
+   "px": 4.153e-05,
+   "q": 9.5,
+   "r1h": -0.034674,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "LUNC",
    "type": "PRE_ENTRY",
@@ -68,7 +78,7 @@
    "px": 4.007e-05,
    "q": 9.5,
    "r1h": 0.003244,
-   "r4h": null,
+   "r4h": 0.000499,
    "r24h": null
   },
   {
@@ -330,20 +340,10 @@
    "r1h": -0.020666,
    "r4h": -0.047646,
    "r24h": 0.012055
-  },
-  {
-   "sym": "RSR",
-   "type": "PRE_ENTRY",
-   "ts": 1794161458,
-   "px": 0.001723,
-   "q": 8.5,
-   "r1h": -0.017411,
-   "r4h": -0.017411,
-   "r24h": 0.004643
   }
  ],
  "replay": {
-  "updated": 1794949504266,
+  "updated": 1794953104157,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,10 +363,10 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 506,
+    "n": 507,
     "winRate": 44,
     "avgR": -0.02,
-    "avgMfe": 0.35,
+    "avgMfe": 0.34,
     "avgMae": -0.32,
     "avgHoldMin": 118
    },
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "LUNC",
+    "type": "PRE_ENTRY",
+    "ts": 1794948417,
+    "q": 9.5,
+    "entry": 4.2e-05,
+    "sl": 3.8e-05,
+    "riskPct": 8.7,
+    "tp1": 4.5e-05,
+    "tp2": 4.9e-05,
+    "exit": 4e-05,
+    "exitReason": "到期平仓 -0.55R",
+    "holdBars": 5,
+    "mfeR": 0.03,
+    "maeR": -0.61,
+    "maxR": 0.03,
+    "finalR": -0.55
+   },
    {
     "sym": "LUNC",
     "type": "PRE_ENTRY",
@@ -505,24 +523,6 @@
     "maeR": -0.33,
     "maxR": 0.17,
     "finalR": -0.28
-   },
-   {
-    "sym": "INJ",
-    "type": "PRE_ENTRY",
-    "ts": 1794915215,
-    "q": 9.5,
-    "entry": 7.43,
-    "sl": 7.129071,
-    "riskPct": 4.1,
-    "tp1": 7.730929,
-    "tp2": 8.031857,
-    "exit": 7.596286,
-    "exitReason": "止损 +0.55R",
-    "holdBars": 4,
-    "mfeR": 1.02,
-    "maeR": 0,
-    "maxR": 1.02,
-    "finalR": 0.64
    }
   ]
  }
