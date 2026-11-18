@@ -1,6 +1,6 @@
 {
- "generated_at": 1795029303,
- "generated_str": "11-19 03:15",
+ "generated_at": 1795032903,
+ "generated_str": "11-19 04:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,13 +22,13 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 670,
+   "n": 671,
    "rate1h": 43,
-   "avg1h": -0.23,
+   "avg1h": -0.24,
    "rate4h": 43,
-   "avg4h": -0.45,
+   "avg4h": -0.46,
    "rate24h": 43,
-   "avg24h": -1.01
+   "avg24h": -1.02
   },
   "EARLY": {
    "n": 46,
@@ -44,11 +44,21 @@
   {
    "sym": "ZIL",
    "type": "PRE_ENTRY",
+   "ts": 1795026781,
+   "px": 0.001099,
+   "q": 8.5,
+   "r1h": -0.030937,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ZIL",
+   "type": "PRE_ENTRY",
    "ts": 1795017692,
    "px": 0.001106,
    "q": 8.5,
    "r1h": -0.039783,
-   "r4h": null,
+   "r4h": -0.019892,
    "r24h": null
   },
   {
@@ -79,7 +89,7 @@
    "q": 8,
    "r1h": 0.012924,
    "r4h": -0.011704,
-   "r24h": null
+   "r24h": -0.040234
   },
   {
    "sym": "LUNC",
@@ -330,20 +340,10 @@
    "r1h": 0.035545,
    "r4h": -0.027251,
    "r24h": 0.119668
-  },
-  {
-   "sym": "GRAM",
-   "type": "PRE_ENTRY",
-   "ts": 1794352882,
-   "px": 1.145,
-   "q": 8.5,
-   "r1h": -0.015721,
-   "r4h": -0.006114,
-   "r24h": 0.025328
   }
  ],
  "replay": {
-  "updated": 1795028704177,
+  "updated": 1795032304184,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "ZIL",
+    "type": "PRE_ENTRY",
+    "ts": 1795026781,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "ZIL",
     "type": "PRE_ENTRY",
@@ -493,24 +499,6 @@
     "maeR": -0.58,
     "maxR": 0,
     "finalR": -0.49
-   },
-   {
-    "sym": "LUNC",
-    "type": "PRE_ENTRY",
-    "ts": 1794923640,
-    "q": 9.5,
-    "entry": 4e-05,
-    "sl": 3.6e-05,
-    "riskPct": 8.1,
-    "tp1": 4.3e-05,
-    "tp2": 4.6e-05,
-    "exit": 3.9e-05,
-    "exitReason": "到期平仓 -0.17R",
-    "holdBars": 5,
-    "mfeR": 0.05,
-    "maeR": -0.4,
-    "maxR": 0.05,
-    "finalR": -0.17
    }
   ]
  }
