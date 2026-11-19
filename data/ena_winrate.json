@@ -1,6 +1,6 @@
 {
- "generated_at": 1795097703,
- "generated_str": "11-19 22:15",
+ "generated_at": 1795101303,
+ "generated_str": "11-19 23:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795097104204,
+  "updated": 1795100702321,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 512,
+    "n": 513,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "CHIP",
+    "type": "PRE_ENTRY",
+    "ts": 1795093370,
+    "q": 9.5,
+    "entry": 0.03311,
+    "sl": 0.029921,
+    "riskPct": 9.6,
+    "tp1": 0.036299,
+    "tp2": 0.039487,
+    "exit": 0.0315,
+    "exitReason": "到期平仓 -0.50R",
+    "holdBars": 6,
+    "mfeR": 0,
+    "maeR": -0.52,
+    "maxR": 0,
+    "finalR": -0.5
+   },
    {
     "sym": "HUMA",
     "type": "PRE_ENTRY",
@@ -481,24 +499,6 @@
     "maeR": -0.13,
     "maxR": 2.99,
     "finalR": 1.85
-   },
-   {
-    "sym": "LUNC",
-    "type": "PRE_ENTRY",
-    "ts": 1794948417,
-    "q": 9.5,
-    "entry": 4.2e-05,
-    "sl": 3.8e-05,
-    "riskPct": 8.7,
-    "tp1": 4.5e-05,
-    "tp2": 4.9e-05,
-    "exit": 4e-05,
-    "exitReason": "到期平仓 -0.55R",
-    "holdBars": 5,
-    "mfeR": 0.03,
-    "maeR": -0.61,
-    "maxR": 0.03,
-    "finalR": -0.55
    }
   ]
  }
