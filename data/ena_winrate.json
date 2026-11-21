@@ -1,6 +1,6 @@
 {
- "generated_at": 1795252503,
- "generated_str": "11-21 17:15",
+ "generated_at": 1795256103,
+ "generated_str": "11-21 18:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,9 +22,9 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 676,
+   "n": 677,
    "rate1h": 43,
-   "avg1h": -0.27,
+   "avg1h": -0.26,
    "rate4h": 42,
    "avg4h": -0.52,
    "rate24h": 43,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "RARE",
+   "type": "PRE_ENTRY",
+   "ts": 1795249136,
+   "px": 0.01397,
+   "q": 8,
+   "r1h": 0.00859,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "CHIP",
    "type": "PRE_ENTRY",
@@ -330,20 +340,10 @@
    "r1h": -0.008065,
    "r4h": -0.027419,
    "r24h": 0.018548
-  },
-  {
-   "sym": "GRAM",
-   "type": "PRE_ENTRY",
-   "ts": 1794397748,
-   "px": 1.185,
-   "q": 8.5,
-   "r1h": 0.048945,
-   "r4h": 0.005063,
-   "r24h": 0.046414
   }
  ],
  "replay": {
-  "updated": 1795251903809,
+  "updated": 1795255504058,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 513,
+    "n": 514,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "RARE",
+    "type": "PRE_ENTRY",
+    "ts": 1795249136,
+    "q": 8,
+    "entry": 0.01397,
+    "sl": 0.012704,
+    "riskPct": 9.1,
+    "tp1": 0.015236,
+    "tp2": 0.016503,
+    "exit": 0.01367,
+    "exitReason": "到期平仓 -0.24R",
+    "holdBars": 5,
+    "mfeR": 0.18,
+    "maeR": -0.45,
+    "maxR": 0.18,
+    "finalR": -0.24
+   },
    {
     "sym": "CHIP",
     "type": "PRE_ENTRY",
@@ -481,24 +499,6 @@
     "type": "PRE_ENTRY",
     "ts": 1795017692,
     "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "ZIL",
-    "type": "PRE_ENTRY",
-    "ts": 1795010439,
-    "q": 9,
-    "entry": 0.001045,
-    "sl": 0.000958,
-    "riskPct": 8.3,
-    "tp1": 0.001132,
-    "tp2": 0.001218,
-    "exit": 0.001227,
-    "exitReason": "止损 +2.09R",
-    "holdBars": 5,
-    "mfeR": 2.99,
-    "maeR": -0.13,
-    "maxR": 2.99,
-    "finalR": 1.85
    }
   ]
  }
