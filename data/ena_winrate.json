@@ -1,6 +1,6 @@
 {
- "generated_at": 1795367703,
- "generated_str": "11-23 01:15",
+ "generated_at": 1795371303,
+ "generated_str": "11-23 02:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 684,
+   "n": 685,
    "rate1h": 43,
    "avg1h": -0.25,
    "rate4h": 43,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "ETHFI",
+   "type": "PRE_ENTRY",
+   "ts": 1795366632,
+   "px": 0.5008,
+   "q": 9.5,
+   "r1h": 0.00599,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "RARE",
    "type": "PRE_ENTRY",
@@ -330,20 +340,10 @@
    "r1h": -0.002614,
    "r4h": 0.00399,
    "r24h": 0.009492
-  },
-  {
-   "sym": "ZRO",
-   "type": "PRE_ENTRY",
-   "ts": 1794894367,
-   "px": 1.529,
-   "q": 9.5,
-   "r1h": -0.01308,
-   "r4h": -0.017659,
-   "r24h": -0.1138
   }
  ],
  "replay": {
-  "updated": 1795367102084,
+  "updated": 1795370703997,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 516,
+    "n": 517,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "ETHFI",
+    "type": "PRE_ENTRY",
+    "ts": 1795366632,
+    "q": 9.5,
+    "entry": 0.5008,
+    "sl": 0.474043,
+    "riskPct": 5.3,
+    "tp1": 0.527557,
+    "tp2": 0.554314,
+    "exit": 0.503,
+    "exitReason": "到期平仓 +0.08R",
+    "holdBars": 5,
+    "mfeR": 0.32,
+    "maeR": -0.12,
+    "maxR": 0.32,
+    "finalR": 0.08
+   },
    {
     "sym": "RARE",
     "type": "PRE_ENTRY",
@@ -445,24 +463,6 @@
     "maeR": 0,
     "maxR": 0.86,
     "finalR": 0.7
-   },
-   {
-    "sym": "RARE",
-    "type": "PRE_ENTRY",
-    "ts": 1795249136,
-    "q": 8,
-    "entry": 0.01397,
-    "sl": 0.012704,
-    "riskPct": 9.1,
-    "tp1": 0.015236,
-    "tp2": 0.016503,
-    "exit": 0.01367,
-    "exitReason": "到期平仓 -0.24R",
-    "holdBars": 5,
-    "mfeR": 0.18,
-    "maeR": -0.45,
-    "maxR": 0.18,
-    "finalR": -0.24
    }
   ]
  }
