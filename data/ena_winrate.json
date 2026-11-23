@@ -1,6 +1,6 @@
 {
- "generated_at": 1795403702,
- "generated_str": "11-23 11:15",
+ "generated_at": 1795407304,
+ "generated_str": "11-23 12:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795403103529,
+  "updated": 1795406704115,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "LISTA",
+    "type": "PRE_ENTRY",
+    "ts": 1795400016,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "ETHFI",
     "type": "PRE_ENTRY",
@@ -445,24 +451,6 @@
     "type": "PRE_ENTRY",
     "ts": 1795259010,
     "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "RARE",
-    "type": "PRE_ENTRY",
-    "ts": 1795253880,
-    "q": 8.5,
-    "entry": 0.01387,
-    "sl": 0.012769,
-    "riskPct": 7.9,
-    "tp1": 0.014971,
-    "tp2": 0.016073,
-    "exit": 0.01464,
-    "exitReason": "到期平仓 +0.70R",
-    "holdBars": 6,
-    "mfeR": 0.86,
-    "maeR": 0,
-    "maxR": 0.86,
-    "finalR": 0.7
    }
   ]
  }
