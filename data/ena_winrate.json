@@ -1,6 +1,6 @@
 {
- "generated_at": 1795482903,
- "generated_str": "11-24 09:15",
+ "generated_at": 1795486503,
+ "generated_str": "11-24 10:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -28,7 +28,7 @@
    "rate4h": 43,
    "avg4h": -0.5,
    "rate24h": 42,
-   "avg24h": -1.14
+   "avg24h": -1.1
   },
   "EARLY": {
    "n": 46,
@@ -169,7 +169,7 @@
    "q": 9.5,
    "r1h": -0.003793,
    "r4h": -0.012642,
-   "r24h": null
+   "r24h": 0.26043
   },
   {
    "sym": "ETHFI",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795482303814,
+  "updated": 1795485903694,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 525,
+    "n": 526,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "ONE",
+    "type": "PRE_ENTRY",
+    "ts": 1795478581,
+    "q": 8,
+    "entry": 0.001064,
+    "sl": 0.000978,
+    "riskPct": 8.1,
+    "tp1": 0.001151,
+    "tp2": 0.001237,
+    "exit": 0.001056,
+    "exitReason": "到期平仓 -0.09R",
+    "holdBars": 6,
+    "mfeR": 0.23,
+    "maeR": -0.27,
+    "maxR": 0.23,
+    "finalR": -0.09
+   },
    {
     "sym": "MUBARAK",
     "type": "PRE_ENTRY",
@@ -481,24 +499,6 @@
     "maeR": -0.09,
     "maxR": 0.48,
     "finalR": -0.07
-   },
-   {
-    "sym": "LISTA",
-    "type": "RETEST",
-    "ts": 1795422293,
-    "q": 9.5,
-    "entry": 0.08,
-    "sl": 0.07544,
-    "riskPct": 5.7,
-    "tp1": 0.08456,
-    "tp2": 0.08912,
-    "exit": 0.0818,
-    "exitReason": "到期平仓 +0.39R",
-    "holdBars": 5,
-    "mfeR": 0.42,
-    "maeR": -0.18,
-    "maxR": 0.42,
-    "finalR": 0.39
    }
   ]
  }
