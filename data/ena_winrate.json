@@ -1,6 +1,6 @@
 {
- "generated_at": 1795544103,
- "generated_str": "11-25 02:15",
+ "generated_at": 1795547703,
+ "generated_str": "11-25 03:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,11 +22,11 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 701,
+   "n": 702,
    "rate1h": 43,
    "avg1h": -0.25,
    "rate4h": 43,
-   "avg4h": -0.51,
+   "avg4h": -0.5,
    "rate24h": 42,
    "avg24h": -0.98
   },
@@ -44,6 +44,16 @@
   {
    "sym": "LISTA",
    "type": "PRE_ENTRY",
+   "ts": 1795543162,
+   "px": 0.1121,
+   "q": 10,
+   "r1h": -0.007136,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "LISTA",
+   "type": "PRE_ENTRY",
    "ts": 1795535086,
    "px": 0.1094,
    "q": 8.5,
@@ -58,7 +68,7 @@
    "px": 0.1067,
    "q": 8,
    "r1h": 0.054358,
-   "r4h": null,
+   "r4h": 0.043112,
    "r24h": null
   },
   {
@@ -330,20 +340,10 @@
    "r1h": -0.044199,
    "r4h": -0.092818,
    "r24h": 0.075138
-  },
-  {
-   "sym": "HUMA",
-   "type": "PRE_ENTRY",
-   "ts": 1795053765,
-   "px": 0.00905,
-   "q": 8,
-   "r1h": -0.01326,
-   "r4h": -0.064088,
-   "r24h": 0.054144
   }
  ],
  "replay": {
-  "updated": 1795543502621,
+  "updated": 1795547104019,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "LISTA",
+    "type": "PRE_ENTRY",
+    "ts": 1795543162,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "LISTA",
     "type": "PRE_ENTRY",
@@ -456,12 +462,6 @@
     "sym": "ONE",
     "type": "PRE_ENTRY",
     "ts": 1795468409,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "MUBARAK",
-    "type": "PRE_ENTRY",
-    "ts": 1795463639,
     "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
