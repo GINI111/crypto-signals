@@ -1,6 +1,6 @@
 {
- "generated_at": 1795529703,
- "generated_str": "11-24 22:15",
+ "generated_at": 1795533303,
+ "generated_str": "11-24 23:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795529103758,
+  "updated": 1795532704382,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "LISTA",
+    "type": "PRE_ENTRY",
+    "ts": 1795525985,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "MUBARAK",
     "type": "PRE_ENTRY",
@@ -481,24 +487,6 @@
     "maeR": -0.43,
     "maxR": 0,
     "finalR": -0.35
-   },
-   {
-    "sym": "ICP",
-    "type": "PRE_ENTRY",
-    "ts": 1795442650,
-    "q": 9,
-    "entry": 2.091,
-    "sl": 1.994607,
-    "riskPct": 4.6,
-    "tp1": 2.187393,
-    "tp2": 2.283786,
-    "exit": 2.109,
-    "exitReason": "到期平仓 +0.19R",
-    "holdBars": 6,
-    "mfeR": 0.73,
-    "maeR": 0,
-    "maxR": 0.73,
-    "finalR": 0.19
    }
   ]
  }
