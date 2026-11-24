@@ -1,6 +1,6 @@
 {
- "generated_at": 1795551304,
- "generated_str": "11-25 04:15",
+ "generated_at": 1795554903,
+ "generated_str": "11-25 05:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,13 +22,13 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 702,
+   "n": 703,
    "rate1h": 43,
    "avg1h": -0.25,
    "rate4h": 43,
    "avg4h": -0.49,
    "rate24h": 42,
-   "avg24h": -0.99
+   "avg24h": -1.01
   },
   "EARLY": {
    "n": 46,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "LISTA",
+   "type": "PRE_ENTRY",
+   "ts": 1795549372,
+   "px": 0.1147,
+   "q": 10,
+   "r1h": -0.010462,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "LISTA",
    "type": "PRE_ENTRY",
@@ -119,7 +129,7 @@
    "q": 8.5,
    "r1h": -0.003731,
    "r4h": -0.018657,
-   "r24h": null
+   "r24h": -0.119403
   },
   {
    "sym": "MUBARAK",
@@ -330,20 +340,10 @@
    "r1h": -0.07287,
    "r4h": -0.075112,
    "r24h": 0.052691
-  },
-  {
-   "sym": "HUMA",
-   "type": "PRE_ENTRY",
-   "ts": 1795058523,
-   "px": 0.00905,
-   "q": 8,
-   "r1h": -0.044199,
-   "r4h": -0.092818,
-   "r24h": 0.075138
   }
  ],
  "replay": {
-  "updated": 1795550703668,
+  "updated": 1795554304073,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -380,6 +380,12 @@
    }
   },
   "last": [
+   {
+    "sym": "LISTA",
+    "type": "PRE_ENTRY",
+    "ts": 1795549372,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "LISTA",
     "type": "PRE_ENTRY",
@@ -457,12 +463,6 @@
     "maeR": 0,
     "maxR": 0.75,
     "finalR": 0.23
-   },
-   {
-    "sym": "ONE",
-    "type": "PRE_ENTRY",
-    "ts": 1795468409,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
  }
