@@ -1,6 +1,6 @@
 {
- "generated_at": 1795486503,
- "generated_str": "11-24 10:15",
+ "generated_at": 1795490103,
+ "generated_str": "11-24 11:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": -0.16
   },
   "PRE_ENTRY": {
-   "n": 697,
+   "n": 698,
    "rate1h": 43,
    "avg1h": -0.25,
    "rate4h": 43,
@@ -42,6 +42,16 @@
  },
  "recent": [
   {
+   "sym": "MUBARAK",
+   "type": "PRE_ENTRY",
+   "ts": 1795482926,
+   "px": 0.02695,
+   "q": 9,
+   "r1h": -0.028942,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "ONE",
    "type": "PRE_ENTRY",
    "ts": 1795478581,
@@ -58,7 +68,7 @@
    "px": 0.02605,
    "q": 8,
    "r1h": 0.023033,
-   "r4h": null,
+   "r4h": 0.004607,
    "r24h": null
   },
   {
@@ -330,20 +340,10 @@
    "r1h": -0.039783,
    "r4h": -0.019892,
    "r24h": -0.158228
-  },
-  {
-   "sym": "ZIL",
-   "type": "PRE_ENTRY",
-   "ts": 1795010439,
-   "px": 0.001045,
-   "q": 9,
-   "r1h": 0.222967,
-   "r4h": 0.021053,
-   "r24h": -0.079426
   }
  ],
  "replay": {
-  "updated": 1795485903694,
+  "updated": 1795489502661,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 526,
+    "n": 527,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "MUBARAK",
+    "type": "PRE_ENTRY",
+    "ts": 1795482926,
+    "q": 9,
+    "entry": 0.02695,
+    "sl": 0.024833,
+    "riskPct": 7.9,
+    "tp1": 0.029067,
+    "tp2": 0.031184,
+    "exit": 0.02652,
+    "exitReason": "到期平仓 -0.20R",
+    "holdBars": 5,
+    "mfeR": 0.02,
+    "maeR": -0.32,
+    "maxR": 0.02,
+    "finalR": -0.2
+   },
    {
     "sym": "ONE",
     "type": "PRE_ENTRY",
@@ -481,24 +499,6 @@
     "maeR": 0,
     "maxR": 0.73,
     "finalR": 0.19
-   },
-   {
-    "sym": "SOL",
-    "type": "PRE_ENTRY",
-    "ts": 1795442418,
-    "q": 8,
-    "entry": 76.2,
-    "sl": 71.452143,
-    "riskPct": 6.2,
-    "tp1": 80.947857,
-    "tp2": 85.695714,
-    "exit": 75.88,
-    "exitReason": "到期平仓 -0.07R",
-    "holdBars": 6,
-    "mfeR": 0.48,
-    "maeR": -0.09,
-    "maxR": 0.48,
-    "finalR": -0.07
    }
   ]
  }
