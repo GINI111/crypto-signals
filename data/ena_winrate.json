@@ -1,6 +1,6 @@
 {
- "generated_at": 1795608903,
- "generated_str": "11-25 20:15",
+ "generated_at": 1795612504,
+ "generated_str": "11-25 21:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -129,7 +129,7 @@
    "q": 9,
    "r1h": -0.040984,
    "r4h": 0.020036,
-   "r24h": null
+   "r24h": -0.018215
   },
   {
    "sym": "MUBARAK",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795608302408,
+  "updated": 1795611902261,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
