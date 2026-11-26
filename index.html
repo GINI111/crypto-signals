@@ -140,9 +140,9 @@
 </div>
 
 <script>
-const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.0,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.0,entryMode:'limit',entryRetraceATR:0.75,fillWindow:{'5m':8,'15m':8,'1h':6,'4h':4,'1d':3},minRiskPct:0.2,maxRiskPct:8,scopeDailyMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
+const CFG={cooldownMs:{'5m':0,'15m':60*60e3,'1h':4*60*60e3,'4h':8*60*60e3,'1d':24*60*60e3},signalTF:'15m',stopATR:1.2,stopATRMax:1.5,tp1ATR:1.5,tp2ATR:2.5,entryMode:'limit',entryRetraceATR:0.75,fillWindow:{'5m':8,'15m':8,'1h':6,'4h':4,'1d':3},minRiskPct:0.2,maxRiskPct:8,scopeDailyMax:1,maxOpenSide:3,maxBars:{'5m':72,'15m':48,'1h':36,'4h':24,'1d':20},lowVolATR:{'5m':0.05,'15m':0.1,'1h':0.2,'4h':0.4,'1d':1.0},v22:{cand:2,a:3,s:4,coreDir:2,volSurge:1.5}};
 let symbol='BTC',tf='15m',ws=null,priceWS=null,last=null,htf={};let history=[];let lastSignal={buy:{key:'',time:0},sell:{key:'',time:0}};let chart=null,candle=null;let storedSignals=[];let serverSignals=[];let livePrice=null,liveChange=null;let lastScopeKey=null;   // [09-21 修复] last 中的数据对应的 scope；防止切币种/周期时用旧币K线给新 scope 记信号（曾产出 SOL|1d|2725.38，实为 ETH 价）
-const RULE_VER='v4-20261019-daily1',RULE_NOTE='atr-capped+limit-retrace-0.75atr+scope-daily-1';
+const RULE_VER='v5-slrr-20261126',RULE_NOTE='atr-floor-1.2+tpcapped2.5rr+limit-retrace-0.75atr+scope-daily-1';
 const STORAGE_KEY='crypto_signal_pro_v21_signals';
 
 // ═══════════ [10-16] Binance 多域容灾（换网络/被墙也能扫）═══════════
