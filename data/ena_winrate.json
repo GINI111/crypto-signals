@@ -1,6 +1,6 @@
 {
- "generated_at": 1795702502,
- "generated_str": "11-26 22:15",
+ "generated_at": 1795706103,
+ "generated_str": "11-26 23:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,11 +22,11 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 720,
+   "n": 721,
    "rate1h": 43,
    "avg1h": -0.24,
    "rate4h": 43,
-   "avg4h": -0.49,
+   "avg4h": -0.48,
    "rate24h": 42,
    "avg24h": -1.1
   },
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "SEI",
+   "type": "PRE_ENTRY",
+   "ts": 1795699542,
+   "px": 0.0361,
+   "q": 9,
+   "r1h": 0.027424,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "ME",
    "type": "PRE_ENTRY",
@@ -58,7 +68,7 @@
    "px": 2.542,
    "q": 9,
    "r1h": 0.017309,
-   "r4h": null,
+   "r4h": 0.06491,
    "r24h": null
   },
   {
@@ -68,7 +78,7 @@
    "px": 1.089,
    "q": 8.5,
    "r1h": 0.004591,
-   "r4h": null,
+   "r4h": 0.001837,
    "r24h": null
   },
   {
@@ -330,20 +340,10 @@
    "r1h": -0.012961,
    "r4h": -0.030816,
    "r24h": -0.088613
-  },
-  {
-   "sym": "ICP",
-   "type": "PRE_ENTRY",
-   "ts": 1795442650,
-   "px": 2.091,
-   "q": 9,
-   "r1h": 0.020564,
-   "r4h": 0.000478,
-   "r24h": -0.025825
   }
  ],
  "replay": {
-  "updated": 1795701903740,
+  "updated": 1795705504186,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 537,
+    "n": 538,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "SEI",
+    "type": "PRE_ENTRY",
+    "ts": 1795699542,
+    "q": 9,
+    "entry": 0.0361,
+    "sl": 0.034148,
+    "riskPct": 5.4,
+    "tp1": 0.038052,
+    "tp2": 0.040004,
+    "exit": 0.03733,
+    "exitReason": "到期平仓 +0.63R",
+    "holdBars": 5,
+    "mfeR": 0.85,
+    "maeR": 0,
+    "maxR": 0.85,
+    "finalR": 0.63
+   },
    {
     "sym": "ME",
     "type": "PRE_ENTRY",
@@ -481,12 +499,6 @@
     "maeR": 0,
     "maxR": 0.15,
     "finalR": 0.11
-   },
-   {
-    "sym": "BLUR",
-    "type": "PRE_ENTRY",
-    "ts": 1795648393,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
  }
