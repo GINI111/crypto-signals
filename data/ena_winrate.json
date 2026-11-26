@@ -1,6 +1,6 @@
 {
- "generated_at": 1795706103,
- "generated_str": "11-26 23:15",
+ "generated_at": 1795709703,
+ "generated_str": "11-27 00:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,9 +22,9 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 721,
+   "n": 724,
    "rate1h": 43,
-   "avg1h": -0.24,
+   "avg1h": -0.23,
    "rate4h": 43,
    "avg4h": -0.48,
    "rate24h": 42,
@@ -42,6 +42,36 @@
  },
  "recent": [
   {
+   "sym": "SSV",
+   "type": "PRE_ENTRY",
+   "ts": 1795705370,
+   "px": 2.71,
+   "q": 8.5,
+   "r1h": 0.0369,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ME",
+   "type": "PRE_ENTRY",
+   "ts": 1795704339,
+   "px": 0.04322,
+   "q": 8.5,
+   "r1h": -0.0472,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "SEI",
+   "type": "PRE_ENTRY",
+   "ts": 1795703508,
+   "px": 0.03759,
+   "q": 9.5,
+   "r1h": 0.025007,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "SEI",
    "type": "PRE_ENTRY",
    "ts": 1795699542,
@@ -58,7 +88,7 @@
    "px": 0.04277,
    "q": 8.5,
    "r1h": -0.007482,
-   "r4h": null,
+   "r4h": -0.038812,
    "r24h": null
   },
   {
@@ -179,7 +209,7 @@
    "q": 9.5,
    "r1h": 0.057692,
    "r4h": 0.095142,
-   "r24h": null
+   "r24h": -0.022267
   },
   {
    "sym": "OPG",
@@ -310,40 +340,10 @@
    "r1h": -0.003731,
    "r4h": -0.018657,
    "r24h": -0.119403
-  },
-  {
-   "sym": "MUBARAK",
-   "type": "PRE_ENTRY",
-   "ts": 1795463639,
-   "px": 0.02615,
-   "q": 8,
-   "r1h": 0.005354,
-   "r4h": 0.01912,
-   "r24h": -0.122371
-  },
-  {
-   "sym": "ICP",
-   "type": "PRE_ENTRY",
-   "ts": 1795451388,
-   "px": 2.13,
-   "q": 9,
-   "r1h": -0.014554,
-   "r4h": -0.039906,
-   "r24h": -0.061033
-  },
-  {
-   "sym": "SOL",
-   "type": "PRE_ENTRY",
-   "ts": 1795450120,
-   "px": 75.61,
-   "q": 9,
-   "r1h": -0.012961,
-   "r4h": -0.030816,
-   "r24h": -0.088613
   }
  ],
  "replay": {
-  "updated": 1795705504186,
+  "updated": 1795709105376,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 538,
+    "n": 539,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,30 @@
    }
   },
   "last": [
+   {
+    "sym": "ME",
+    "type": "PRE_ENTRY",
+    "ts": 1795704339,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
+   {
+    "sym": "SEI",
+    "type": "PRE_ENTRY",
+    "ts": 1795703508,
+    "q": 9.5,
+    "entry": 0.03759,
+    "sl": 0.034535,
+    "riskPct": 8.1,
+    "tp1": 0.040645,
+    "tp2": 0.0437,
+    "exit": 0.0386,
+    "exitReason": "到期平仓 +0.33R",
+    "holdBars": 6,
+    "mfeR": 0.45,
+    "maeR": -0.36,
+    "maxR": 0.45,
+    "finalR": 0.33
+   },
    {
     "sym": "SEI",
     "type": "PRE_ENTRY",
@@ -463,42 +487,6 @@
     "maeR": -0.43,
     "maxR": 0.05,
     "finalR": -0.39
-   },
-   {
-    "sym": "PROM",
-    "type": "PRE_ENTRY",
-    "ts": 1795657648,
-    "q": 9,
-    "entry": 5.207,
-    "sl": 4.776607,
-    "riskPct": 8.3,
-    "tp1": 5.637393,
-    "tp2": 6.067786,
-    "exit": 5.106,
-    "exitReason": "到期平仓 -0.23R",
-    "holdBars": 5,
-    "mfeR": 0,
-    "maeR": -0.27,
-    "maxR": 0,
-    "finalR": -0.23
-   },
-   {
-    "sym": "PROM",
-    "type": "PRE_ENTRY",
-    "ts": 1795650656,
-    "q": 9.5,
-    "entry": 5.236,
-    "sl": 4.7875,
-    "riskPct": 8.6,
-    "tp1": 5.6845,
-    "tp2": 6.133,
-    "exit": 5.286,
-    "exitReason": "到期平仓 +0.11R",
-    "holdBars": 5,
-    "mfeR": 0.15,
-    "maeR": 0,
-    "maxR": 0.15,
-    "finalR": 0.11
    }
   ]
  }
