@@ -1,6 +1,6 @@
 {
- "generated_at": 1795691703,
- "generated_str": "11-26 19:15",
+ "generated_at": 1795695303,
+ "generated_str": "11-26 20:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 717,
+   "n": 719,
    "rate1h": 43,
    "avg1h": -0.24,
    "rate4h": 43,
@@ -41,6 +41,26 @@
   }
  },
  "recent": [
+  {
+   "sym": "SSV",
+   "type": "PRE_ENTRY",
+   "ts": 1795690990,
+   "px": 2.542,
+   "q": 9,
+   "r1h": 0.017309,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ZRO",
+   "type": "PRE_ENTRY",
+   "ts": 1795689540,
+   "px": 1.089,
+   "q": 8.5,
+   "r1h": 0.004591,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "SSV",
    "type": "PRE_ENTRY",
@@ -320,30 +340,10 @@
    "r1h": -0.001969,
    "r4h": -0.034514,
    "r24h": -0.08189
-  },
-  {
-   "sym": "LISTA",
-   "type": "RETEST",
-   "ts": 1795422293,
-   "px": 0.08,
-   "q": 9.5,
-   "r1h": 0.05125,
-   "r4h": -0.035,
-   "r24h": 0.34125
-  },
-  {
-   "sym": "LISTA",
-   "type": "PRE_ENTRY",
-   "ts": 1795414189,
-   "px": 0.0787,
-   "q": 9,
-   "r1h": 0.010165,
-   "r4h": 0.044473,
-   "r24h": 0.35197
   }
  ],
  "replay": {
-  "updated": 1795691103829,
+  "updated": 1795694704011,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 535,
+    "n": 536,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,30 @@
    }
   },
   "last": [
+   {
+    "sym": "ZRO",
+    "type": "PRE_ENTRY",
+    "ts": 1795689540,
+    "q": 8.5,
+    "entry": 1.089,
+    "sl": 1.042643,
+    "riskPct": 4.3,
+    "tp1": 1.135357,
+    "tp2": 1.181714,
+    "exit": 1.109,
+    "exitReason": "到期平仓 +0.43R",
+    "holdBars": 6,
+    "mfeR": 0.47,
+    "maeR": -0.37,
+    "maxR": 0.47,
+    "finalR": 0.43
+   },
+   {
+    "sym": "SSV",
+    "type": "PRE_ENTRY",
+    "ts": 1795687236,
+    "skip": "风险>10% 放弃交易（不扩大止损）"
+   },
    {
     "sym": "BLUR",
     "type": "PRE_ENTRY",
@@ -475,42 +499,6 @@
     "maeR": 0,
     "maxR": 0.41,
     "finalR": 0.33
-   },
-   {
-    "sym": "PROM",
-    "type": "PRE_ENTRY",
-    "ts": 1795629647,
-    "q": 9,
-    "entry": 5.173,
-    "sl": 4.783714,
-    "riskPct": 7.5,
-    "tp1": 5.562286,
-    "tp2": 5.951571,
-    "exit": 5.125,
-    "exitReason": "到期平仓 -0.12R",
-    "holdBars": 6,
-    "mfeR": 0.27,
-    "maeR": -0.94,
-    "maxR": 0.27,
-    "finalR": -0.12
-   },
-   {
-    "sym": "PROM",
-    "type": "PRE_ENTRY",
-    "ts": 1795624869,
-    "q": 8.5,
-    "entry": 5.04,
-    "sl": 4.678143,
-    "riskPct": 7.2,
-    "tp1": 5.401857,
-    "tp2": 5.763714,
-    "exit": 5.221,
-    "exitReason": "到期平仓 +0.50R",
-    "holdBars": 6,
-    "mfeR": 0.56,
-    "maeR": -0.16,
-    "maxR": 0.56,
-    "finalR": 0.5
    }
   ]
  }
