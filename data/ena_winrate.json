@@ -1,6 +1,6 @@
 {
- "generated_at": 1795720503,
- "generated_str": "11-27 03:15",
+ "generated_at": 1795724103,
+ "generated_str": "11-27 04:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,13 +22,13 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 727,
-   "rate1h": 43,
+   "n": 728,
+   "rate1h": 44,
    "avg1h": -0.23,
    "rate4h": 43,
-   "avg4h": -0.46,
+   "avg4h": -0.45,
    "rate24h": 42,
-   "avg24h": -1.1
+   "avg24h": -1.11
   },
   "EARLY": {
    "n": 46,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "SEI",
+   "type": "PRE_ENTRY",
+   "ts": 1795719909,
+   "px": 0.04037,
+   "q": 10,
+   "r1h": 0.004459,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "SKY",
    "type": "PRE_ENTRY",
@@ -58,7 +68,7 @@
    "px": 0.03863,
    "q": 10,
    "r1h": 0.018121,
-   "r4h": null,
+   "r4h": 0.049702,
    "r24h": null
   },
   {
@@ -68,7 +78,7 @@
    "px": 2.772,
    "q": 9,
    "r1h": 0.030664,
-   "r4h": null,
+   "r4h": -0.010462,
    "r24h": null
   },
   {
@@ -209,7 +219,7 @@
    "q": 8.5,
    "r1h": 0.012693,
    "r4h": 0.022847,
-   "r24h": null
+   "r24h": -0.022457
   },
   {
    "sym": "PROM",
@@ -330,20 +340,10 @@
    "r1h": -0.040984,
    "r4h": 0.020036,
    "r24h": -0.018215
-  },
-  {
-   "sym": "MUBARAK",
-   "type": "PRE_ENTRY",
-   "ts": 1795482926,
-   "px": 0.02695,
-   "q": 9,
-   "r1h": -0.028942,
-   "r4h": -0.090909,
-   "r24h": -0.175139
   }
  ],
  "replay": {
-  "updated": 1795719901232,
+  "updated": 1795723503990,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
