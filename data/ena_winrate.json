@@ -1,6 +1,6 @@
 {
- "generated_at": 1795781703,
- "generated_str": "11-27 20:15",
+ "generated_at": 1795785303,
+ "generated_str": "11-27 21:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795781104598,
+  "updated": 1795784703785,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,10 +363,10 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 550,
+    "n": 551,
     "winRate": 44,
     "avgR": -0.02,
-    "avgMfe": 0.35,
+    "avgMfe": 0.34,
     "avgMae": -0.32,
     "avgHoldMin": 115
    },
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "牛来",
+    "type": "PRE_ENTRY",
+    "ts": 1795779448,
+    "q": 8.5,
+    "entry": 0.04817,
+    "sl": 0.045471,
+    "riskPct": 5.6,
+    "tp1": 0.050869,
+    "tp2": 0.053568,
+    "exit": 0.04734,
+    "exitReason": "到期平仓 -0.31R",
+    "holdBars": 6,
+    "mfeR": 0,
+    "maeR": -0.42,
+    "maxR": 0,
+    "finalR": -0.31
+   },
    {
     "sym": "SKY",
     "type": "PRE_ENTRY",
@@ -505,24 +523,6 @@
     "maeR": -0.25,
     "maxR": 0,
     "finalR": -0.18
-   },
-   {
-    "sym": "SEI",
-    "type": "PRE_ENTRY",
-    "ts": 1795728214,
-    "q": 9.5,
-    "entry": 0.04008,
-    "sl": 0.036135,
-    "riskPct": 9.8,
-    "tp1": 0.044025,
-    "tp2": 0.04797,
-    "exit": 0.03906,
-    "exitReason": "到期平仓 -0.26R",
-    "holdBars": 5,
-    "mfeR": 0.03,
-    "maeR": -0.27,
-    "maxR": 0.03,
-    "finalR": -0.26
    }
   ]
  }
