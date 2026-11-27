@@ -1,6 +1,6 @@
 {
- "generated_at": 1795749303,
- "generated_str": "11-27 11:15",
+ "generated_at": 1795752903,
+ "generated_str": "11-27 12:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,7 +22,7 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 735,
+   "n": 737,
    "rate1h": 43,
    "avg1h": -0.23,
    "rate4h": 43,
@@ -42,6 +42,26 @@
  },
  "recent": [
   {
+   "sym": "SKY",
+   "type": "PRE_ENTRY",
+   "ts": 1795746895,
+   "px": 0.04811,
+   "q": 9,
+   "r1h": -0.019539,
+   "r4h": null,
+   "r24h": null
+  },
+  {
+   "sym": "ZRO",
+   "type": "PRE_ENTRY",
+   "ts": 1795746683,
+   "px": 1.157,
+   "q": 9.5,
+   "r1h": -0.001729,
+   "r4h": null,
+   "r24h": null
+  },
+  {
    "sym": "ZRO",
    "type": "PRE_ENTRY",
    "ts": 1795741932,
@@ -58,7 +78,7 @@
    "px": 1.144,
    "q": 9.5,
    "r1h": 0.013986,
-   "r4h": null,
+   "r4h": 0.012238,
    "r24h": null
   },
   {
@@ -320,30 +340,10 @@
    "r1h": 0.057692,
    "r4h": 0.095142,
    "r24h": -0.022267
-  },
-  {
-   "sym": "OPG",
-   "type": "PRE_ENTRY",
-   "ts": 1795587270,
-   "px": 0.1784,
-   "q": 8,
-   "r1h": -0.040359,
-   "r4h": -0.019058,
-   "r24h": -0.119955
-  },
-  {
-   "sym": "OPG",
-   "type": "PRE_ENTRY",
-   "ts": 1795583141,
-   "px": 0.1742,
-   "q": 8,
-   "r1h": 0.013777,
-   "r4h": -0.000574,
-   "r24h": -0.106774
   }
  ],
  "replay": {
-  "updated": 1795748703858,
+  "updated": 1795752304586,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 546,
+    "n": 548,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,42 @@
    }
   },
   "last": [
+   {
+    "sym": "SKY",
+    "type": "PRE_ENTRY",
+    "ts": 1795746895,
+    "q": 9,
+    "entry": 0.04811,
+    "sl": 0.045015,
+    "riskPct": 6.4,
+    "tp1": 0.051205,
+    "tp2": 0.054301,
+    "exit": 0.04719,
+    "exitReason": "到期平仓 -0.30R",
+    "holdBars": 6,
+    "mfeR": 0.69,
+    "maeR": -0.34,
+    "maxR": 0.69,
+    "finalR": -0.3
+   },
+   {
+    "sym": "ZRO",
+    "type": "PRE_ENTRY",
+    "ts": 1795746683,
+    "q": 9.5,
+    "entry": 1.157,
+    "sl": 1.094179,
+    "riskPct": 5.4,
+    "tp1": 1.219821,
+    "tp2": 1.282643,
+    "exit": 1.156,
+    "exitReason": "到期平仓 -0.02R",
+    "holdBars": 6,
+    "mfeR": 0.21,
+    "maeR": -0.14,
+    "maxR": 0.21,
+    "finalR": -0.02
+   },
    {
     "sym": "ZRO",
     "type": "PRE_ENTRY",
@@ -474,18 +510,6 @@
     "sym": "SSV",
     "type": "PRE_ENTRY",
     "ts": 1795725510,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "SEI",
-    "type": "PRE_ENTRY",
-    "ts": 1795724468,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
-   },
-   {
-    "sym": "SEI",
-    "type": "PRE_ENTRY",
-    "ts": 1795719909,
     "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
