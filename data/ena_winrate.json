@@ -1,6 +1,6 @@
 {
- "generated_at": 1795734903,
- "generated_str": "11-27 07:15",
+ "generated_at": 1795738503,
+ "generated_str": "11-27 08:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,13 +22,13 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 732,
+   "n": 733,
    "rate1h": 43,
    "avg1h": -0.23,
    "rate4h": 43,
    "avg4h": -0.46,
    "rate24h": 42,
-   "avg24h": -1.11
+   "avg24h": -1.12
   },
   "EARLY": {
    "n": 46,
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "ZRO",
+   "type": "PRE_ENTRY",
+   "ts": 1795731540,
+   "px": 1.142,
+   "q": 9.5,
+   "r1h": -0.008757,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "SEI",
    "type": "PRE_ENTRY",
@@ -229,7 +239,7 @@
    "q": 9.5,
    "r1h": 0.009549,
    "r4h": -0.06016,
-   "r24h": null
+   "r24h": -0.064362
   },
   {
    "sym": "BLUR",
@@ -330,20 +340,10 @@
    "r1h": -0.040708,
    "r4h": -0.036283,
    "r24h": -0.059292
-  },
-  {
-   "sym": "LISTA",
-   "type": "PRE_ENTRY",
-   "ts": 1795549372,
-   "px": 0.1147,
-   "q": 10,
-   "r1h": -0.010462,
-   "r4h": -0.039233,
-   "r24h": -0.039233
   }
  ],
  "replay": {
-  "updated": 1795734304044,
+  "updated": 1795737903110,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
@@ -363,7 +363,7 @@
     "avgHoldMin": 125
    },
    "PRE_ENTRY": {
-    "n": 543,
+    "n": 544,
     "winRate": 44,
     "avgR": -0.02,
     "avgMfe": 0.35,
@@ -380,6 +380,24 @@
    }
   },
   "last": [
+   {
+    "sym": "ZRO",
+    "type": "PRE_ENTRY",
+    "ts": 1795731540,
+    "q": 9.5,
+    "entry": 1.142,
+    "sl": 1.050714,
+    "riskPct": 8,
+    "tp1": 1.233286,
+    "tp2": 1.324571,
+    "exit": 1.126,
+    "exitReason": "到期平仓 -0.18R",
+    "holdBars": 5,
+    "mfeR": 0,
+    "maeR": -0.25,
+    "maxR": 0,
+    "finalR": -0.18
+   },
    {
     "sym": "SEI",
     "type": "PRE_ENTRY",
@@ -469,12 +487,6 @@
     "maeR": -0.22,
     "maxR": 0.33,
     "finalR": 0.22
-   },
-   {
-    "sym": "SSV",
-    "type": "PRE_ENTRY",
-    "ts": 1795709104,
-    "skip": "风险>10% 放弃交易（不扩大止损）"
    }
   ]
  }
