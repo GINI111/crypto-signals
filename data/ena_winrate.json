@@ -1,6 +1,6 @@
 {
- "generated_at": 1795738503,
- "generated_str": "11-27 08:15",
+ "generated_at": 1795742103,
+ "generated_str": "11-27 09:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -22,11 +22,11 @@
    "avg24h": 1.98
   },
   "PRE_ENTRY": {
-   "n": 733,
+   "n": 734,
    "rate1h": 43,
    "avg1h": -0.23,
    "rate4h": 43,
-   "avg4h": -0.46,
+   "avg4h": -0.47,
    "rate24h": 42,
    "avg24h": -1.12
   },
@@ -41,6 +41,16 @@
   }
  },
  "recent": [
+  {
+   "sym": "ZRO",
+   "type": "PRE_ENTRY",
+   "ts": 1795738197,
+   "px": 1.144,
+   "q": 9.5,
+   "r1h": 0.013986,
+   "r4h": null,
+   "r24h": null
+  },
   {
    "sym": "ZRO",
    "type": "PRE_ENTRY",
@@ -68,7 +78,7 @@
    "px": 1.137,
    "q": 8,
    "r1h": -0.00088,
-   "r4h": null,
+   "r4h": 0.020229,
    "r24h": null
   },
   {
@@ -78,7 +88,7 @@
    "px": 2.888,
    "q": 10,
    "r1h": 0.003463,
-   "r4h": null,
+   "r4h": -0.065097,
    "r24h": null
   },
   {
@@ -88,7 +98,7 @@
    "px": 0.04067,
    "q": 10,
    "r1h": -0.025818,
-   "r4h": null,
+   "r4h": -0.051881,
    "r24h": null
   },
   {
@@ -330,20 +340,10 @@
    "r1h": -0.003419,
    "r4h": -0.02963,
    "r24h": -0.111111
-  },
-  {
-   "sym": "LISTA",
-   "type": "PRE_ENTRY",
-   "ts": 1795554351,
-   "px": 0.113,
-   "q": 9.5,
-   "r1h": -0.040708,
-   "r4h": -0.036283,
-   "r24h": -0.059292
   }
  ],
  "replay": {
-  "updated": 1795737903110,
+  "updated": 1795741503822,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
