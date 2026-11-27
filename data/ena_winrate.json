@@ -1,6 +1,6 @@
 {
- "generated_at": 1795810503,
- "generated_str": "11-28 04:15",
+ "generated_at": 1795814103,
+ "generated_str": "11-28 05:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -28,7 +28,7 @@
    "rate4h": 43,
    "avg4h": -0.48,
    "rate24h": 41,
-   "avg24h": -1.14
+   "avg24h": -1.16
   },
   "EARLY": {
    "n": 46,
@@ -129,7 +129,7 @@
    "q": 8,
    "r1h": -0.00088,
    "r4h": 0.020229,
-   "r24h": null
+   "r24h": -0.064204
   },
   {
    "sym": "SSV",
@@ -139,7 +139,7 @@
    "q": 10,
    "r1h": 0.003463,
    "r4h": -0.065097,
-   "r24h": null
+   "r24h": -0.062673
   },
   {
    "sym": "SEI",
@@ -149,7 +149,7 @@
    "q": 10,
    "r1h": -0.025818,
    "r4h": -0.051881,
-   "r24h": null
+   "r24h": -0.06565
   },
   {
    "sym": "SEI",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795809902064,
+  "updated": 1795813502772,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
