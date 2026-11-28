@@ -1,6 +1,6 @@
 {
- "generated_at": 1795835703,
- "generated_str": "11-28 11:15",
+ "generated_at": 1795839303,
+ "generated_str": "11-28 12:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -28,7 +28,7 @@
    "rate4h": 43,
    "avg4h": -0.48,
    "rate24h": 41,
-   "avg24h": -1.18
+   "avg24h": -1.17
   },
   "EARLY": {
    "n": 46,
@@ -59,7 +59,7 @@
    "q": 9,
    "r1h": -0.012606,
    "r4h": -0.028725,
-   "r24h": null
+   "r24h": 0.069229
   },
   {
    "sym": "SKY",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795835102601,
+  "updated": 1795838702236,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
