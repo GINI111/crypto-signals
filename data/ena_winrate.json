@@ -1,6 +1,6 @@
 {
- "generated_at": 1795824903,
- "generated_str": "11-28 08:15",
+ "generated_at": 1795828503,
+ "generated_str": "11-28 09:15",
  "source": "ena_signals.jsonl",
  "types": {
   "BREAKOUT": {
@@ -89,7 +89,7 @@
    "q": 9.5,
    "r1h": -0.004333,
    "r4h": -0.015598,
-   "r24h": null
+   "r24h": -0.053726
   },
   {
    "sym": "ZRO",
@@ -343,7 +343,7 @@
   }
  ],
  "replay": {
-  "updated": 1795824302991,
+  "updated": 1795827902058,
   "source": "ena_signals.jsonl",
   "stats": {
    "BREAKOUT": {
